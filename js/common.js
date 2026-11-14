@@ -43,8 +43,7 @@
   document.addEventListener('touchstart', unlockSpeech, { once: true });
 
   function praise() {
-    var list = window.KL_I18N.t('praise');
-    return list[randInt(0, list.length - 1)];
+    return 'praise.' + randInt(0, 5);
   }
 
   function shuffle(arr) {
@@ -156,8 +155,8 @@
   /* ---- generic multiple-choice game engine ----
      cfg: {
        gameId, main, scoreEl, questions: [...],
-       build: function (q, promptEl, answersEl) -> [{ el, isCorrect, speechOnCorrect }],
-       promptSpeech: function (q) -> string
+       build: function (q, promptEl, answersEl) -> [{ el, isCorrect, speechParts: [audioKey, ...] }],
+       promptSpeech: function (q) -> [audioKey, ...]   (played via KL_TTS.say)
      } */
   function runGame(cfg) {
     var I = window.KL_I18N;
@@ -169,7 +168,7 @@
 
     function endScreen() {
       if (window.KL_SOUND) window.KL_SOUND.play('win');
-      speak(I.t('end.title'));
+      if (window.KL_TTS) window.KL_TTS.say(['end.title']);
       var total = cfg.questions.length;
       var stars = state.mistakes === 0 ? 3 : (state.mistakes <= 2 ? 2 : 1);
       saveBest(cfg.gameId, state.correct);
@@ -208,7 +207,7 @@
       spk.classList.add('hint');
       spk.addEventListener('click', function () {
         spk.classList.remove('hint');
-        speak(cfg.promptSpeech(q));
+        if (window.KL_TTS) window.KL_TTS.say(cfg.promptSpeech(q));
       });
 
       answers.forEach(function (a) {
@@ -223,9 +222,9 @@
             updateScore();
             var p = praise();
             if (window.KL_SOUND) window.KL_SOUND.play('correct');
-            msg.textContent = p;
+            msg.textContent = I.t(p);
             msg.className = 'message good';
-            speak(p + (a.speechOnCorrect ? ' ' + a.speechOnCorrect : ''));
+            if (window.KL_TTS) window.KL_TTS.say([p].concat(a.speechParts || []));
             setTimeout(function () {
               state.i++;
               state.locked = false;
@@ -237,15 +236,15 @@
             a.el.classList.add('wrong');
             msg.textContent = I.t('try_again');
             msg.className = 'message bad';
-            speak(I.t('try_again'));
+            if (window.KL_TTS) window.KL_TTS.say(['try_again']);
             setTimeout(function () { a.el.classList.remove('wrong'); }, 450);
           }
         });
       });
 
       // Speak the question when the round appears (works after the first user tap on iOS).
-      speak(cfg.promptSpeech(q));
-      onUnlock(function () { speak(cfg.promptSpeech(q)); });
+      if (window.KL_TTS) window.KL_TTS.say(cfg.promptSpeech(q));
+      onUnlock(function () { if (window.KL_TTS) window.KL_TTS.say(cfg.promptSpeech(q)); });
     }
 
     updateScore();

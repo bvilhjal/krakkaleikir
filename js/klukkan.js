@@ -2,10 +2,6 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
-  var da = KL_I18N.lang() === 'da';
-  var WORDS = da
-    ? { 1: 'en', 2: 'to', 3: 'tre', 4: 'fire', 5: 'fem', 6: 'seks', 7: 'syv', 8: 'otte', 9: 'ni', 10: 'ti', 11: 'elleve', 12: 'tolv' }
-    : { 1: 'einn', 2: 'tveir', 3: 'þrír', 4: 'fjórir', 5: 'fimm', 6: 'sex', 7: 'sjö', 8: 'átta', 9: 'níu', 10: 'tíu', 11: 'ellefu', 12: 'tólf' };
   var HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   var CX = 120, CY = 120, FACE_R = 112, NUM_R = 88, BTN_R = 88, BTN_SIZE = 46;
 
@@ -59,8 +55,8 @@ document.addEventListener('DOMContentLoaded', function () {
     scoreEl: document.getElementById('score'),
     questions: questions,
     promptSpeech: function (q) {
-      if (q.type === 'read') return KL.t('klukkan.read_q');
-      return KL.fmt('klukkan.set_speech', { h: WORDS[q.hour] });
+      if (q.type === 'read') return ['klukkan.read_q'];
+      return ['klukkan.set_a', 'num.' + q.hour, 'klukkan.set_b'];
     },
     build: function (q, promptEl, answersEl) {
       var answers = [];
@@ -71,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
           btn.className = 'answer';
           btn.textContent = c;
           answersEl.appendChild(btn);
-          answers.push({ el: btn, isCorrect: c === q.hour, speechOnCorrect: KL.fmt('klukkan.clock_is', { h: WORDS[c] }) });
+          answers.push({ el: btn, isCorrect: c === q.hour, speechParts: ['klukkan.clock_is_a', 'num.' + c] });
         });
       } else {
         promptEl.innerHTML = '<div class="digital">' + q.hour + ':00</div>';
@@ -87,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
           btn.style.left = (p[0] - BTN_SIZE / 2) + 'px';
           btn.style.top = (p[1] - BTN_SIZE / 2) + 'px';
           wrap.appendChild(btn);
-          answers.push({ el: btn, isCorrect: h === q.hour, speechOnCorrect: KL.fmt('klukkan.clock_is', { h: WORDS[h] }) });
+          answers.push({ el: btn, isCorrect: h === q.hour, speechParts: ['klukkan.clock_is_a', 'num.' + h] });
         }
       }
       return answers;

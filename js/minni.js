@@ -41,8 +41,10 @@ document.addEventListener('DOMContentLoaded', function () {
       '</div>';
     document.getElementById('kl-6').addEventListener('click', function () { play(6); });
     document.getElementById('kl-8').addEventListener('click', function () { play(8); });
-    KL.speak(KL.t('minni.start'));
-    KL.onUnlock(function () { KL.speak(KL.t('minni.start')); });
+    if (window.KL_TTS) {
+      window.KL_TTS.say(['minni.start']);
+      KL.onUnlock(function () { window.KL_TTS.say(['minni.start']); });
+    }
   }
 
   function play(nPairs) {
@@ -90,9 +92,9 @@ document.addEventListener('DOMContentLoaded', function () {
               flipped = [];
               matched++;
               var msg = document.getElementById('kl-msg');
-              msg.textContent = KL.praise();
+              msg.textContent = KL.t(KL.praise());
               msg.className = 'message good';
-              KL.speak(msg.textContent);
+              if (window.KL_TTS) window.KL_TTS.say([KL.praise()]);
               if (matched === nPairs) end();
             }, 350);
           } else {
@@ -111,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function end() {
       if (window.KL_SOUND) window.KL_SOUND.play('win');
-      KL.speak(KL.t('minni.end_title'));
+      if (window.KL_TTS) window.KL_TTS.say(['minni.end_title']);
       var stars = nPairs === 6
         ? (flips <= 9 ? 3 : flips <= 14 ? 2 : 1)
         : (flips <= 12 ? 3 : flips <= 18 ? 2 : 1);

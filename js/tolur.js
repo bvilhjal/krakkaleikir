@@ -2,10 +2,6 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
-  var da = KL_I18N.lang() === 'da';
-  var WORDS = da
-    ? { 1: 'en', 2: 'to', 3: 'tre', 4: 'fire', 5: 'fem', 6: 'seks', 7: 'syv', 8: 'otte', 9: 'ni', 10: 'ti' }
-    : { 1: 'einn', 2: 'tveir', 3: 'þrír', 4: 'fjórir', 5: 'fimm', 6: 'sex', 7: 'sjö', 8: 'átta', 9: 'níu', 10: 'tíu' };
   var BALL_COLORS = ['#E53935', '#1E88E5', '#FDD835', '#43A047', '#8E24AA', '#FB8C00', '#F48FB1', '#26C6DA', '#8D6E63', '#66BB6A'];
 
   var questions = [];
@@ -24,8 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
     scoreEl: document.getElementById('score'),
     questions: questions,
     promptSpeech: function (q) {
-      if (q.type === 'count') return KL.t('tolur.count_q');
-      return KL.fmt('tolur.add_speech', { a: WORDS[q.a], b: WORDS[q.b] });
+      if (q.type === 'count') return ['tolur.count_q'];
+      return ['num.' + q.a, 'tolur.plus', 'num.' + q.b, 'tolur.add_q'];
     },
     build: function (q, promptEl, answersEl) {
       var answers = [];
@@ -38,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
           btn.className = 'answer';
           btn.textContent = c;
           answersEl.appendChild(btn);
-          answers.push({ el: btn, isCorrect: c === q.n, speechOnCorrect: WORDS[c] });
+          answers.push({ el: btn, isCorrect: c === q.n, speechParts: ['num.' + c] });
         });
       } else {
         var sum = q.a + q.b;
@@ -52,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
           btn.className = 'answer';
           btn.textContent = c;
           answersEl.appendChild(btn);
-          answers.push({ el: btn, isCorrect: c === sum, speechOnCorrect: WORDS[c] });
+          answers.push({ el: btn, isCorrect: c === sum, speechParts: ['num.' + c] });
         });
       }
       return answers;
