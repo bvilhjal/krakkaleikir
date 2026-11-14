@@ -23,7 +23,7 @@
       if (!got) return '<span class="sticker missing" title="?">' + KL_ART.silhouette(id, 56) + '</span>';
       return '<button type="button" class="sticker" data-animal-sound="' + id + '" aria-label="' + KL.fmt('sticker.sound', { a: KL.t('animal.' + id) }) + '">' +
         KL_ART.animal(id, 56) + '</button>';
-    }).join('');
+    }).join('') + KL.familyHTML();
   }
 
   KL.renderMenu = function () {

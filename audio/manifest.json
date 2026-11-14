@@ -16,6 +16,14 @@
   "noise": "-55dB",
   "reencode": true
  },
+ "voice_overrides": {
+  "is": {
+   "family.dad": "is-IS-GunnarNeural"
+  },
+  "da": {
+   "family.mom": "en-US-EmmaMultilingualNeural"
+  }
+ },
  "is": {
   "koala.hello": "Hæ! Ég heiti Kóli. Veldu leik og við spilum saman!",
   "koala.next": "Hvað viltu spila næst?",
@@ -318,6 +326,7 @@
   "word.fíll": "fíll",
   "word.pera": "pera",
   "word.lamb": "lamb",
+  "family.dad": "frábært Agnes mín",
   "praise.0": "Frábært!",
   "praise.1": "Æðislegt!",
   "praise.2": "Snilld!",
@@ -630,6 +639,7 @@
   "word.fisk": "fisk",
   "word.gris": "gris",
   "word.kage": "kage",
-  "word.frø": "frø"
+  "word.frø": "frø",
+  "family.mom": "hvor er du dygtig skat"
  }
 }

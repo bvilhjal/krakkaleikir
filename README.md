@@ -22,9 +22,13 @@ Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á h
 
 ## Hljóð
 
+Þegar öll tólf dýrin eru komin í bókina opnast tveir bónuslímmiðar: pabbi og mamma. Bankaðu á pabba til að heyra „frábært Agnes mín“ með karlrödd á íslensku, eða mömmu til að heyra „hvor er du dygtig skat“ með kvenrödd á dönsku. Setningarnar haldast eins þótt skipt sé um tungumál. Bónusinn birtist líka strax hjá þeim sem hafa þegar safnað öllum dýrunum og læsist aftur ef byrjað er upp á nýtt.
+
 Bankaðu á límmiða sem þú hefur safnað til að heyra hljóð dýrsins, líka þegar nýr límmiði birtist eftir leik. Ljónið öskrar, kötturinn mjálmar og grísinn rýtur. Fiskurinn fær fjörugar loftbólur og maríuhænan létt vængjablak. Hljóðin virka án nettengingar og hlýða hljóðhnappnum.
 
 Fimm stutt dýrahljóð eru tilbúnar, gervigreindargerðar CC0-hljóðskrár frá [SFXMint](https://sfxmint.com/license), geymdar í `audio/animals/`; uppruni, vinnsla og SHA256 eru í `audio/animals/credits.json`. Hin sjö eru leikræn Web Audio-hljóð.
+
+Raddir foreldra eru stilltar sérstaklega í `FAMILY` í `js/i18n.js`: Gunnar fyrir pabba og Emma Multilingual fyrir mömmu (Christel skilar engu hljóði). `audio/manifest.json` skráir þessi frávik frá rödd Kóla; aðeins viðkomandi skrár eru endurgerðar þegar rödd breytist.
 
 Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Edge (rödd Kóla: is-IS-Gunnar og da-DK-Jeppe; sjá `tools/make_audio.py`). Heilar setningar eru teknar upp í einu lagi („Hvað eru þrír plús tveir?“, „Klukkan er hálf fjögur.“) og þögnin fremst og aftast í hverri skrá er klippt burt, svo talið flæðir án hléa. Bókstafir notar raunveruleg orð en ekki atkvæði eins og „ba“, sem talgervillinn stafar oft eins og skammstöfun; hvert orð er sagt í setningu („Hlustaðu: mús.“) og klippt út. Á `tools/listen.html` (á netinu: https://bvilhjal.github.io/krakkaleikir/tools/listen.html) er hægt að hlusta á allar skrárnar og merkja þær sem hljóma rangt. Ef skrá vantar er Web Speech API notað. Almenn leikjahljóð eru búin til í vafranum með Web Audio API. Hljóðhnappurinn efst slekkur á öllu hljóði, líka tali sem er í gangi.
 

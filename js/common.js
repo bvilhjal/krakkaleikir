@@ -58,7 +58,7 @@
   }
   document.addEventListener('pointerdown', warmSpeech, { once: true });
   document.addEventListener('touchstart', warmSpeech, { once: true });
-  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .sound-btn, #kl-replay';
+  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], [data-family], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .sound-btn, #kl-replay';
   function onGesture(e) {
     var T = window.KL_TTS;
     if (!T) return;
@@ -150,7 +150,7 @@
   function stickers() {
     try {
       var s = JSON.parse(window.localStorage.getItem('kl.stickers') || 'null');
-      if (Array.isArray(s)) return s.filter(function (id) { return ART.ANIMALS.indexOf(id) >= 0; });
+      if (Array.isArray(s)) return s.filter(function (id, i) { return ART.ANIMALS.indexOf(id) >= 0 && s.indexOf(id) === i; });
     } catch (e) { /* ignore */ }
     return ['koala']; // Kóli is the first sticker
   }
@@ -162,6 +162,19 @@
     have.push(id);
     try { window.localStorage.setItem('kl.stickers', JSON.stringify(have)); } catch (e) { /* ignore */ }
     return id;
+  }
+  function allAnimals() {
+    var have = stickers();
+    return ART.ANIMALS.every(function (id) { return have.indexOf(id) >= 0; });
+  }
+  function familyHTML() {
+    if (!allAnimals()) return '';
+    return '<section class="family-reward"><h2>' + I.t('family.title') + '</h2><p>' + I.t('family.unlocked') + '</p>' +
+      '<div class="family-row">' + Object.keys(I.FAMILY).map(function (id) {
+        var p = I.FAMILY[id];
+        return '<button type="button" class="family-sticker" data-family="' + id + '" aria-label="' + I.t('family.' + id) + ': ' + p.text + '">' +
+          ART.parent(id, 88) + '<strong>' + I.t('family.' + id) + '</strong><span lang="' + p.lang + '">' + p.text + '</span></button>';
+      }).join('') + '</div></section>';
   }
   function resetScores() {
     try {
@@ -238,6 +251,15 @@
   }
   document.addEventListener('click', function (e) {
     if (!e.target.closest) return;
+    var parent = e.target.closest('[data-family]');
+    if (parent) {
+      var reward = I.FAMILY[parent.getAttribute('data-family')];
+      if (!allAnimals() || !reward) return;
+      onUnlock(null);
+      say([reward.lang + ':family.' + parent.getAttribute('data-family')]);
+      replay(parent, 'sticker-play');
+      return;
+    }
     var sticker = e.target.closest('[data-animal-sound]');
     if (sticker) {
       if (window.KL_TTS) window.KL_TTS.stop();
@@ -341,7 +363,7 @@
     var best = getBest('stars.' + o.slotKey);
     var sticker = awardSticker();
     var hurra = I.PRAISE[I.HURRA];
-    var speech = ['is:praise.' + I.HURRA, o.titleKey].concat(sticker ? ['sticker.' + sticker] : (stickers().length === ART.ANIMALS.length ? ['sticker.all'] : []));
+    var speech = ['is:praise.' + I.HURRA, o.titleKey].concat(sticker ? ['sticker.' + sticker] : (allAnimals() ? ['sticker.all'] : []));
     ctx.main.innerHTML =
       '<div class="question-card end-card enter">' + guideHTML(96) +
         '<div class="big-stars">' + starsRow(o.stars, 3, 56) + '</div>' +
@@ -349,6 +371,7 @@
         '<p class="best">' + I.t('end.best') + ' <span class="inline-stars">' + starsRow(best, 3, 24) + '</span></p>' +
         (sticker ? '<div class="sticker-reveal"><button type="button" class="sticker-new" data-animal-sound="' + sticker + '" aria-label="' + I.fmt('sticker.sound', { a: I.t('animal.' + sticker) }) + '">' + ART.animal(sticker, 92) + '</button>' +
           '<p>' + I.fmt('sticker.new', { a: I.t('animal.' + sticker) }) + '</p></div>' : '') +
+        familyHTML() +
         '<div class="end-buttons">' +
           '<button type="button" class="btn-primary" id="kl-replay">' + I.t('end.replay') + '</button>' +
           '<a class="btn-secondary" href="#" data-nav="">' + I.t('end.menu') + '</a>' +
@@ -605,6 +628,8 @@
     getBest: getBest,
     saveBest: saveBest,
     stickers: stickers,
+    allAnimals: allAnimals,
+    familyHTML: familyHTML,
     resetScores: resetScores,
     shapeSVG: shapeSVG,
     guideHTML: guideHTML,

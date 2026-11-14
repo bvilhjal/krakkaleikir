@@ -598,6 +598,30 @@ button.sticker { border: none; }
 button.sticker:active, button.sticker-new:active { transform: scale(0.92); }
 button.sticker:focus-visible, button.sticker-new:focus-visible { outline: 3px solid #5C6BC0; outline-offset: 3px; }
 .sticker-play { animation: hop-in 0.4s ease-out; }
+.family-reward { grid-column: 1 / -1; width: 100%; margin-top: 18px; padding: 18px 10px; border-radius: 18px; background: #FFF3D6; }
+.family-reward h2 { margin: 0 0 4px; }
+.family-reward p { margin: 0 0 14px; font-size: 1rem; }
+.family-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.family-sticker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 130px;
+  max-width: 240px;
+  padding: 12px 8px;
+  border: 2px solid #E9CD90;
+  border-radius: 18px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.family-sticker strong { font-size: 1.2rem; }
+.family-sticker span { font-size: 0.95rem; }
+.family-sticker:active { transform: scale(0.94); }
+.family-sticker:focus-visible { outline: 3px solid #5C6BC0; outline-offset: 3px; }
 .sil svg { filter: grayscale(1) brightness(1.6) contrast(0.25); opacity: 0.55; }
 
 @media (prefers-reduced-motion: reduce) {

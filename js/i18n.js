@@ -50,6 +50,10 @@
       'end.menu': 'Annar leikur',
       'sticker.new': 'Nýr límmiði: {a}!',
       'sticker.sound': 'Heyra hljóð: {a}',
+      'family.title': 'Pabbi og mamma',
+      'family.unlocked': 'Þú safnaðir öllum dýrunum!',
+      'family.dad': 'Pabbi',
+      'family.mom': 'Mamma',
       'sticker.all': 'Allir límmiðarnir eru komnir í bókina!',
       'try_again': 'Næstum því! Reyndu aftur.',
       'praise.means': '{g}',
@@ -157,6 +161,10 @@
       'end.menu': 'Et andet spil',
       'sticker.new': 'Nyt klistermærke: {a}!',
       'sticker.sound': 'Hør lyden: {a}',
+      'family.title': 'Far og mor',
+      'family.unlocked': 'Du har samlet alle dyrene!',
+      'family.dad': 'Far',
+      'family.mom': 'Mor',
       'sticker.all': 'Alle klistermærkerne er i bogen!',
       'try_again': 'Næsten! Prøv igen.',
       'praise.means': 'betyder: {g}',
@@ -244,6 +252,12 @@
         !unit ? ten : l === 'is' ? ten + ' og ' + S['num.' + unit] : S['num.' + unit] + 'og' + ten;
     }
   });
+
+  // Parent rewards keep their own language and voice, whatever the menu language.
+  var FAMILY = {
+    dad: { lang: 'is', voice: 'is-IS-GunnarNeural', text: 'frábært Agnes mín' },
+    mom: { lang: 'da', voice: 'en-US-EmmaMultilingualNeural', text: 'hvor er du dygtig skat' }
+  };
 
   // Kóli's Icelandic cheers, said in Icelandic in both languages (da: the gloss is shown)
   var PRAISE = [
@@ -334,6 +348,7 @@
       if (k.indexOf('animal.') === 0) v['sticker.' + k.slice(7)] = fill(S['sticker.new'], { a: S[k] });
     });
     WORDS[l].forEach(function (w) { v['word.' + w] = w; });
+    Object.keys(FAMILY).forEach(function (id) { if (FAMILY[id].lang === l) v['family.' + id] = FAMILY[id].text; });
     if (l === 'is') PRAISE.forEach(function (p, i) { v['praise.' + i] = p.is; });
     vocabCache[l] = v;
     return v;
@@ -371,6 +386,6 @@
 
   window.KL_I18N = {
     lang: lang, setLang: setLang, t: t, fmt: fmt, fill: fill, speechLang: speechLang, apply: apply, onChange: onChange,
-    audioVocab: audioVocab, LANGS: LANGS, WORDS: WORDS, STR: STR, PRAISE: PRAISE, HURRA: HURRA
+    audioVocab: audioVocab, LANGS: LANGS, WORDS: WORDS, STR: STR, PRAISE: PRAISE, HURRA: HURRA, FAMILY: FAMILY
   };
 })();

@@ -33,7 +33,8 @@ OUT_AUDIO = ROOT / "audio"
 RECORD = OUT_AUDIO / "manifest.json"
 
 # Kóli has the same (male) voice in both languages: his Icelandic cheers are
-# mixed into Danish sentences. da-DK-ChristelNeural returns no audio (2026-11).
+# mixed into Danish sentences. Parent clips override these per file via i18n.js;
+# Mom uses Emma's female multilingual voice because Christel returns no audio.
 VOICES = {
     "is": ["is-IS-GunnarNeural"],
     "da": ["da-DK-JeppeNeural"],
@@ -43,8 +44,8 @@ LEAD, TAIL = 0.06, 0.14  # seconds of silence kept before / after the speech
 SETTINGS = {"voices": VOICES, "rate": RATE, "trim": [LEAD, TAIL], "noise": "-55dB", "reencode": True}
 
 
-def load_vocab() -> dict:
-    """lang -> {audio_key: text}, from audioVocab() in js/i18n.js."""
+def load_spec() -> dict:
+    """Spoken text and per-clip voice overrides, both from js/i18n.js."""
     probe = """
       const fs = require('fs'), vm = require('vm');
       const ctx = { localStorage: { getItem: () => null, setItem() {} },
@@ -53,7 +54,11 @@ def load_vocab() -> dict:
       vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), ctx);
       const I = ctx.KL_I18N, out = {};
       for (const l of I.LANGS) out[l] = I.audioVocab(l);
-      console.log(JSON.stringify(out));
+      const overrides = {};
+      for (const [id, p] of Object.entries(I.FAMILY)) {
+        (overrides[p.lang] ||= {})['family.' + id] = p.voice;
+      }
+      console.log(JSON.stringify({vocab: out, voice_overrides: overrides}));
     """
     res = subprocess.run(["node", "-e", probe, str(I18N)], capture_output=True, text=True, check=True)
     return json.loads(res.stdout)
@@ -107,7 +112,7 @@ def load_record() -> dict:
         return {}
 
 
-def prune(vocab: dict, record: dict) -> None:
+def prune(vocab: dict, record: dict, overrides: dict) -> None:
     """Delete mp3s whose key is gone or whose text/settings changed, so they get (re)generated."""
     same_settings = record.get("settings") == json.loads(json.dumps(SETTINGS))
     for lang in VOICES:
@@ -121,11 +126,12 @@ def prune(vocab: dict, record: dict) -> None:
             if key not in v:
                 print(f"  delete {lang}/{mp3.name} (no longer used)")
                 mp3.unlink()
-            elif not same_settings or old.get(key) != v[key]:
+            elif (not same_settings or old.get(key) != v[key]
+                  or record.get("voice_overrides", {}).get(lang, {}).get(key) != overrides.get(lang, {}).get(key)):
                 mp3.unlink()
 
 
-async def generate(vocab: dict) -> int:
+async def generate(vocab: dict, overrides: dict) -> int:
     ff = ffmpeg_exe()
     tmpdir = Path(tempfile.mkdtemp(prefix="kl_tts_"))
     todo = [(lang, k, t) for lang, v in vocab.items() for k, t in v.items()
@@ -142,7 +148,8 @@ async def generate(vocab: dict) -> int:
             dest.parent.mkdir(parents=True, exist_ok=True)
             raw = tmpdir / f"raw_{idx}.mp3"
             ok = False
-            for voice in VOICES[lang]:
+            voice_override = overrides.get(lang, {}).get(key)
+            for voice in ([voice_override] if voice_override else VOICES[lang]):
                 for attempt in range(5):
                     try:
                         await synth(text, voice, raw)
@@ -170,11 +177,12 @@ async def generate(vocab: dict) -> int:
 
 
 def main() -> None:
-    vocab = load_vocab()
-    prune(vocab, load_record())
-    failed = asyncio.run(generate(vocab))
+    spec = load_spec()
+    vocab, overrides = spec["vocab"], spec["voice_overrides"]
+    prune(vocab, load_record(), overrides)
+    failed = asyncio.run(generate(vocab, overrides))
     # A missing mp3 is regenerated on the next run whatever the record says.
-    RECORD.write_text(json.dumps({"settings": SETTINGS, **vocab}, ensure_ascii=False, indent=1) + "\n",
+    RECORD.write_text(json.dumps({"settings": SETTINGS, "voice_overrides": overrides, **vocab}, ensure_ascii=False, indent=1) + "\n",
                       encoding="utf-8")
     total = sum(len(v) for v in vocab.values())
     size = sum(p.stat().st_size for p in OUT_AUDIO.rglob("*.mp3"))

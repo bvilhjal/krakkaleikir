@@ -164,5 +164,23 @@
 
   function face(id) { return FACES[id](); }
 
-  window.KL_ART = { koala: koala, animal: animal, face: face, silhouette: silhouette, ANIMALS: ANIMALS };
+  // Friendly parent portraits for completing the animal book; never random prizes.
+  function parent(id, size) {
+    var mom = id === 'mom';
+    var hair = mom ? '#65463A' : '#705342';
+    return '<svg width="' + (size || 88) + '" height="' + (size || 88) + '" viewBox="0 0 100 100" aria-hidden="true">' +
+      '<circle cx="50" cy="50" r="47" fill="#FFF0CD"/>' +
+      (mom ? '<path d="M20 77 L20 38 Q20 9 50 9 Q80 9 80 38 L82 80 Z" fill="' + hair + '"/>' : '') +
+      '<path d="M12 100 Q13 76 38 76 L62 76 Q87 76 88 100 Z" fill="' + (mom ? '#E07A5F' : '#5C6BC0') + '"/>' +
+      '<rect x="41" y="67" width="18" height="18" rx="8" fill="#E8AF8D"/>' +
+      '<circle cx="25" cy="47" r="7" fill="#F2C3A5"/><circle cx="75" cy="47" r="7" fill="#F2C3A5"/>' +
+      '<ellipse cx="50" cy="45" rx="26" ry="32" fill="#F2C3A5"/>' +
+      (mom ? '<path d="M23 39 Q20 9 50 9 Q79 9 78 38 Q60 34 45 22 Q36 35 23 39" fill="' + hair + '"/>' :
+        '<path d="M24 38 Q17 17 35 13 Q49 2 68 16 Q83 19 77 37 L69 28 Q47 32 32 25 L30 38 Z" fill="' + hair + '"/>') +
+      eyes(39, 61, 45, 3.5) + cheeks(32, 68, 56, 4.5) +
+      '<path class="k-mouth" d="M39 61 Q50 73 61 61" fill="#A64F58" stroke="#A64F58" stroke-width="2" stroke-linecap="round"/>' +
+      '</svg>';
+  }
+
+  window.KL_ART = { koala: koala, animal: animal, face: face, parent: parent, silhouette: silhouette, ANIMALS: ANIMALS };
 })();

@@ -5,7 +5,7 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = 'f388f15fbf2c';
+var VERSION = 'd6d4fb84b11b';
 var FILES = [
   './',
   'audio/animals/bjorn.mp3',
@@ -71,6 +71,7 @@ var FILES = [
   'audio/da/color.rau%C3%B0ur.mp3',
   'audio/da/color.svartur.mp3',
   'audio/da/end.title.mp3',
+  'audio/da/family.mom.mp3',
   'audio/da/form.q.mp3',
   'audio/da/klukkan.pick_b.mp3',
   'audio/da/klukkan.read_q.mp3',
@@ -372,6 +373,7 @@ var FILES = [
   'audio/is/color.rau%C3%B0ur.mp3',
   'audio/is/color.svartur.mp3',
   'audio/is/end.title.mp3',
+  'audio/is/family.dad.mp3',
   'audio/is/form.q.mp3',
   'audio/is/klukkan.pick_b.mp3',
   'audio/is/klukkan.read_q.mp3',

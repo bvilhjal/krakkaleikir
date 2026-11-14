@@ -37,6 +37,18 @@ const VOCAB = {};
 for (const l of LANGS) VOCAB[l] = ctx.KL_I18N.audioVocab(l);
 let RECORD = {};
 try { RECORD = JSON.parse(read('audio/manifest.json')); } catch (e) { err('audio/manifest.json missing or unreadable (run tools/make_audio.py)'); }
+const familyVoices = {};
+for (const [id, p] of Object.entries(ctx.KL_I18N.FAMILY)) {
+  const key = 'family.' + id;
+  if (VOCAB[p.lang]?.[key] !== p.text) err(`parent '${id}' has no matching spoken phrase`);
+  (familyVoices[p.lang] ||= {})[key] = p.voice;
+}
+for (const l of LANGS) {
+  const expected = familyVoices[l] || {}, recorded = RECORD.voice_overrides?.[l] || {};
+  for (const key of new Set([...Object.keys(expected), ...Object.keys(recorded)])) {
+    if (recorded[key] !== expected[key]) err(`audio/${l}/${key}.mp3 voice changed (run tools/make_audio.py)`);
+  }
+}
 
 /* ---- string tables ---- */
 const keys = {};
