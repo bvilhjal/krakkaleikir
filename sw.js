@@ -5,7 +5,7 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = '53ed47ccd2e3';
+var VERSION = 'ff88e33beb10';
 var FILES = [
   './',
   'audio/da/add.1.1.mp3',
@@ -485,7 +485,7 @@ self.addEventListener('activate', function (e) {
 // a range request, so cut the cached file to the requested range.
 function partial(req, res) {
   var m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.get('range') || '');
-  if (!m || res.status !== 200) return res;
+  if (!m || (m[1] === '' && m[2] === '') || res.status !== 200) return res;
   return res.arrayBuffer().then(function (buf) {
     var size = buf.byteLength;
     var start, end;

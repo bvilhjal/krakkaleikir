@@ -10,14 +10,11 @@
   },
   "rate": "-8%",
   "trim": [
-   0.05,
-   0.12
-  ]
- },
- "carrier": {
-  "is": "Hlustaðu: {w}.",
-  "da": "Lyt: {w}.",
-  "cut": "-0.01s re-encoded, blips dropped"
+   0.06,
+   0.14
+  ],
+  "noise": "-55dB",
+  "reencode": true
  },
  "is": {
   "koala.hello": "Hæ! Ég heiti Kóli. Veldu leik og við spilum saman!",

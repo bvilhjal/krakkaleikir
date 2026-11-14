@@ -57,11 +57,18 @@
   }
   document.addEventListener('pointerdown', warmSpeech, { once: true });
   document.addEventListener('touchstart', warmSpeech, { once: true });
-  function onGesture() {
+  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .sound-btn, #kl-replay';
+  function onGesture(e) {
     var T = window.KL_TTS;
     if (!T) return;
-    if (T.blocked() && unlockCb) { try { unlockCb(); } catch (e) { /* ignore */ } }
-    else T.prime();
+    var own = e && e.target && e.target.closest && e.target.closest(OWN_AUDIO);
+    if (!own && T.blocked() && unlockCb) {
+      var fn = unlockCb;
+      unlockCb = null;
+      try { fn(); } catch (err) { /* ignore */ }
+    } else {
+      T.prime();
+    }
   }
   document.addEventListener('touchend', onGesture, true);
   document.addEventListener('click', onGesture, true);
@@ -453,9 +460,11 @@
             sfx('wrong');
             a.el.classList.add('wrong');
             a.el.disabled = true;
-            koalaSay(I.t('try_again'));
+            koalaSay(I.t('try_again'), cfg.promptText(q));
             koalaMood('oops');
-            say(['try_again'].concat(cfg.retrySpeech ? cfg.retrySpeech(q) : prompt));
+            say(['try_again'].concat(cfg.retrySpeech ? cfg.retrySpeech(q) : prompt), function () {
+              if (!locked) koalaSay(cfg.promptText(q));
+            });
             later(function () { a.el.classList.remove('wrong'); a.el.classList.add('used'); }, 450);
           }
         });

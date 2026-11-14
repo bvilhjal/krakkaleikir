@@ -77,12 +77,14 @@
 
   // swing the settable hour hand to hour h (the short way round); back=true returns it to 12 and hides it
   function swing(wrap, state, h, back) {
+    if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+    if (state.raf) { window.cancelAnimationFrame(state.raf); state.raf = null; }
     var g = wrap.querySelector('#kl-hour');
     var from = state.angle;
     var target = back ? 0 : h * 30;
     var delta = ((target - from) % 360 + 540) % 360 - 180;
+    if (delta === -180) delta = 180;
     var to = from + delta;
-    state.angle = to;
     var hourWrap = wrap.querySelector('#kl-hour-wrap');
     if (!back) hourWrap.setAttribute('opacity', '1');
     var t0 = null;
@@ -90,11 +92,18 @@
       if (t0 === null) t0 = ts;
       var k = Math.min(1, (ts - t0) / 380);
       var e = 1 - Math.pow(1 - k, 3);
-      g.setAttribute('transform', 'rotate(' + f1(from + (to - from) * e) + ' ' + CX + ' ' + CY + ')');
-      if (k < 1) window.requestAnimationFrame(step);
-      else if (back) hourWrap.setAttribute('opacity', '0');
+      var cur = from + (to - from) * e;
+      state.angle = cur;
+      g.setAttribute('transform', 'rotate(' + f1(cur) + ' ' + CX + ' ' + CY + ')');
+      if (k < 1) {
+        state.raf = window.requestAnimationFrame(step);
+      } else {
+        state.raf = null;
+        state.angle = to;
+        if (back) hourWrap.setAttribute('opacity', '0');
+      }
     }
-    window.requestAnimationFrame(step);
+    state.raf = window.requestAnimationFrame(step);
   }
 
   function makeQuestions(level) {
@@ -159,7 +168,7 @@
           wrap.className = 'clock-wrap';
           wrap.innerHTML = clockSVG({ settable: true });
           promptEl.appendChild(wrap);
-          var handState = { angle: 0 };
+          var handState = { angle: 0, timer: null, raf: null };
           return HOURS.map(function (h) {
             var p = polar(NUM_R, h);
             var btn = document.createElement('button');
@@ -175,7 +184,12 @@
               speechParts: [timeKey({ h: h, m: 0 })],
               onTap: function (correct) {
                 swing(wrap, handState, h, false);
-                if (!correct) KL.later(function () { swing(wrap, handState, h, true); }, 750);
+                if (!correct) {
+                  handState.timer = KL.later(function () {
+                    handState.timer = null;
+                    swing(wrap, handState, h, true);
+                  }, 750);
+                }
               }
             };
           });

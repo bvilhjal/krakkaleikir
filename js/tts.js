@@ -74,8 +74,9 @@
 
   function stop() {
     token++;
-    if (busy) state('quiet');
+    if (busy || refused) state('quiet');
     busy = false;
+    refused = false;
     if (el) {
       try { el.onended = null; el.onerror = null; el.pause(); } catch (e) { /* ignore */ }
     }

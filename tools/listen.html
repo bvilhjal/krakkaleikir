@@ -54,6 +54,7 @@
   ];
   var audio = new Audio();
   var queue = [];
+  var timer = null;
   var lang = 'is';
   var flagged = {};
 
@@ -62,15 +63,24 @@
     document.querySelectorAll('.row.playing').forEach(function (r) { r.classList.remove('playing'); });
     if (row) { row.classList.add('playing'); row.scrollIntoView({ block: 'nearest' }); }
   }
+  function stopPlayback() {
+    queue = [];
+    if (timer) { clearTimeout(timer); timer = null; }
+    audio.onended = null;
+    audio.pause();
+    mark(null);
+  }
   function playRows(rows) {
+    stopPlayback();
     queue = rows.slice();
     next();
   }
   function next() {
+    timer = null;
     var row = queue.shift();
     if (!row) { mark(null); return; }
     mark(row);
-    audio.onended = function () { setTimeout(next, 350); };
+    audio.onended = function () { timer = setTimeout(next, 350); };
     audio.src = url(row.dataset.lang, row.dataset.key);
     audio.play().catch(function () { mark(null); });
   }
@@ -103,8 +113,8 @@
 
   document.addEventListener('click', function (e) {
     var t = e.target;
-    if (t.dataset && t.dataset.lang && t.closest('.bar')) { lang = t.dataset.lang; render(); return; }
-    if (t.id === 'stop') { queue = []; audio.pause(); mark(null); return; }
+    if (t.dataset && t.dataset.lang && t.closest('.bar')) { stopPlayback(); lang = t.dataset.lang; render(); return; }
+    if (t.id === 'stop') { stopPlayback(); return; }
     if (t.classList.contains('play')) { playRows([t.closest('.row')]); return; }
     if (t.classList.contains('group')) { playRows(Array.prototype.slice.call(t.closest('section').querySelectorAll('.row'))); }
   });

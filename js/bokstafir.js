@@ -10,9 +10,13 @@
   // how alike two words look: same length, the same letters in the same places,
   // shared letters (mús ~ hús ~ lús rank above dós, which ranks above kaka)
   function likeness(a, b) {
-    var score = a.length === b.length ? 2 : -Math.abs(a.length - b.length);
+    var score = a.length === b.length ? 3 : -2 * Math.abs(a.length - b.length);
     for (var i = 0; i < Math.min(a.length, b.length); i++) if (a[i] === b[i]) score += 2;
-    for (var j = 0; j < b.length; j++) if (a.indexOf(b[j]) >= 0) score += 1;
+    var rem = b.split('');
+    for (var j = 0; j < a.length; j++) {
+      var k = rem.indexOf(a[j]);
+      if (k >= 0) { score += 1; rem.splice(k, 1); }
+    }
     return score;
   }
 

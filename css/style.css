@@ -202,6 +202,7 @@ a { color: inherit; text-decoration: none; }
   gap: 16px;
   margin-top: 18px;
 }
+.answers:empty { display: none; }
 @media (min-width: 640px) {
   .answers.four { grid-template-columns: repeat(4, 1fr); }
 }
