@@ -92,9 +92,10 @@ document.addEventListener('DOMContentLoaded', function () {
               flipped = [];
               matched++;
               var msg = document.getElementById('kl-msg');
-              msg.textContent = KL.t(KL.praise());
+              var pk = KL.praise();
+              msg.textContent = KL.t(pk);
               msg.className = 'message good';
-              if (window.KL_TTS) window.KL_TTS.say([KL.praise()]);
+              if (window.KL_TTS) setTimeout(function () { window.KL_TTS.say([pk]); }, 250);
               if (matched === nPairs) end();
             }, 350);
           } else {
