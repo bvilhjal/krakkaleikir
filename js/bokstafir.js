@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
       KL.pickDistinct(SYL, q.syl, 4).forEach(function (c) {
         var btn = document.createElement('button');
         btn.className = 'answer';
-        btn.textContent = c.toUpperCase();
+        btn.textContent = c; // lowercase, so it always reads as the syllable "ba", never spelled out as "B-A"
         answersEl.appendChild(btn);
         answers.push({ el: btn, isCorrect: c === q.syl, speechParts: ['syl.' + c] });
       });

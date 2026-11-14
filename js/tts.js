@@ -23,12 +23,18 @@
   var token = 0;
 
   function urlFor(key) {
-    return base() + 'audio/' + window.KL_I18N.lang() + '/' + encodeURIComponent(key) + '.mp3';
+    // cache-buster: count of manifest keys changes whenever audio is regenerated,
+    // so a stale cached 404/old file is never reused
+    var m = window.KL_AUDIO && window.KL_AUDIO[window.KL_I18N.lang()];
+    var v = m ? Object.keys(m).length : 0;
+    return base() + 'audio/' + window.KL_I18N.lang() + '/' + encodeURIComponent(key) + '.mp3?v=' + v;
   }
 
   function textFor(key) {
     var m = window.KL_AUDIO && window.KL_AUDIO[window.KL_I18N.lang()];
-    return (m && m[key]) || key;
+    if (m && m[key]) return m[key];
+    // manifest missing/stale: speak the raw syllable/word, not the "syl.xxx" key
+    return key.replace(/^[a-z]+\./, '');
   }
 
   function stop() {
