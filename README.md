@@ -12,6 +12,7 @@ Educational browser games for young kids, in Icelandic. Static site, no build st
 | Bókstafir | Hlustun á stafi í íslenska stafrófinu |
 | Litir | Litarheiti |
 | Form | Formheiti (hringur, ferningur, þríhyrningur, ...) |
+| Klukkan | Lesa klukkuna (heil klukkuslög) og setja vísirinn með tapi |
 | Minni | Minnisspil — finndu pörin (6 eða 8 pör) |
 
 Spurningarnar eru lesnar upphátt á íslensku (Web Speech API, `is-IS`) og hægt er að hlusta aftur með hnappi efst í hægra horninu. Bestu stig geymast í `localStorage` í vafranum.
