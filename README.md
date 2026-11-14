@@ -9,11 +9,14 @@ Educational browser games for young kids, guided by Kóli the koala; bilingual I
 | Leikur | Hvað er æft | Erfiðleikastig |
 |---|---|---|
 | Tölur | Telja dýr og leysa einföld dæmi, með dýrum til að telja | 1–5: telja upp í 5, samlagning · 1–10: telja upp í 10, samlagning og frádráttur |
+| Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, eða finna tíu tölur sem Kóli les | Frjáls könnun eða talnaleit |
 | Bókstafir | Hlusta á stutt orð (t.d. „mús“) og finna það skrifað | Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
 | Litir | Litarheiti; hver litur kemur einu sinni | — |
 | Form | Formheiti (hringur, ferningur, þríhyrningur, ...) | — |
 | Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar, vísirinn snýst að tölunni sem bankað er á · 3:30: líka hálfir tímar („hálf fjögur“), finna réttu klukkuna |
 | Minni (DA: Vendespil) | Finna dýrin sem eru eins | 6 eða 8 pör |
+
+Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Á þröngum skjám má strjúka töflunni til hliðar; dálkarnir eru alltaf tíu.
 
 Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á hann til að heyra hana aftur. Hann hrósar á íslensku („Frábært!“, „Geggjað!“, „Jibbí!“), líka í dönsku útgáfunni, þar sem merkingin birtist undir. Rangt svar dofnar og spurningin er lesin aftur. Stjörnurnar (1–3) sýna hve margar spurningar voru réttar í fyrstu tilraun (í Minni: hve fáa snúninga þurfti). Eftir hvern leik kemur nýr dýralímmiði í límmiðabókina á forsíðunni (12 dýr).
 
@@ -30,7 +33,7 @@ Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Ed
 
 ### Á iPad
 
-Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 2,4 MB) og sækir nýja útgáfu þegar hún er komin á netið.
+Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 6,8 MB) og sækir nýja útgáfu þegar hún er komin á netið.
 
 ## Uppbygging
 

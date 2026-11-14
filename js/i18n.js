@@ -14,12 +14,14 @@
       'koala.next': 'Hvað viltu spila næst?',
       'menu.stickers': 'Límmiðarnir mínir',
       'game.tolur': 'Tölur',
+      'game.talnatafla': 'Tölutafla',
       'game.bokstafir': 'Bókstafir',
       'game.litir': 'Litir',
       'game.form': 'Form',
       'game.klukkan': 'Klukkan',
       'game.minni': 'Minni',
       'desc.tolur': 'Teldu dýrin og leystu dæmi',
+      'desc.talnatafla': 'Kannaðu tölurnar frá 1 upp í 100',
       'desc.bokstafir': 'Hlustaðu og finndu orðið',
       'desc.litir': 'Hvaða litur er þetta?',
       'desc.form': 'Hvað heitir formið?',
@@ -32,6 +34,7 @@
       'back.aria': 'Til baka í valmynd',
       'speak.aria': 'Hlusta aftur',
       'title.tolur': 'Tölur — Krakkaleikir',
+      'title.talnatafla': 'Tölutafla — Krakkaleikir',
       'title.bokstafir': 'Bókstafir — Krakkaleikir',
       'title.litir': 'Litir — Krakkaleikir',
       'title.form': 'Form — Krakkaleikir',
@@ -65,6 +68,10 @@
       'tolur.count_q.kottur': 'Hvað eru margir kettir?',
       'tolur.add': 'Hvað eru {a} plús {b}?',
       'tolur.sub': 'Hvað eru {a} mínus {b}?',
+      'talnatafla.start': 'Bankaðu á tölu og hlustum saman!',
+      'talnatafla.play': 'Finndu tölu',
+      'talnatafla.find': 'Finndu töluna {n}!',
+      'talnatafla.range': 'Tölur frá 1 til 100',
       'bokstafir.q': 'Hlustaðu vel! Hvaða orð heyrirðu?',
       'litir.q': 'Hvaða litur er þetta?',
       'form.q': 'Hvað heitir þetta form?',
@@ -113,12 +120,14 @@
       'koala.next': 'Hvad vil du spille nu?',
       'menu.stickers': 'Mine klistermærker',
       'game.tolur': 'Tal',
+      'game.talnatafla': 'Taltavle',
       'game.bokstafir': 'Bogstaver',
       'game.litir': 'Farver',
       'game.form': 'Former',
       'game.klukkan': 'Klokken',
       'game.minni': 'Vendespil',
       'desc.tolur': 'Tæl dyrene og løs regnestykker',
+      'desc.talnatafla': 'Gå på opdagelse i tallene fra 1 til 100',
       'desc.bokstafir': 'Lyt og find ordet',
       'desc.litir': 'Hvilken farve er det?',
       'desc.form': 'Hvad hedder formen?',
@@ -131,6 +140,7 @@
       'back.aria': 'Tilbage til menuen',
       'speak.aria': 'Lyt igen',
       'title.tolur': 'Tal — Krakkaleikir',
+      'title.talnatafla': 'Taltavle — Krakkaleikir',
       'title.bokstafir': 'Bogstaver — Krakkaleikir',
       'title.litir': 'Farver — Krakkaleikir',
       'title.form': 'Former — Krakkaleikir',
@@ -164,6 +174,10 @@
       'tolur.count_q.kottur': 'Hvor mange katte er der?',
       'tolur.add': 'Hvad er {a} plus {b}?',
       'tolur.sub': 'Hvad er {a} minus {b}?',
+      'talnatafla.start': 'Tryk på et tal, så lytter vi sammen!',
+      'talnatafla.play': 'Find et tal',
+      'talnatafla.find': 'Find tallet {n}!',
+      'talnatafla.range': 'Tal fra 1 til 100',
       'bokstafir.q': 'Lyt godt efter! Hvilket ord hører du?',
       'litir.q': 'Hvilken farve er det?',
       'form.q': 'Hvad hedder denne form?',
@@ -208,6 +222,27 @@
     }
   };
 
+  // Build 11–100 from their spoken forms. Icelandic puts tens first;
+  // Danish puts units first and joins them into a single word (enogtyve).
+  var TEENS = {
+    is: ['ellefu', 'tólf', 'þrettán', 'fjórtán', 'fimmtán', 'sextán', 'sautján', 'átján', 'nítján'],
+    da: ['elleve', 'tolv', 'tretten', 'fjorten', 'femten', 'seksten', 'sytten', 'atten', 'nitten']
+  };
+  var TENS = {
+    is: ['tuttugu', 'þrjátíu', 'fjörutíu', 'fimmtíu', 'sextíu', 'sjötíu', 'áttatíu', 'níutíu'],
+    da: ['tyve', 'tredive', 'fyrre', 'halvtreds', 'tres', 'halvfjerds', 'firs', 'halvfems']
+  };
+  ['is', 'da'].forEach(function (l) {
+    var S = STR[l];
+    for (var n = 11; n <= 100; n++) {
+      var unit = n % 10;
+      var ten = TENS[l][Math.floor(n / 10) - 2];
+      S['num.' + n] = n < 20 ? TEENS[l][n - 11] :
+        n === 100 ? (l === 'is' ? 'eitt hundrað' : 'et hundrede') :
+        !unit ? ten : l === 'is' ? ten + ' og ' + S['num.' + unit] : S['num.' + unit] + 'og' + ten;
+    }
+  });
+
   // Kóli's Icelandic cheers, said in Icelandic in both languages (da: the gloss is shown)
   var PRAISE = [
     { is: 'Frábært!', da: 'fantastisk!' },
@@ -243,7 +278,7 @@
     'koala.hello', 'koala.next', 'level.q', 'end.title', 'try_again', 'sticker.all',
     'tolur.count_q.fiskur', 'tolur.count_q.froskur', 'tolur.count_q.ungi', 'tolur.count_q.kottur',
     'bokstafir.q', 'litir.q', 'form.q', 'klukkan.read_q', 'klukkan.set_b', 'klukkan.pick_b',
-    'minni.start', 'minni.end_title'
+    'minni.start', 'minni.end_title', 'talnatafla.start'
   ];
 
   function lang() {
@@ -281,7 +316,7 @@
     if (vocabCache[l]) return vocabCache[l];
     var S = STR[l], v = {}, a, b, h;
     PHRASES.forEach(function (k) { v[k] = S[k]; });
-    for (a = 1; a <= 10; a++) v['num.' + a] = S['num.' + a];
+    for (a = 1; a <= 100; a++) v['num.' + a] = S['num.' + a];
     for (a = 1; a <= 10; a++) {
       for (b = 1; b <= 10; b++) {
         if (a + b <= 10) v['add.' + a + '.' + b] = fill(S['tolur.add'], { a: S['num.' + a], b: S['num.' + b] });

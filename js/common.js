@@ -57,7 +57,7 @@
   }
   document.addEventListener('pointerdown', warmSpeech, { once: true });
   document.addEventListener('touchstart', warmSpeech, { once: true });
-  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .sound-btn, #kl-replay';
+  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .sound-btn, #kl-replay';
   function onGesture(e) {
     var T = window.KL_TTS;
     if (!T) return;
