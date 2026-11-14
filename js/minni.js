@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '</div>';
       el.addEventListener('click', function () {
         if (lock || el.classList.contains('flipped') || el.classList.contains('matched')) return;
+        if (window.KL_SOUND) window.KL_SOUND.play('flip');
         el.classList.add('flipped');
         flipped.push({ el: el, key: card.key });
         if (flipped.length === 2) {
@@ -81,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
           var b = flipped[1];
           if (a.key === b.key) {
             setTimeout(function () {
+              if (window.KL_SOUND) window.KL_SOUND.play('correct');
               a.el.classList.add('matched');
               b.el.classList.add('matched');
               flipped = [];
@@ -106,6 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function end() {
+      if (window.KL_SOUND) window.KL_SOUND.play('win');
       var stars = nPairs === 6
         ? (flips <= 9 ? 3 : flips <= 14 ? 2 : 1)
         : (flips <= 12 ? 3 : flips <= 18 ? 2 : 1);

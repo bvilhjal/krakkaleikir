@@ -17,6 +17,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   renderBadges();
 
+  document.querySelectorAll('.game-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      if (window.KL_SOUND) window.KL_SOUND.play('click');
+    });
+  });
+
   var reset = document.getElementById('reset-scores');
   if (reset) {
     reset.addEventListener('click', function () {

@@ -4,6 +4,7 @@
 
   function speak(text) {
     try {
+      if (window.KL_SOUND && !window.KL_SOUND.on()) return;
       if (!('speechSynthesis' in window)) return;
       var u = new SpeechSynthesisUtterance(String(text));
       u.lang = window.KL_I18N.speechLang();
@@ -139,6 +140,7 @@
     }
 
     function endScreen() {
+      if (window.KL_SOUND) window.KL_SOUND.play('win');
       var total = cfg.questions.length;
       var stars = state.mistakes === 0 ? 3 : (state.mistakes <= 2 ? 2 : 1);
       saveBest(cfg.gameId, state.correct);
@@ -188,6 +190,7 @@
             state.correct++;
             updateScore();
             var p = praise();
+            if (window.KL_SOUND) window.KL_SOUND.play('correct');
             msg.textContent = p;
             msg.className = 'message good';
             speak(p + (a.speechOnCorrect ? ' ' + a.speechOnCorrect : ''));
@@ -198,6 +201,7 @@
             }, 1100);
           } else {
             state.mistakes++;
+            if (window.KL_SOUND) window.KL_SOUND.play('wrong');
             a.el.classList.add('wrong');
             msg.textContent = I.t('try_again');
             msg.className = 'message bad';
