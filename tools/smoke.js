@@ -309,6 +309,16 @@ async function main() {
       await shot('menu-desktop');
     });
 
+    await test('animal voices: all 12 play via the live path (5 recorded + 7 synth)', async () => {
+      assert(await cdp.eval(`KL_SOUND.animals.length === 12`), '12 animals');
+      assert(await cdp.eval(`KL_SOUND.animalFiles.length === 5`), '5 recorded clips');
+      for (const id of await cdp.eval(`KL_SOUND.animals`)) {
+        await cdp.eval(`KL_SOUND.animal(${JSON.stringify(id)})`);
+        await sleep(60);
+        await cdp.eval(`KL_SOUND.stopAnimal()`);
+      }
+    });
+
     await test('tolur: full round, stars saved, sticker awarded, confetti', async () => {
       await openGame('tolur');
       await pickLevel(0);

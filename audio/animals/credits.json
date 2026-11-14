@@ -11,16 +11,6 @@
       "source_sha256": "8251ff0b5b9335dbec3b6bc7a225d80a4c67d887f18edcf07e2f9e5e0aa143dc",
       "sha256": "a2dd5aaf143a7d5d286abb044fc26bf836b96c63a28ac12260d5eb2187b3a61c"
     },
-    "kottur": {
-      "title": "Single Soft Cat Meowing (1.1 s) – Free CC0 Sound Effect #34",
-      "source": "https://sfxmint.com/sounds/animal-cat-meow-34",
-      "download": "https://sfxmint.com/dl/animal-cat-meow-34.mp3",
-      "license": "CC0-1.0",
-      "license_url": "https://sfxmint.com/license",
-      "kind": "AI-generated sound effect",
-      "source_sha256": "738619e7816b44115441e127b0abfbd20beab3fab7a6398ae39eed84f3a30d6b",
-      "sha256": "0130b5e5351b81dc75bfe119dfff5a460a1a6f3d572c128e86a9326e808ca293"
-    },
     "svin": {
       "title": "Fading Pig Oink (2.4 s) – Free CC0 Sound Effect #02",
       "source": "https://sfxmint.com/sounds/pig-oink-02",
@@ -50,6 +40,16 @@
       "kind": "AI-generated sound effect",
       "source_sha256": "1d72a89c5a7c7188e97cf20848b3280d46e65d9d56e5b47e51138dc31faed33f",
       "sha256": "6f8c76a2e48071d3ccdec143bca2639622fa4e74259faf38fdeb1330bb71f9e8"
+    },
+    "kottur": {
+      "title": "Cat meowing (Mixkit sound effect #93)",
+      "source": "https://mixkit.co/free-sound-effects/cat/",
+      "download": "https://assets.mixkit.co/active_storage/sfx/93/93-preview.mp3",
+      "license": "Mixkit Sound Effects Free License (royalty-free, no attribution required)",
+      "license_url": "https://mixkit.co/license/",
+      "kind": "real recording (stock)",
+      "processing": "used as-is (not trimmed/re-encoded)",
+      "sha256": "c23169140be166dc88a76c33dce1e446e6b5804f0b00b728d038f69a0f807c18"
     }
   }
 }

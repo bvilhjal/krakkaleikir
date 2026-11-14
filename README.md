@@ -24,9 +24,9 @@ Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á h
 
 Þegar öll tólf dýrin eru komin í bókina opnast tveir bónuslímmiðar: pabbi og mamma. Bankaðu á pabba til að heyra „frábært Agnes mín“ með karlrödd á íslensku, eða mömmu til að heyra „hvor er du dygtig skat“ með kvenrödd á dönsku. Setningarnar haldast eins þótt skipt sé um tungumál. Bónusinn birtist líka strax hjá þeim sem hafa þegar safnað öllum dýrunum og læsist aftur ef byrjað er upp á nýtt.
 
-Bankaðu á límmiða sem þú hefur safnað til að heyra hljóð dýrsins, líka þegar nýr límmiði birtist eftir leik. Ljónið öskrar, kötturinn mjálmar og grísinn rýtur. Fiskurinn fær fjörugar loftbólur og maríuhænan létt vængjablak. Hljóðin virka án nettengingar og hlýða hljóðhnappnum.
+Bankaðu á límmiða sem þú hefur safnað til að heyra hljóð dýrsins, líka þegar nýr límmiði birtist eftir leik. Ljónið öskrar, kötturinn mjálmar og grísinn rýtur. Froskurinn kurrar, ugla hóar, músin pípir, ungi kvakar og mörgæsin kallar. Fiskurinn fær fjörugar loftbólur og maríuhænan létt vængjablak. Hljóðin virka án nettengingar og hlýða hljóðhnappnum.
 
-Fimm stutt dýrahljóð eru tilbúnar, gervigreindargerðar CC0-hljóðskrár frá [SFXMint](https://sfxmint.com/license), geymdar í `audio/animals/`; uppruni, vinnsla og SHA256 eru í `audio/animals/credits.json`. Hin sjö eru leikræn Web Audio-hljóð.
+Fjögur dýrahljóðanna eru gervigreindargerðar CC0-hljóðskrár frá [SFXMint](https://sfxmint.com/license) (kóali, grís, björn, ljón) en mjálmið er raunveruleg upptaka frá [Mixkit](https://mixkit.co/license/) (royalty-free). Öll fimm eru geymd í `audio/animals/`; uppruni, vinnsla og SHA256 eru í `audio/animals/credits.json`. Hin sjö eru leikræn Web Audio-hljóð sem herma eftir dýrunum (sjá `tools/audition.js`).
 
 Raddir foreldra eru stilltar sérstaklega í `FAMILY` í `js/i18n.js`: Gunnar fyrir pabba og Emma Multilingual fyrir mömmu (Christel skilar engu hljóði). `audio/manifest.json` skráir þessi frávik frá rödd Kóla; aðeins viðkomandi skrár eru endurgerðar þegar rödd breytist.
 
@@ -61,6 +61,7 @@ audio/manifest.json   úr hvaða texta og stillingum hver mp3-skrá var gerð (m
 icons/                app-tákn (tools/make_icons.py)
 tools/check.js        samræmisprófanir; keyrt í GitHub Actions við hvert push
 tools/smoke.js        keyrir alla leikina í gegn í headless Chrome (CDP, engin forritasöfn; Node ≥ 22); keyrt í GitHub Actions
+tools/audition.js     mælir dýrahljóðin (Web Audio í headless Chrome) og skrifar WAV-forskoðun; keyrt í GitHub Actions
 tools/make_audio.py   býr til mp3-skrárnar og klippir þögnina burt
 tools/listen.html     hlusta á allar mp3-skrárnar og merkja þær sem hljóma rangt
 ```

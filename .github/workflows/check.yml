@@ -14,6 +14,8 @@ jobs:
           node-version: 22
       - run: node tools/check.js
       - name: JavaScript parses
-        run: for f in js/*.js sw.js tools/check.js tools/smoke.js; do node --check "$f" || exit 1; done
+        run: for f in js/*.js sw.js tools/check.js tools/smoke.js tools/audition.js; do node --check "$f" || exit 1; done
       - name: Runtime smoke (headless Chrome plays every game)
         run: node tools/smoke.js
+      - name: Animal voices (headless Chrome renders + measures each)
+        run: node tools/audition.js

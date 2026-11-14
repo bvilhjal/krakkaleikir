@@ -68,21 +68,153 @@
     return o;
   }
 
-  // Clips are shared by both languages. Small calls and playful bubbles/wing
-  // flutters use pitch sweeps: [frequency, delay, duration, waveform, gain, end].
+  /* ---- animal voice synth kit ----
+     A voice is a function (ctx, out) -> [source nodes]. The same functions play
+     in the app and render offline in tools/audition.js, which measures them and
+     writes WAV previews — what you audition is exactly what the app plays. */
+  function noiseBuffer(c) {
+    if (!c.__klNoise) {
+      var b = c.createBuffer(1, c.sampleRate, c.sampleRate);
+      var d = b.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      c.__klNoise = b;
+    }
+    return c.__klNoise;
+  }
+
+  // enveloped tone with optional glide (f0->f1->f2), filter, vibrato [rate, Hz]
+  // and tremolo [rate, depth] — the trill that makes a frog a frog
+  function voice(c, out, o) {
+    var t0 = o.at, dur = o.dur, a = o.attack || 0.012, rel = o.release || 0.06;
+    var src = c.createOscillator();
+    src.type = o.type || 'sine';
+    src.frequency.setValueAtTime(o.f0, t0);
+    if (o.f1) src.frequency.exponentialRampToValueAtTime(o.f1, t0 + (o.glide || dur));
+    if (o.f2) src.frequency.exponentialRampToValueAtTime(o.f2, t0 + dur);
+    var g = c.createGain();
+    var base = Math.max(o.trem ? o.vol * (1 - o.trem[1]) : o.vol, 0.0001);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(base, t0 + a);
+    g.gain.setValueAtTime(base, t0 + Math.max(a, dur - rel));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    if (o.trem) {
+      var tl = c.createOscillator(), tg = c.createGain();
+      tl.frequency.value = o.trem[0]; tg.gain.value = o.vol * o.trem[1];
+      tl.connect(tg); tg.connect(g.gain);
+      tl.start(t0); tl.stop(t0 + dur + 0.1);
+    }
+    if (o.vib) {
+      var vl = c.createOscillator(), vg = c.createGain();
+      vl.frequency.value = o.vib[0]; vg.gain.value = o.vib[1];
+      vl.connect(vg); vg.connect(src.frequency);
+      vl.start(t0); vl.stop(t0 + dur + 0.1);
+    }
+    if (o.filter) {
+      var f = c.createBiquadFilter();
+      f.type = o.filter[0]; f.frequency.value = o.filter[1]; f.Q.value = o.filter[2] || 1;
+      src.connect(f); f.connect(g);
+    } else {
+      src.connect(g);
+    }
+    g.connect(out);
+    src.start(t0); src.stop(t0 + dur + 0.1);
+    return src;
+  }
+
+  // enveloped filtered noise: breath, wing flutter, bray texture
+  function breath(c, out, o) {
+    var t0 = o.at, dur = o.dur, a = o.attack || 0.01, rel = o.release || 0.05;
+    var src = c.createBufferSource();
+    src.buffer = noiseBuffer(c); src.loop = true;
+    var f = c.createBiquadFilter();
+    f.type = o.filter[0]; f.frequency.value = o.filter[1]; f.Q.value = o.filter[2] || 1;
+    var g = c.createGain();
+    var base = Math.max(o.trem ? o.vol * (1 - o.trem[1]) : o.vol, 0.0001);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(base, t0 + a);
+    g.gain.setValueAtTime(base, t0 + Math.max(a, dur - rel));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    if (o.trem) {
+      var tl = c.createOscillator(), tg = c.createGain();
+      tl.frequency.value = o.trem[0]; tg.gain.value = o.vol * o.trem[1];
+      tl.connect(tg); tg.connect(g.gain);
+      tl.start(t0); tl.stop(t0 + dur + 0.1);
+    }
+    src.connect(f); f.connect(g); g.connect(out);
+    src.start(t0); src.stop(t0 + dur + 0.1);
+    return src;
+  }
+
+  // Clips are shared by both languages. Five animals have real CC0 recordings
+  // (audio/animals/, credits.json); the other seven are synthesized voices.
   var ANIMAL_SOUNDS = {
     koala: 'koala.mp3',
-    froskur: [[150, 0, 0.22, 'sawtooth', 0.08, 85], [170, 0.28, 0.22, 'sawtooth', 0.08, 90]],
-    ungi: [[1700, 0, 0.1, 'sine', 0.12, 2500], [1900, 0.18, 0.1, 'sine', 0.12, 2800], [1700, 0.36, 0.14, 'sine', 0.1, 2200]],
+    // "ribbit": a short low grunt, then a trilled resonant croak, twice
+    froskur: function (c, out) {
+      var t = c.currentTime + 0.01, nodes = [];
+      [[0, 105], [0.42, 122]].forEach(function (p) {
+        var at = t + p[0], f = p[1];
+        nodes.push(voice(c, out, { at: at, dur: 0.09, type: 'sawtooth', f0: f, f1: f * 0.85, vol: 0.16, filter: ['lowpass', 500, 1.5], attack: 0.008, release: 0.03 }));
+        nodes.push(voice(c, out, { at: at + 0.1, dur: 0.3, type: 'sawtooth', f0: f * 1.1, f1: f * 0.8, vol: 0.18, filter: ['bandpass', 320, 2.2], trem: [27, 0.4], attack: 0.015, release: 0.08 }));
+      });
+      return nodes;
+    },
+    // "cheep-cheep": round rising-falling chirps
+    ungi: function (c, out) {
+      var t = c.currentTime + 0.01, nodes = [];
+      [[0, 1900, 2700, 2100], [0.17, 2100, 2900, 2300], [0.36, 1800, 2500, 2000]].forEach(function (p) {
+        nodes.push(voice(c, out, { at: t + p[0], dur: 0.11, type: 'triangle', f0: p[1], f1: p[2], f2: p[3], glide: 0.05, vol: 0.11, attack: 0.008, release: 0.045 }));
+      });
+      return nodes;
+    },
+    // real cat meow (Mixkit, royalty-free). Replaced an AI-generated clip that
+    // had the pitch arc but none of the formant character of a real cat.
     kottur: 'kottur.mp3',
     svin: 'svin.mp3',
     bjorn: 'bjorn.mp3',
-    fiskur: [[360, 0, 0.12, 'sine', 0.16, 1000], [500, 0.16, 0.12, 'sine', 0.14, 1400], [420, 0.34, 0.15, 'sine', 0.12, 1200]],
-    mariuhaena: [[190, 0, 0.12, 'triangle', 0.1, 240], [220, 0.16, 0.12, 'triangle', 0.1, 170], [190, 0.32, 0.18, 'triangle', 0.08, 260]],
-    ugla: [[430, 0, 0.18, 'sine', 0.18, 360], [400, 0.3, 0.48, 'sine', 0.18, 330]],
-    mus: [[1900, 0, 0.11, 'sine', 0.1, 2700], [2300, 0.22, 0.14, 'sine', 0.08, 1600]],
+    // playful bubbles: discrete rising "bloop"s, big and small
+    fiskur: function (c, out) {
+      var t = c.currentTime + 0.01, nodes = [];
+      [[0, 280, 750, 0.1], [0.2, 400, 1000, 0.09], [0.36, 330, 850, 0.1], [0.54, 520, 1300, 0.08], [0.7, 420, 1050, 0.09]].forEach(function (p) {
+        nodes.push(voice(c, out, { at: t + p[0], dur: p[3] + 0.06, type: 'sine', f0: p[1], f1: p[2], glide: p[3], vol: 0.16, attack: 0.005, release: 0.05 }));
+      });
+      return nodes;
+    },
+    // a light wing flutter: one continuous 40 Hz-modulated buzz over a faint hum
+    mariuhaena: function (c, out) {
+      var t = c.currentTime + 0.01, nodes = [];
+      nodes.push(breath(c, out, { at: t, dur: 0.42, vol: 0.35, filter: ['bandpass', 240, 1.1], trem: [40, 0.4], attack: 0.02, release: 0.08 }));
+      nodes.push(voice(c, out, { at: t, dur: 0.42, type: 'triangle', f0: 190, f1: 215, vol: 0.02, attack: 0.02, release: 0.08 }));
+      return nodes;
+    },
+    // "hoo-hoo": soft sine hoots gliding down, with a little breath and chest
+    ugla: function (c, out) {
+      var t = c.currentTime + 0.01, nodes = [];
+      [[0, 340, 300, 0.3], [0.45, 315, 275, 0.42]].forEach(function (p) {
+        nodes.push(voice(c, out, { at: t + p[0], dur: p[3], type: 'sine', f0: p[1], f1: p[2], vol: 0.22, vib: [5.5, 4], attack: 0.035, release: 0.1 }));
+        nodes.push(voice(c, out, { at: t + p[0], dur: p[3], type: 'sine', f0: p[1] / 2, f1: p[2] / 2, vol: 0.07, attack: 0.04, release: 0.1 }));
+        nodes.push(breath(c, out, { at: t + p[0], dur: p[3], vol: 0.02, filter: ['bandpass', 600, 1.2], attack: 0.04, release: 0.1 }));
+      });
+      return nodes;
+    },
+    // "squeak-squeak": fast up-down sweeps, three of them
+    mus: function (c, out) {
+      var t = c.currentTime + 0.01, nodes = [];
+      [[0, 2300, 3400, 2700], [0.16, 2600, 3700, 2900], [0.34, 2100, 3100, 2500]].forEach(function (p) {
+        nodes.push(voice(c, out, { at: t + p[0], dur: 0.1, type: 'sine', f0: p[1], f1: p[2], f2: p[3], glide: 0.05, vol: 0.09, attack: 0.008, release: 0.04 }));
+        nodes.push(voice(c, out, { at: t + p[0], dur: 0.1, type: 'sine', f0: p[1] * 2, f1: p[2] * 2, f2: p[3] * 2, glide: 0.05, vol: 0.02, attack: 0.008, release: 0.04 }));
+      });
+      return nodes;
+    },
     ljon: 'ljon.mp3',
-    morgaes: [[320, 0, 0.2, 'sawtooth', 0.06, 470], [380, 0.25, 0.35, 'sawtooth', 0.06, 210]]
+    // a penguin bray: harsh harmonic call through a formant, down then up
+    morgaes: function (c, out) {
+      var t = c.currentTime + 0.01, nodes = [];
+      nodes.push(voice(c, out, { at: t, dur: 0.34, type: 'sawtooth', f0: 430, f1: 290, vol: 0.18, filter: ['bandpass', 900, 1.4], trem: [15, 0.2], attack: 0.02, release: 0.08 }));
+      nodes.push(voice(c, out, { at: t + 0.42, dur: 0.3, type: 'sawtooth', f0: 310, f1: 420, vol: 0.18, filter: ['bandpass', 950, 1.4], trem: [15, 0.2], attack: 0.02, release: 0.1 }));
+      nodes.push(breath(c, out, { at: t, dur: 0.72, vol: 0.004, filter: ['bandpass', 1400, 1], attack: 0.03, release: 0.1 }));
+      return nodes;
+    }
   };
 
   function stopAnimal() {
@@ -104,9 +236,10 @@
         var p = animalAudio.play();
         if (p && p.catch) p.catch(function () { /* audio unavailable */ });
       } else {
-        sound.forEach(function (part) {
-          var node = tone.apply(null, part);
-          if (!node) return;
+        var c = ac();
+        if (!c) return;
+        var nodes = sound(c, master) || [];
+        nodes.forEach(function (node) {
           animalNodes.push(node);
           node.onended = function () { animalNodes = animalNodes.filter(function (n) { return n !== node; }); };
         });
@@ -165,6 +298,11 @@
 
   window.KL_SOUND = {
     play: play, on: on, setOn: setOn, animal: animal, stopAnimal: stopAnimal,
+    // render a synthesized voice into any (offline) context — tools/audition.js
+    synth: function (id, c, out) {
+      var s = ANIMAL_SOUNDS[id];
+      return typeof s === 'function' ? s(c, out) : null;
+    },
     animals: Object.keys(ANIMAL_SOUNDS),
     animalFiles: Object.keys(ANIMAL_SOUNDS).filter(function (id) { return typeof ANIMAL_SOUNDS[id] === 'string'; }).map(function (id) { return ANIMAL_SOUNDS[id]; })
   };
