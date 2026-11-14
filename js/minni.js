@@ -17,7 +17,10 @@
       var main = ctx.main;
       var scoreEl = ctx.scoreEl;
 
-      function showFlips(n) { scoreEl.innerHTML = cardsIcon() + '<span>' + n + '</span>'; }
+      function showFlips(n) {
+        scoreEl.innerHTML = cardsIcon() + '<span>' + n + '</span>';
+        scoreEl.setAttribute('aria-label', KL.t('minni.flips') + ': ' + n);
+      }
 
       function chooseSize() {
         scoreEl.innerHTML = '';
@@ -42,7 +45,7 @@
 
         main.innerHTML =
           '<div class="minni-wrap enter">' + KL.guideHTML(64) +
-            '<div class="board' + (nPairs === 8 ? ' board-8' : '') + '" id="kl-board"></div>' +
+            '<div class="board" id="kl-board"></div>' +
           '</div>';
         var board = document.getElementById('kl-board');
         KL.koalaSay(KL.t('minni.start'));
@@ -50,19 +53,25 @@
         showFlips(0);
 
         cards.forEach(function (card, idx) {
-          var el = document.createElement('div');
+          // a real button: keyboard and screen readers can play too. Face down
+          // the label is the position; face up it is the animal (what is shown).
+          var el = document.createElement('button');
+          el.type = 'button';
           el.className = 'mcard';
           el.style.animationDelay = (idx * 30) + 'ms';
+          var cardLabel = KL.fmt('minni.card', { n: idx + 1 });
+          el.setAttribute('aria-label', cardLabel);
           el.innerHTML =
             '<div class="mcard-inner">' +
               '<div class="mface back"></div>' +
               '<div class="mface front">' + KL_ART.animal(card.key, 72) + '</div>' +
             '</div>';
           el.addEventListener('click', function () {
-            if (lock || el.classList.contains('flipped') || el.classList.contains('matched')) return;
+            if (lock || el.disabled || el.classList.contains('flipped')) return;
             KL.sfx('flip');
             el.classList.add('flipped');
-            flipped.push({ el: el, key: card.key });
+            el.setAttribute('aria-label', KL.t('animal.' + card.key));
+            flipped.push({ el: el, key: card.key, label: cardLabel });
             if (flipped.length < 2) return;
             // two cards up: ignore taps until they are matched or turned back
             lock = true;
@@ -75,6 +84,8 @@
                 KL.sfx('correct');
                 a.el.classList.add('matched');
                 b.el.classList.add('matched');
+                a.el.disabled = true;
+                b.el.disabled = true;
                 KL.burst(b.el);
                 flipped = [];
                 matched++;
@@ -89,6 +100,8 @@
               KL.later(function () {
                 a.el.classList.remove('flipped');
                 b.el.classList.remove('flipped');
+                a.el.setAttribute('aria-label', a.label);
+                b.el.setAttribute('aria-label', b.label);
                 flipped = [];
                 lock = false;
               }, 900);

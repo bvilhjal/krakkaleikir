@@ -2,7 +2,7 @@
 <html lang="is">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#E07A5F">
@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
+  <noscript><p class="noscript-note">Krakkaleikir þurfa JavaScript til að virka. · Krakkaleikir kræver JavaScript for at virke.</p></noscript>
   <header class="topbar">
     <a class="back-btn" id="back" href="#" data-nav="" data-i18n-aria="back.aria" aria-label="Til baka í valmynd" hidden>
       <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="#3D405B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -23,7 +24,7 @@
       <button type="button" data-lang="is">IS</button>
       <button type="button" data-lang="da">DA</button>
     </div>
-    <div class="score-pill" id="score"></div>
+    <div class="score-pill" id="score" aria-live="polite"></div>
   </header>
 
   <main class="stage">

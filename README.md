@@ -60,6 +60,7 @@ audio/is, audio/da    upplesnir textar
 audio/manifest.json   úr hvaða texta og stillingum hver mp3-skrá var gerð (make_audio.py)
 icons/                app-tákn (tools/make_icons.py)
 tools/check.js        samræmisprófanir; keyrt í GitHub Actions við hvert push
+tools/smoke.js        keyrir alla leikina í gegn í headless Chrome (CDP, engin forritasöfn; Node ≥ 22); keyrt í GitHub Actions
 tools/make_audio.py   býr til mp3-skrárnar og klippir þögnina burt
 tools/listen.html     hlusta á allar mp3-skrárnar og merkja þær sem hljóma rangt
 ```
@@ -69,6 +70,7 @@ tools/listen.html     hlusta á allar mp3-skrárnar og merkja þær sem hljóma 
 1. Ef texti sem er lesinn upphátt breyttist eða bættist við: `pip install edge-tts imageio-ffmpeg` og `python tools/make_audio.py`. Skrár þar sem textinn breyttist eru endurgerðar og skrám sem ekki eru lengur notaðar er eytt.
 2. `node tools/check.js --write` uppfærir skráalistann og útgáfuna í `sw.js`, svo iPadinn sæki nýju útgáfuna.
 3. `node tools/check.js` athugar að íslenska og danska taflan hafi sömu lykla, að allir lyklar sem kóðinn notar séu til, að hljóðskrár passi við textana og að `sw.js` sé uppfært.
+4. `node tools/smoke.js` (valfrjálst, þarf Chrome/Chromium og Node ≥ 22) spilar alla leikina í gegn í headless Chrome: lyklaborð í Minni, tungumálaskipti, hljóðhnapp, núllstilling, mjóir skjáir og offline-hamur. GitHub Actions keyrir þetta við hvert push.
 
 ## Nýr leikur
 

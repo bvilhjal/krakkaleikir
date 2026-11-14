@@ -112,16 +112,24 @@ for (const id of Object.keys(animalCredits)) if (!sounds.animalFiles.includes(id
 
 /* ---- games: registered, on the menu, loaded, redirect page ---- */
 const index = read('index.html');
+for (const m of index.matchAll(/data-i18n(?:-aria)?="([^"]+)"/g)) {
+  if (!keys.is.has(m[1])) err(`index.html: unknown string key '${m[1]}'`);
+}
 const registered = jsFiles.flatMap((f) => [...read('js/' + f).matchAll(/KL\.register\('([^']+)'/g)].map((m) => ({ id: m[1], file: f })));
 const cards = new Set([...index.matchAll(/class="game-card"[^>]*data-nav="([^"]+)"/g)].map((m) => m[1]));
 for (const { id, file } of registered) {
   if (!cards.has(id)) err(`index.html: no menu card (data-nav="${id}") for game '${id}'`);
   if (!index.includes(`data-game="${id}"`)) err(`index.html: no badge (data-game="${id}") for game '${id}'`);
   if (!index.includes(`src="js/${file}"`)) err(`index.html: js/${file} is not loaded`);
-  if (!fs.existsSync(path.join(ROOT, 'games', id + '.html'))) err(`games/${id}.html redirect page missing`);
+  const redirect = path.join(ROOT, 'games', id + '.html');
+  if (!fs.existsSync(redirect)) err(`games/${id}.html redirect page missing`);
+  else if (!fs.readFileSync(redirect, 'utf8').includes('index.html#' + id)) err(`games/${id}.html does not redirect to index.html#${id}`);
   if (!keys.is.has('game.' + id) || !keys.is.has('title.' + id) || !keys.is.has('desc.' + id)) err(`i18n: game '${id}' needs game./title./desc. strings`);
 }
 for (const id of cards) if (!registered.some((r) => r.id === id)) err(`index.html: menu card '${id}' has no registered game`);
+for (const f of fs.readdirSync(path.join(ROOT, 'games'))) {
+  if (f.endsWith('.html') && !registered.some((r) => r.id + '.html' === f)) err(`games/${f}: no registered game`);
+}
 
 /* ---- sw.js: offline file list ---- */
 const SHIP = ['index.html', 'manifest.webmanifest', 'css', 'js', 'icons', 'audio', 'games'];

@@ -90,6 +90,8 @@
       'minni.end_title': 'Þú fannst öll pörin!',
       'minni.end_flips': 'Þú notaðir <strong>{n}</strong> snúninga.',
       'minni.end_best': 'Fæstu snúningar: {n}',
+      'minni.card': 'Spjald {n}',
+      'minni.flips': 'Snúningar',
       'color.rauður': 'rauður',
       'color.blár': 'blár',
       'color.gulur': 'gulur',
@@ -201,6 +203,8 @@
       'minni.end_title': 'Du fandt alle parrene!',
       'minni.end_flips': 'Du brugte <strong>{n}</strong> træk.',
       'minni.end_best': 'Færrest træk: {n}',
+      'minni.card': 'Kort {n}',
+      'minni.flips': 'Træk',
       'color.rauður': 'rød',
       'color.blár': 'blå',
       'color.gulur': 'gul',
@@ -364,7 +368,9 @@
       el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
     });
     document.querySelectorAll('.lang-toggle button').forEach(function (btn) {
-      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang());
+      var active = btn.getAttribute('data-lang') === lang();
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
   }
 

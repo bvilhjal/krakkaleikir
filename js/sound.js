@@ -6,6 +6,9 @@
 
   var KEY = 'kl.sound';
   var ctx = null;
+  // every tone runs through one gain, so muting also silences cues that were
+  // already scheduled (a win jingle keeps ringing for half a second otherwise)
+  var master = null;
   var animalAudio = null;
   var animalNodes = [];
 
@@ -20,6 +23,7 @@
 
   function setOn(v) {
     try { window.localStorage.setItem(KEY, v ? 'on' : 'off'); } catch (e) { /* ignore */ }
+    if (master) master.gain.value = v ? 1 : 0;
     if (!v) stopAnimal();
   }
 
@@ -29,6 +33,7 @@
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       if (!ctx) ctx = new AC();
+      if (!master) { master = ctx.createGain(); master.connect(ctx.destination); }
       // iOS leaves the context 'interrupted' after a call or an app switch
       if (ctx.state !== 'running' && ctx.state !== 'closed') {
         var r = ctx.resume();
@@ -57,7 +62,7 @@
     g.gain.exponentialRampToValueAtTime(vol || 0.2, t0 + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     o.connect(g);
-    g.connect(c.destination);
+    g.connect(master);
     o.start(t0);
     o.stop(t0 + dur + 0.05);
     return o;

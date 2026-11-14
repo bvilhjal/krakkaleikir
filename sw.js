@@ -5,7 +5,7 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = '6f51870ede21';
+var VERSION = '72a9ab638a6a';
 var FILES = [
   './',
   'audio/animals/bjorn.mp3',
@@ -660,8 +660,14 @@ var CACHE = 'krakkaleikir-' + VERSION;
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {
-    // bypass the HTTP cache so a new version never stores an old file
-    return c.addAll(FILES.map(function (f) { return new Request(f, { cache: 'reload' }); }));
+    // VERSION hashes every shipped file, so a cache under the same VERSION is
+    // already complete — unless a previous install failed midway. Only then
+    // (or on a genuinely new version) download everything again.
+    return Promise.all(FILES.map(function (f) { return c.match(f); })).then(function (hits) {
+      if (hits.every(Boolean)) return;
+      // bypass the HTTP cache so a new version never stores an old file
+      return c.addAll(FILES.map(function (f) { return new Request(f, { cache: 'reload' }); }));
+    });
   }).then(function () { return self.skipWaiting(); }));
 });
 
@@ -705,6 +711,10 @@ self.addEventListener('fetch', function (e) {
   e.respondWith(caches.open(CACHE).then(function (c) {
     return c.match(req, { ignoreSearch: true }).then(function (hit) {
       if (hit) return partial(req, hit);
+      // an uncached page opened offline (old bookmark, stray link) still gets the app
+      if (req.mode === 'navigate') {
+        return c.match('./').then(function (home) { return home || fetch(req); });
+      }
       return fetch(req);
     });
   }));
