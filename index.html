@@ -6,17 +6,24 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#E07A5F">
-  <title>Krakkaleikir</title>
+  <title data-i18n="title.menu">Krakkaleikir</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
+  <header class="topbar" style="justify-content: flex-end">
+    <div class="lang-toggle">
+      <button type="button" data-lang="is">IS</button>
+      <button type="button" data-lang="da">DA</button>
+    </div>
+  </header>
+
   <main class="stage">
     <section class="hero">
-      <h1>Krakkaleikir</h1>
-      <p>Veldu leik og byrjaðu að spila!</p>
+      <h1 data-i18n="title.menu">Krakkaleikir</h1>
+      <p data-i18n="menu.subtitle">Veldu leik og byrjaðu að spila!</p>
     </section>
 
     <section class="menu-grid">
@@ -31,8 +38,8 @@
             <text x="76" y="65" text-anchor="middle" font-size="20" font-weight="bold" fill="#fff">3</text>
           </svg>
         </span>
-        <h2>Tölur</h2>
-        <p>Teldu kúlurnar og leystu einföld dæmi</p>
+        <h2 data-i18n="game.tolur">Tölur</h2>
+        <p data-i18n="desc.tolur">Teldu kúlurnar og leystu einföld dæmi</p>
         <span class="badge" data-game="tolur"></span>
       </a>
 
@@ -43,8 +50,8 @@
             <text x="66" y="72" text-anchor="middle" font-size="44" font-weight="bold" fill="#5C6BC0">á</text>
           </svg>
         </span>
-        <h2>Bókstafir</h2>
-        <p>Hlustaðu á stafinn og finndu hann</p>
+        <h2 data-i18n="game.bokstafir">Bókstafir</h2>
+        <p data-i18n="desc.bokstafir">Hlustaðu á stafinn og finndu hann</p>
         <span class="badge" data-game="bokstafir"></span>
       </a>
 
@@ -56,8 +63,8 @@
             <circle cx="50" cy="62" r="20" fill="#FDD835" fill-opacity="0.85"/>
           </svg>
         </span>
-        <h2>Litir</h2>
-        <p>Hvaða litur er á myndinni?</p>
+        <h2 data-i18n="game.litir">Litir</h2>
+        <p data-i18n="desc.litir">Hvaða litur er á myndinni?</p>
         <span class="badge" data-game="litir"></span>
       </a>
 
@@ -69,8 +76,8 @@
             <circle cx="30" cy="24" r="12" fill="#43A047"/>
           </svg>
         </span>
-        <h2>Form</h2>
-        <p>Hvað heitir þetta form?</p>
+        <h2 data-i18n="game.form">Form</h2>
+        <p data-i18n="desc.form">Hvað heitir þetta form?</p>
         <span class="badge" data-game="form"></span>
       </a>
 
@@ -83,8 +90,8 @@
             <circle cx="50" cy="50" r="5" fill="#3D405B"/>
           </svg>
         </span>
-        <h2>Klukkan</h2>
-        <p>Lærðu hvað klukkan er og stilltu vísana</p>
+        <h2 data-i18n="game.klukkan">Klukkan</h2>
+        <p data-i18n="desc.klukkan">Lærðu hvað klukkan er og stilltu vísana</p>
         <span class="badge" data-game="klukkan"></span>
       </a>
 
@@ -95,18 +102,19 @@
             <rect x="48" y="26" width="34" height="46" rx="8" fill="#FFD9A0" stroke="#E07A5F" stroke-width="4" transform="rotate(8 65 49)"/>
           </svg>
         </span>
-        <h2>Minni</h2>
-        <p>Finndu pörin í minnarleiknum</p>
+        <h2 data-i18n="game.minni">Minni</h2>
+        <p data-i18n="desc.minni">Finndu pörin í minnarleiknum</p>
         <span class="badge" data-game="minni"></span>
       </a>
     </section>
 
     <footer class="menu-footer">
-      <p>Bestu stig geymast í vafranum þínum.</p>
-      <button class="link-btn" id="reset-scores">Hreinsa stig</button>
+      <p data-i18n="footer.note">Bestu stig geymast í vafranum þínum.</p>
+      <button class="link-btn" id="reset-scores" data-i18n="footer.reset">Hreinsa stig</button>
     </footer>
   </main>
 
+  <script src="js/i18n.js"></script>
   <script src="js/common.js"></script>
   <script src="js/menu.js"></script>
 </body>

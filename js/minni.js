@@ -1,4 +1,4 @@
-/* Minni: memory matching game. Lower flip count is better; best is stored as fewest flips. */
+/* Minni / Hukommelse: memory matching game. Lower flip count is better; best is stored as fewest flips. */
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
@@ -31,13 +31,13 @@ document.addEventListener('DOMContentLoaded', function () {
     main.innerHTML =
       '<div class="question-card">' +
         '<div class="prompt">' +
-          '<p class="q-text">Finndu pörin! Snúðu tveimur spjöldum í einu og reyndu að muna hvar myndirnar eru.</p>' +
+          '<p class="q-text">' + KL.t('minni.start') + '</p>' +
         '</div>' +
         '<div class="diff-row">' +
-          '<button class="btn-primary" id="kl-6">6 pör</button>' +
-          '<button class="btn-primary" id="kl-8">8 pör</button>' +
+          '<button class="btn-primary" id="kl-6">' + KL.t('minni.pairs6') + '</button>' +
+          '<button class="btn-primary" id="kl-8">' + KL.t('minni.pairs8') + '</button>' +
         '</div>' +
-        '<a class="btn-secondary" href="../index.html">Til baka í valmynd</a>' +
+        '<a class="btn-secondary" href="../index.html">' + KL.t('end.menu') + '</a>' +
       '</div>';
     document.getElementById('kl-6').addEventListener('click', function () { play(6); });
     document.getElementById('kl-8').addEventListener('click', function () { play(8); });
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
               flipped = [];
               matched++;
               var msg = document.getElementById('kl-msg');
-              msg.textContent = KL.PRAISE[KL.randInt(0, KL.PRAISE.length - 1)];
+              msg.textContent = KL.praise();
               msg.className = 'message good';
               KL.speak(msg.textContent);
               if (matched === nPairs) end();
@@ -112,12 +112,12 @@ document.addEventListener('DOMContentLoaded', function () {
       saveFlips(flips);
       main.innerHTML =
         '<div class="question-card end-card">' +
-          '<h2>Þú fannst öll pörin!</h2>' +
+          '<h2>' + KL.t('minni.end_title') + '</h2>' +
           '<div class="big-stars">' + KL.starsRow(stars, 3, 56) + '</div>' +
-          '<p>Þú notaðir <strong>' + flips + '</strong> snúninga.</p>' +
-          '<p class="best">Fæstu snúningar: ' + bestFlips() + '</p>' +
-          '<button class="btn-primary" id="kl-replay">Spila aftur</button><br>' +
-          '<a class="btn-secondary" href="../index.html">Til baka í valmynd</a>' +
+          '<p>' + KL.fmt('minni.end_flips', { n: flips }) + '</p>' +
+          '<p class="best">' + KL.fmt('minni.end_best', { n: bestFlips() }) + '</p>' +
+          '<button class="btn-primary" id="kl-replay">' + KL.t('end.replay') + '</button><br>' +
+          '<a class="btn-secondary" href="../index.html">' + KL.t('end.menu') + '</a>' +
         '</div>';
       document.getElementById('kl-replay').addEventListener('click', startScreen);
     }

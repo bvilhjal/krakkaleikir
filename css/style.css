@@ -335,3 +335,22 @@ a { color: inherit; text-decoration: none; }
 .clock-num:active { transform: scale(0.92); }
 .clock-num.correct { background: var(--good-bg); border-color: var(--good); }
 .clock-num.wrong { background: var(--bad-bg); border-color: var(--bad); animation: shake 0.35s ease; }
+
+/* ---- language toggle ---- */
+.lang-toggle { display: flex; gap: 6px; flex: none; }
+.lang-toggle button {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--muted);
+  background: var(--card);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-height: 52px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  touch-action: manipulation;
+}
+.lang-toggle button.active { background: var(--accent); color: #fff; }
+.lang-toggle button:active { transform: scale(0.94); }

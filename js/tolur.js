@@ -1,8 +1,11 @@
-/* Tölur: count the balls (1-5), then simple addition (sums up to 10). */
+/* Tölur / Tal: count the balls (1-5), then simple addition (sums up to 10). */
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
-  var WORDS = { 1: 'einn', 2: 'tveir', 3: 'þrír', 4: 'fjórir', 5: 'fimm', 6: 'sex', 7: 'sjö', 8: 'átta', 9: 'níu', 10: 'tíu' };
+  var da = KL_I18N.lang() === 'da';
+  var WORDS = da
+    ? { 1: 'en', 2: 'to', 3: 'tre', 4: 'fire', 5: 'fem', 6: 'seks', 7: 'syv', 8: 'otte', 9: 'ni', 10: 'ti' }
+    : { 1: 'einn', 2: 'tveir', 3: 'þrír', 4: 'fjórir', 5: 'fimm', 6: 'sex', 7: 'sjö', 8: 'átta', 9: 'níu', 10: 'tíu' };
   var BALL_COLORS = ['#E53935', '#1E88E5', '#FDD835', '#43A047', '#8E24AA', '#FB8C00', '#F48FB1', '#26C6DA', '#8D6E63', '#66BB6A'];
 
   var questions = [];
@@ -21,15 +24,15 @@ document.addEventListener('DOMContentLoaded', function () {
     scoreEl: document.getElementById('score'),
     questions: questions,
     promptSpeech: function (q) {
-      if (q.type === 'count') return 'Hvað eru margar kúlur?';
-      return WORDS[q.a] + ' plús ' + WORDS[q.b] + '. Hvað er útkoman?';
+      if (q.type === 'count') return KL.t('tolur.count_q');
+      return KL.fmt('tolur.add_speech', { a: WORDS[q.a], b: WORDS[q.b] });
     },
     build: function (q, promptEl, answersEl) {
       var answers = [];
       if (q.type === 'count') {
         var balls = '';
         for (var i = 0; i < q.n; i++) balls += KL.ballSVG(BALL_COLORS[i % BALL_COLORS.length], 62);
-        promptEl.innerHTML = '<div class="balls">' + balls + '</div><p class="q-text">Hvað eru margar kúlur?</p>';
+        promptEl.innerHTML = '<div class="balls">' + balls + '</div><p class="q-text">' + KL.t('tolur.count_q') + '</p>';
         KL.pickDistinct([1, 2, 3, 4, 5], q.n, 4).forEach(function (c) {
           var btn = document.createElement('button');
           btn.className = 'answer';

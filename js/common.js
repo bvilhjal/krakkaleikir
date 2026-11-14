@@ -1,19 +1,21 @@
-/* Shared helpers for Krakkaleikir games. Vanilla JS, no dependencies. */
+/* Shared helpers for Krakkaleikir games. Vanilla JS, no dependencies. Load i18n.js first. */
 (function () {
   'use strict';
-
-  var PRAISE = ['Rétt!', 'Frábært!', 'Vel gert!', 'Alveg rétt!', 'Svoleiðis!', 'Æðislegt!'];
-  var TRY_AGAIN = 'Reyndu aftur!';
 
   function speak(text) {
     try {
       if (!('speechSynthesis' in window)) return;
       var u = new SpeechSynthesisUtterance(String(text));
-      u.lang = 'is-IS';
+      u.lang = window.KL_I18N.speechLang();
       u.rate = 0.85;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
     } catch (e) { /* speech unsupported: ignore */ }
+  }
+
+  function praise() {
+    var list = window.KL_I18N.t('praise');
+    return list[randInt(0, list.length - 1)];
   }
 
   function shuffle(arr) {
@@ -73,7 +75,7 @@
     } catch (e) { /* ignore */ }
   }
 
-  /* ---- SVG shapes and balls ---- */
+  /* ---- SVG shapes and balls (shape keys are always Icelandic, internal only) ---- */
   function starPoints(cx, cy, outer, inner, points) {
     var pts = [];
     for (var i = 0; i < points * 2; i++) {
@@ -129,6 +131,7 @@
        promptSpeech: function (q) -> string
      } */
   function runGame(cfg) {
+    var I = window.KL_I18N;
     var state = { i: 0, correct: 0, mistakes: 0, locked: false };
 
     function updateScore() {
@@ -142,12 +145,12 @@
       var best = getBest(cfg.gameId);
       cfg.main.innerHTML =
         '<div class="question-card end-card">' +
-          '<h2>Þú kláraðir leikinn!</h2>' +
+          '<h2>' + I.t('end.title') + '</h2>' +
           '<div class="big-stars">' + starsRow(stars, 3, 56) + '</div>' +
-          '<p>Þú fékkst <strong>' + state.correct + ' af ' + total + '</strong> rétt.</p>' +
-          '<p class="best">Bestu stig í þessum leik: ' + best + ' / ' + total + '</p>' +
-          '<button class="btn-primary" id="kl-replay">Spila aftur</button><br>' +
-          '<a class="btn-secondary" href="../index.html">Til baka í valmynd</a>' +
+          '<p>' + I.fmt('end.score', { c: state.correct, t: total }) + '</p>' +
+          '<p class="best">' + I.fmt('end.best', { b: best, t: total }) + '</p>' +
+          '<button class="btn-primary" id="kl-replay">' + I.t('end.replay') + '</button><br>' +
+          '<a class="btn-secondary" href="../index.html">' + I.t('end.menu') + '</a>' +
         '</div>';
       cfg.scoreEl.innerHTML = starSVG(true, 30) + '<span>' + state.correct + '</span>';
       document.getElementById('kl-replay').addEventListener('click', function () {
@@ -161,7 +164,7 @@
       var q = cfg.questions[state.i];
       cfg.main.innerHTML =
         '<div class="question-card">' +
-          '<button class="speaker-btn" id="kl-speak" aria-label="Hlusta">' + speakerSVG(30) + '</button>' +
+          '<button class="speaker-btn" id="kl-speak" aria-label="' + I.t('speak.aria') + '">' + speakerSVG(30) + '</button>' +
           '<div class="prompt" id="kl-prompt"></div>' +
           '<div class="answers four" id="kl-answers"></div>' +
           '<div class="message" id="kl-msg"></div>' +
@@ -184,10 +187,10 @@
             answers.forEach(function (x) { x.el.disabled = true; });
             state.correct++;
             updateScore();
-            var praise = PRAISE[randInt(0, PRAISE.length - 1)];
-            msg.textContent = praise;
+            var p = praise();
+            msg.textContent = p;
             msg.className = 'message good';
-            speak(praise + (a.speechOnCorrect ? ' ' + a.speechOnCorrect : ''));
+            speak(p + (a.speechOnCorrect ? ' ' + a.speechOnCorrect : ''));
             setTimeout(function () {
               state.i++;
               state.locked = false;
@@ -196,9 +199,9 @@
           } else {
             state.mistakes++;
             a.el.classList.add('wrong');
-            msg.textContent = TRY_AGAIN;
+            msg.textContent = I.t('try_again');
             msg.className = 'message bad';
-            speak(TRY_AGAIN);
+            speak(I.t('try_again'));
             setTimeout(function () { a.el.classList.remove('wrong'); }, 450);
           }
         });
@@ -214,6 +217,7 @@
 
   window.KL = {
     speak: speak,
+    praise: praise,
     shuffle: shuffle,
     sample: sample,
     randInt: randInt,
@@ -227,6 +231,7 @@
     shapeSVG: shapeSVG,
     ballSVG: ballSVG,
     runGame: runGame,
-    PRAISE: PRAISE
+    t: function (k) { return window.KL_I18N.t(k); },
+    fmt: function (k, p) { return window.KL_I18N.fmt(k, p); }
   };
 })();

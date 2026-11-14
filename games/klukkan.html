@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#E07A5F">
-  <title>Klukkan — Krakkaleikir</title>
+  <title data-i18n="title.klukkan">Klukkan — Krakkaleikir</title>
   <link rel="stylesheet" href="../css/style.css">
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="icon" type="image/png" href="../icons/icon-192.png">
@@ -13,13 +13,18 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="back-btn" href="../index.html" aria-label="Til baka í valmynd">
+    <a class="back-btn" href="../index.html" data-i18n-aria="back.aria" aria-label="Til baka í valmynd">
       <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="#3D405B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
-    <h1>Klukkan</h1>
+    <h1 data-i18n="game.klukkan">Klukkan</h1>
+    <div class="lang-toggle">
+      <button type="button" data-lang="is">IS</button>
+      <button type="button" data-lang="da">DA</button>
+    </div>
     <div class="score-pill" id="score"></div>
   </header>
   <main class="stage" id="game"></main>
+  <script src="../js/i18n.js"></script>
   <script src="../js/common.js"></script>
   <script src="../js/klukkan.js"></script>
 </body>

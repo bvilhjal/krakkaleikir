@@ -6,11 +6,11 @@ document.addEventListener('DOMContentLoaded', function () {
       var game = el.getAttribute('data-game');
       var best = KL.getBest(game);
       if (best <= 0) {
-        el.textContent = 'Ekki búið að spila';
+        el.textContent = KL.t('badge.not_played');
       } else if (game === 'minni') {
-        el.textContent = 'Best: ' + best + ' snúningar';
+        el.textContent = KL.fmt('badge.best_flips', { n: best });
       } else {
-        el.textContent = 'Best: ' + best + ' / 10';
+        el.textContent = KL.fmt('badge.best', { n: best });
       }
     });
   }

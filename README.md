@@ -2,7 +2,7 @@
 
 Skemmtilegir lærdómsleikir fyrir lítil börn — einföld vefsíða sem virkar í vafranum á iPad (eða hvaða tæki sem er). Engar utanaðkomandi dépendansíur, bara HTML/CSS/JS.
 
-Educational browser games for young kids, in Icelandic. Static site, no build step, no dependencies.
+Educational browser games for young kids, bilingual Icelandic/Danish (IS/DA toggle in the top bar; language is remembered in `localStorage`). Static site, no build step, no dependencies.
 
 ## Leikir
 
@@ -15,7 +15,7 @@ Educational browser games for young kids, in Icelandic. Static site, no build st
 | Klukkan | Lesa klukkuna (heil klukkuslög) og setja vísirinn með tapi |
 | Minni | Minnisspil — finndu pörin (6 eða 8 pör) |
 
-Spurningarnar eru lesnar upphátt á íslensku (Web Speech API, `is-IS`) og hægt er að hlusta aftur með hnappi efst í hægra horninu. Bestu stig geymast í `localStorage` í vafranum.
+Spurningarnar eru lesnar upphátt á valnu máli (Web Speech API, `is-IS` / `da-DK`) og hægt er að hlusta aftur með hnappi efst í hægra horninu. Bestu stig og tungumál geymast í `localStorage` í vafranum.
 
 ## Keyra
 
