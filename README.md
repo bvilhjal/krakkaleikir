@@ -15,7 +15,7 @@ Educational browser games for young kids, bilingual Icelandic/Danish (IS/DA togg
 | Klukkan | Lesa klukkuna (heil klukkuslög) og setja vísirinn með tapi |
 | Minni | Minnisspil — finndu pörin (6 eða 8 pör) |
 
-Spurningarnar eru lesnar upphátt á valnu máli (Web Speech API, `is-IS` / `da-DK`) og hægt er að hlusta aftur með hnappi efst í hægra horninu. Hljóðáhrif (rétt svar, rangt svar, spilaflipp, sigur) eru búin til í vafranum með Web Audio API — engar hljóðskrár. Hljóðhnappurinn efst í hægra horninu slökkur á öllu hljóði (spil og tal). Bestu stig, tungumál og hljóðstilling geymast í `localStorage` í vafranum.
+Spurningarnar eru lesnar upphátt sjálfkrafa á valnu máli (Web Speech API, `is-IS` / `da-DK`) í hverri umferðar og hægt er að hlusta aftur með púlserandi hnappi efst í hægra horninu. Á iOS þarf fyrsta tap til að opna talgervilinn (unlock), síðan virkar allt sjálfkrafa. Hljóðáhrif (rétt svar, rangt svar, spilaflipp, sigur) eru búin til í vafranum með Web Audio API — engar hljóðskrár. Hljóðhnappurinn efst í hægra horninu slökkur á öllu hljóði (spil og tal). Bestu stig, tungumál og hljóðstilling geymast í `localStorage` í vafranum.
 
 ## Keyra
 

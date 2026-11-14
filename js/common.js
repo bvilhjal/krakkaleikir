@@ -7,12 +7,35 @@
       if (window.KL_SOUND && !window.KL_SOUND.on()) return;
       if (!('speechSynthesis' in window)) return;
       var u = new SpeechSynthesisUtterance(String(text));
-      u.lang = window.KL_I18N.speechLang();
+      var l = window.KL_I18N.speechLang();
+      u.lang = l;
       u.rate = 0.85;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      u.pitch = 1.1;
+      // pick an explicit voice when the list is available (iOS loads it lazily)
+      var prefix = l.slice(0, 2).toLowerCase();
+      var vs = window.speechSynthesis.getVoices() || [];
+      for (var i = 0; i < vs.length; i++) {
+        if (vs[i].lang && vs[i].lang.toLowerCase().indexOf(prefix) === 0) { u.voice = vs[i]; break; }
+      }
+      var synth = window.speechSynthesis;
+      if (synth.speaking || synth.pending) synth.cancel();
+      // iOS drops speak() when called in the same tick as cancel(); defer slightly
+      setTimeout(function () {
+        try { synth.speak(u); } catch (e) { /* ignore */ }
+      }, 30);
     } catch (e) { /* speech unsupported: ignore */ }
   }
+
+  // iOS only allows speechSynthesis inside/after a user gesture: unlock on first tap.
+  function unlockSpeech() {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.getVoices(); // also triggers voice loading on iOS
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+    } catch (e) { /* ignore */ }
+  }
+  document.addEventListener('pointerdown', unlockSpeech, { once: true });
+  document.addEventListener('touchstart', unlockSpeech, { once: true });
 
   function praise() {
     var list = window.KL_I18N.t('praise');
@@ -141,6 +164,7 @@
 
     function endScreen() {
       if (window.KL_SOUND) window.KL_SOUND.play('win');
+      speak(I.t('end.title'));
       var total = cfg.questions.length;
       var stars = state.mistakes === 0 ? 3 : (state.mistakes <= 2 ? 2 : 1);
       saveBest(cfg.gameId, state.correct);
@@ -175,7 +199,10 @@
       var answersEl = document.getElementById('kl-answers');
       var answers = cfg.build(q, promptEl, answersEl) || [];
 
-      document.getElementById('kl-speak').addEventListener('click', function () {
+      var spk = document.getElementById('kl-speak');
+      spk.classList.add('hint');
+      spk.addEventListener('click', function () {
+        spk.classList.remove('hint');
         speak(cfg.promptSpeech(q));
       });
 
