@@ -6,29 +6,35 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#E07A5F">
-  <title data-i18n="title.menu">Krakkaleikir</title>
+  <title>Krakkaleikir</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
-  <header class="topbar" style="justify-content: flex-end">
+  <header class="topbar">
+    <a class="back-btn" id="back" href="#" data-nav="" data-i18n-aria="back.aria" aria-label="Til baka í valmynd" hidden>
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="#3D405B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <h1 id="game-title"></h1>
     <button type="button" class="sound-toggle" id="sound-toggle" aria-label="Hljóð á / Lyd til"></button>
     <div class="lang-toggle">
       <button type="button" data-lang="is">IS</button>
       <button type="button" data-lang="da">DA</button>
     </div>
+    <div class="score-pill" id="score"></div>
   </header>
 
   <main class="stage">
+    <div id="menu">
     <section class="hero">
       <h1 data-i18n="title.menu">Krakkaleikir</h1>
       <p data-i18n="menu.subtitle">Veldu leik og byrjaðu að spila!</p>
     </section>
 
     <section class="menu-grid">
-      <a class="game-card" href="games/tolur.html">
+      <a class="game-card" href="#tolur" data-nav="tolur">
         <span class="icon">
           <svg width="84" height="84" viewBox="0 0 100 100" aria-hidden="true">
             <circle cx="24" cy="56" r="17" fill="#E07A5F"/>
@@ -44,7 +50,7 @@
         <span class="badge" data-game="tolur"></span>
       </a>
 
-      <a class="game-card" href="games/bokstafir.html">
+      <a class="game-card" href="#bokstafir" data-nav="bokstafir">
         <span class="icon">
           <svg width="84" height="84" viewBox="0 0 100 100" aria-hidden="true">
             <text x="26" y="72" text-anchor="middle" font-size="58" font-weight="bold" fill="#E07A5F">A</text>
@@ -52,11 +58,11 @@
           </svg>
         </span>
         <h2 data-i18n="game.bokstafir">Bókstafir</h2>
-        <p data-i18n="desc.bokstafir">Hlustaðu á stafinn og finndu hann</p>
+        <p data-i18n="desc.bokstafir">Hlustaðu á hljóðið og finndu stafina tvo</p>
         <span class="badge" data-game="bokstafir"></span>
       </a>
 
-      <a class="game-card" href="games/litir.html">
+      <a class="game-card" href="#litir" data-nav="litir">
         <span class="icon">
           <svg width="84" height="84" viewBox="0 0 100 100" aria-hidden="true">
             <circle cx="38" cy="40" r="20" fill="#E53935" fill-opacity="0.85"/>
@@ -69,7 +75,7 @@
         <span class="badge" data-game="litir"></span>
       </a>
 
-      <a class="game-card" href="games/form.html">
+      <a class="game-card" href="#form" data-nav="form">
         <span class="icon">
           <svg width="84" height="84" viewBox="0 0 100 100" aria-hidden="true">
             <polygon points="24,68 38,36 52,68" fill="#8E24AA"/>
@@ -82,7 +88,7 @@
         <span class="badge" data-game="form"></span>
       </a>
 
-      <a class="game-card" href="games/klukkan.html">
+      <a class="game-card" href="#klukkan" data-nav="klukkan">
         <span class="icon">
           <svg width="84" height="84" viewBox="0 0 100 100" aria-hidden="true">
             <circle cx="50" cy="50" r="38" fill="#fff" stroke="#3D405B" stroke-width="6"/>
@@ -96,7 +102,7 @@
         <span class="badge" data-game="klukkan"></span>
       </a>
 
-      <a class="game-card" href="games/minni.html">
+      <a class="game-card" href="#minni" data-nav="minni">
         <span class="icon">
           <svg width="84" height="84" viewBox="0 0 100 100" aria-hidden="true">
             <rect x="16" y="26" width="34" height="46" rx="8" fill="#fff" stroke="#E07A5F" stroke-width="4" transform="rotate(-8 33 49)"/>
@@ -104,20 +110,31 @@
           </svg>
         </span>
         <h2 data-i18n="game.minni">Minni</h2>
-        <p data-i18n="desc.minni">Finndu pörin í minnarleiknum</p>
+        <p data-i18n="desc.minni">Finndu pörin í minnisleiknum</p>
         <span class="badge" data-game="minni"></span>
       </a>
     </section>
 
     <footer class="menu-footer">
       <p data-i18n="footer.note">Bestu stig geymast í vafranum þínum.</p>
-      <button class="link-btn" id="reset-scores" data-i18n="footer.reset">Hreinsa stig</button>
+      <button type="button" class="link-btn" id="reset-scores" data-i18n="footer.reset">Hreinsa stig</button>
     </footer>
+    </div>
+
+    <div id="game" hidden></div>
   </main>
 
   <script src="js/i18n.js"></script>
   <script src="js/sound.js"></script>
+  <script src="js/tts.js"></script>
+  <script src="js/audio-manifest.js"></script>
   <script src="js/common.js"></script>
+  <script src="js/tolur.js"></script>
+  <script src="js/bokstafir.js"></script>
+  <script src="js/litir.js"></script>
+  <script src="js/form.js"></script>
+  <script src="js/klukkan.js"></script>
+  <script src="js/minni.js"></script>
   <script src="js/menu.js"></script>
 </body>
 </html>

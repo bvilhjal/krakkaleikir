@@ -1,8 +1,9 @@
 /* Bilingual strings (Icelandic / Danish) + language toggle for Krakkaleikir.
-   Load before sound.js / tts.js / common.js on every page.
-   Language is stored in localStorage ('kl.lang').
-   Keys 'num.*', 'color.*', 'shape.*', 'letter.*' (letters) and the phrase keys are
-   also the audio keys used by js/audio-manifest.js + audio/<lang>/*.mp3. */
+   Load first. Language is stored in localStorage ('kl.lang').
+   Spoken keys ('num.*', 'hour.*', 'half.*', 'color.*', 'shape.*', 'syl.*' and the
+   phrase keys listed in tools/make_audio.py) are also the audio keys used by
+   js/audio-manifest.js + audio/<lang>/*.mp3: after editing a spoken string, re-run
+   tools/make_audio.py. Both tables must have the same keys (tools/check.js). */
 (function () {
   'use strict';
 
@@ -21,12 +22,10 @@
       'desc.litir': 'Hvaða litur er á myndinni?',
       'desc.form': 'Hvað heitir þetta form?',
       'desc.klukkan': 'Lærðu hvað klukkan er og stilltu vísana',
-      'desc.minni': 'Finndu pörin í minnarleiknum',
+      'desc.minni': 'Finndu pörin í minnisleiknum',
       'footer.note': 'Bestu stig geymast í vafranum þínum.',
       'footer.reset': 'Hreinsa stig',
       'badge.not_played': 'Ekki búið að spila',
-      'badge.best': 'Best: {n} / 10',
-      'badge.best_flips': 'Best: {n} snúningar',
       'back.aria': 'Til baka í valmynd',
       'speak.aria': 'Hlusta',
       'title.tolur': 'Tölur — Krakkaleikir',
@@ -35,9 +34,12 @@
       'title.form': 'Form — Krakkaleikir',
       'title.klukkan': 'Klukkan — Krakkaleikir',
       'title.minni': 'Minni — Krakkaleikir',
+      'level.q': 'Veldu erfiðleikastig',
+      'level.easy': 'Létt',
+      'level.hard': 'Erfitt',
       'end.title': 'Þú kláraðir leikinn!',
-      'end.score': 'Þú fékkst <strong>{c} af {t}</strong> rätt.',
-      'end.best': 'Bestu stig í þessum leik: {b} / {t}',
+      'end.score': 'Rétt í fyrstu tilraun: <strong>{c} af {t}</strong>',
+      'end.best': 'Besti árangur:',
       'end.replay': 'Spila aftur',
       'end.menu': 'Til baka í valmynd',
       'try_again': 'Reyndu aftur!',
@@ -50,8 +52,17 @@
       'num.1': 'einn', 'num.2': 'tveir', 'num.3': 'þrír', 'num.4': 'fjórir', 'num.5': 'fimm',
       'num.6': 'sex', 'num.7': 'sjö', 'num.8': 'átta', 'num.9': 'níu', 'num.10': 'tíu',
       'num.11': 'ellefu', 'num.12': 'tólf',
+      // the time of day takes the neuter form: "klukkan er eitt / tvö / þrjú / fjögur"
+      'hour.1': 'eitt', 'hour.2': 'tvö', 'hour.3': 'þrjú', 'hour.4': 'fjögur', 'hour.5': 'fimm',
+      'hour.6': 'sex', 'hour.7': 'sjö', 'hour.8': 'átta', 'hour.9': 'níu', 'hour.10': 'tíu',
+      'hour.11': 'ellefu', 'hour.12': 'tólf',
+      // half hours count toward the coming hour: 3:30 is "hálf fjögur" (key half.4)
+      'half.1': 'hálf eitt', 'half.2': 'hálf tvö', 'half.3': 'hálf þrjú', 'half.4': 'hálf fjögur',
+      'half.5': 'hálf fimm', 'half.6': 'hálf sex', 'half.7': 'hálf sjö', 'half.8': 'hálf átta',
+      'half.9': 'hálf níu', 'half.10': 'hálf tíu', 'half.11': 'hálf ellefu', 'half.12': 'hálf tólf',
       'tolur.count_q': 'Hvað eru margar kúlur?',
       'tolur.plus': 'plús',
+      'tolur.minus': 'mínus',
       'tolur.add_q': 'Hvað er útkoman?',
       'bokstafir.q': 'Hvaða hljóð heyrist? Finndu stafina tvo sem mynda það.',
       'litir.q': 'Hvaða litur er þetta?',
@@ -59,6 +70,7 @@
       'klukkan.read_q': 'Hvað er klukkan?',
       'klukkan.set_a': 'Klukkan er',
       'klukkan.set_b': 'Á hvaða tölu á vísirinn að benda?',
+      'klukkan.pick_b': 'Finndu réttu klukkuna.',
       'klukkan.clock_is_a': 'Klukkan er',
       'minni.start': 'Finndu pörin! Snúðu tveimur spjöldum í einu og reyndu að muna hvar myndirnar eru.',
       'minni.pairs6': '6 pör',
@@ -91,18 +103,16 @@
       'game.litir': 'Farver',
       'game.form': 'Former',
       'game.klukkan': 'Uret',
-      'game.minni': 'Hukommelse',
+      'game.minni': 'Vendespil',
       'desc.tolur': 'Tæl kuglerne og løs simple regnestykker',
       'desc.bokstafir': 'Lyt til lyden og find de to bogstaver',
       'desc.litir': 'Hvilken farve er der på billedet?',
       'desc.form': 'Hvad hedder denne form?',
       'desc.klukkan': 'Lær hvad klokken er, og sæt viserne',
-      'desc.minni': 'Find parrene i hukommelsesspillet',
+      'desc.minni': 'Find parrene i vendespillet',
       'footer.note': 'De bedste point gemmes i din browser.',
       'footer.reset': 'Nulstil point',
       'badge.not_played': 'Ikke spillet endnu',
-      'badge.best': 'Bedste: {n} / 10',
-      'badge.best_flips': 'Bedste: {n} træk',
       'back.aria': 'Tilbage til menuen',
       'speak.aria': 'Lyt',
       'title.tolur': 'Tal — Krakkaleikir',
@@ -110,10 +120,13 @@
       'title.litir': 'Farver — Krakkaleikir',
       'title.form': 'Former — Krakkaleikir',
       'title.klukkan': 'Uret — Krakkaleikir',
-      'title.minni': 'Hukommelse — Krakkaleikir',
+      'title.minni': 'Vendespil — Krakkaleikir',
+      'level.q': 'Vælg sværhedsgrad',
+      'level.easy': 'Let',
+      'level.hard': 'Svær',
       'end.title': 'Du klarede spillet!',
-      'end.score': 'Du fik <strong>{c} af {t}</strong> rigtige.',
-      'end.best': 'Bedste point i dette spil: {b} / {t}',
+      'end.score': 'Rigtigt i første forsøg: <strong>{c} af {t}</strong>',
+      'end.best': 'Bedste resultat:',
       'end.replay': 'Spil igen',
       'end.menu': 'Tilbage til menuen',
       'try_again': 'Prøv igen!',
@@ -126,8 +139,17 @@
       'num.1': 'en', 'num.2': 'to', 'num.3': 'tre', 'num.4': 'fire', 'num.5': 'fem',
       'num.6': 'seks', 'num.7': 'syv', 'num.8': 'otte', 'num.9': 'ni', 'num.10': 'ti',
       'num.11': 'elleve', 'num.12': 'tolv',
+      // "klokken er et" (not "en")
+      'hour.1': 'et', 'hour.2': 'to', 'hour.3': 'tre', 'hour.4': 'fire', 'hour.5': 'fem',
+      'hour.6': 'seks', 'hour.7': 'syv', 'hour.8': 'otte', 'hour.9': 'ni', 'hour.10': 'ti',
+      'hour.11': 'elleve', 'hour.12': 'tolv',
+      // 3:30 is "halv fire" (key half.4)
+      'half.1': 'halv et', 'half.2': 'halv to', 'half.3': 'halv tre', 'half.4': 'halv fire',
+      'half.5': 'halv fem', 'half.6': 'halv seks', 'half.7': 'halv syv', 'half.8': 'halv otte',
+      'half.9': 'halv ni', 'half.10': 'halv ti', 'half.11': 'halv elleve', 'half.12': 'halv tolv',
       'tolur.count_q': 'Hvor mange kugler er der?',
       'tolur.plus': 'plus',
+      'tolur.minus': 'minus',
       'tolur.add_q': 'Hvad er resultatet?',
       'bokstafir.q': 'Hvilken lyd hører du? Find de to bogstaver, der laver den.',
       'litir.q': 'Hvilken farve er det?',
@@ -135,6 +157,7 @@
       'klukkan.read_q': 'Hvad er klokken?',
       'klukkan.set_a': 'Klokken er',
       'klukkan.set_b': 'Hvilket tal skal viseren pege på?',
+      'klukkan.pick_b': 'Find det rigtige ur.',
       'klukkan.clock_is_a': 'Klokken er',
       'minni.start': 'Find parrene! Vend to kort ad gangen, og husk hvor billederne ligger.',
       'minni.pairs6': '6 par',
@@ -164,15 +187,6 @@
   var KEY = 'kl.lang';
   var LANGS = ['is', 'da'];
 
-  // alphabets per language; letter -> spoken name overrides for special letters
-  var ALPHABETS = {
-    is: 'a á b d ð e é f g h i í j k l m n o ó p r s t u ú v x y ý þ æ ö'.split(' '),
-    da: 'a b c d e f g h i j k l m n o p q r s t u v w x y z æ ø å'.split(' ')
-  };
-  var LETTER_NAMES = {
-    is: { 'ð': 'eð', 'þ': 'þorn' },
-    da: {}
-  };
   // syllables for the listening game: one consonant + one vowel
   var SYLLABLES = {
     is: ['ba','be','bi','bu','da','de','di','du','ga','gu','ha','la','le','ma','me','mi','na','ne','ra','sa','ta','va'],
@@ -206,6 +220,7 @@
 
   function speechLang() { return lang() === 'da' ? 'da-DK' : 'is-IS'; }
 
+  // (re)translate the static page; safe to call repeatedly
   function apply() {
     document.documentElement.lang = lang();
     document.querySelectorAll('[data-i18n]').forEach(function (el) {
@@ -215,19 +230,28 @@
       el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
     });
     document.querySelectorAll('.lang-toggle button').forEach(function (btn) {
-      if (btn.getAttribute('data-lang') === lang()) btn.classList.add('active');
-      else btn.classList.remove('active');
-      btn.addEventListener('click', function () {
-        setLang(btn.getAttribute('data-lang'));
-        window.location.reload();
-      });
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang());
     });
   }
 
-  document.addEventListener('DOMContentLoaded', apply);
+  var listeners = [];
+  function onChange(fn) { listeners.push(fn); }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    apply();
+    document.querySelectorAll('.lang-toggle button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var l = btn.getAttribute('data-lang');
+        if (l === lang()) return;
+        setLang(l);
+        apply();
+        listeners.forEach(function (fn) { try { fn(l); } catch (e) { /* ignore */ } });
+      });
+    });
+  });
 
   window.KL_I18N = {
-    lang: lang, setLang: setLang, t: t, fmt: fmt, speechLang: speechLang,
-    LANGS: LANGS, ALPHABETS: ALPHABETS, LETTER_NAMES: LETTER_NAMES, SYLLABLES: SYLLABLES
+    lang: lang, setLang: setLang, t: t, fmt: fmt, speechLang: speechLang, apply: apply, onChange: onChange,
+    LANGS: LANGS, SYLLABLES: SYLLABLES, STR: STR
   };
 })();

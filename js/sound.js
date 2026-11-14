@@ -1,10 +1,15 @@
 /* Sound effects for Krakkaleikir, synthesized with the Web Audio API (no audio files).
-   Load after i18n.js, before common.js. Mute state persisted in localStorage ('kl.sound'). */
+   Load after i18n.js, before common.js. Mute state persisted in localStorage ('kl.sound');
+   muting also silences speech (js/tts.js checks on()). */
 (function () {
   'use strict';
 
   var KEY = 'kl.sound';
   var ctx = null;
+
+  // iOS/iPadOS 16.4+: play like a media app, so the ring/silent switch does not
+  // mute the sound effects while the spoken audio (an <audio> element) keeps playing.
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* ignore */ }
 
   function on() {
     try { return window.localStorage.getItem(KEY) !== 'off'; }
@@ -26,9 +31,11 @@
     } catch (e) { return null; }
   }
 
-  // iOS requires a user gesture before audio can start; resume on any tap.
-  document.addEventListener('pointerdown', function () { ac(); });
-  document.addEventListener('touchstart', function () { ac(); });
+  // iOS requires a user gesture before audio can start; resume on any tap
+  // (touchend/click are the events iOS accepts as a gesture for Web Audio).
+  ['pointerdown', 'touchstart', 'touchend', 'click'].forEach(function (ev) {
+    document.addEventListener(ev, function () { ac(); }, true);
+  });
 
   function tone(freq, delay, dur, type, vol) {
     var c = ac();
@@ -90,6 +97,7 @@
         setOn(!on());
         refreshToggle();
         if (on()) play('click');
+        else if (window.KL_TTS) window.KL_TTS.stop(); // cut off speech that is already playing
       });
     }
   });

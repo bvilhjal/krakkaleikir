@@ -16,6 +16,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html, body { margin: 0; padding: 0; }
 
 body {
@@ -46,6 +48,10 @@ a { color: inherit; text-decoration: none; }
   font-size: clamp(1.6rem, 5vw, 2.4rem);
   margin: 0;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .back-btn {
@@ -75,6 +81,7 @@ a { color: inherit; text-decoration: none; }
   font-weight: 700;
   flex: none;
 }
+.score-pill:empty { display: none; }
 
 .stage {
   max-width: 900px;
@@ -121,7 +128,14 @@ a { color: inherit; text-decoration: none; }
   font-size: 0.85rem;
   font-weight: 700;
   min-height: 24px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 10px;
 }
+.badge .slot { display: inline-flex; align-items: center; gap: 2px; }
+.badge .slot span { margin-right: 3px; }
 
 .menu-footer {
   text-align: center;
@@ -183,8 +197,18 @@ a { color: inherit; text-decoration: none; }
 
 .q-text { font-size: clamp(1.4rem, 4.5vw, 2rem); font-weight: 700; margin: 0; }
 .q-big { font-size: clamp(3rem, 12vw, 5rem); font-weight: 800; margin: 0; letter-spacing: 0.04em; }
-.big-letter { font-size: clamp(6rem, 24vw, 11rem); font-weight: 800; line-height: 1; }
 .balls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.balls.frame { display: grid; grid-template-columns: repeat(5, auto); }
+.sum-dots { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.sum-dots .op { font-size: 1.8rem; font-weight: 800; color: var(--muted); }
+.dots { display: grid; gap: 4px; }
+
+/* progress through the 10 questions: green = right first time, amber = after a retry */
+.progress { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 2px 64px 4px; min-height: 12px; }
+.progress span { width: 12px; height: 12px; border-radius: 50%; background: #E6E7EF; }
+.progress span.now { background: #fff; box-shadow: inset 0 0 0 3px var(--accent); }
+.progress span.done { background: var(--good); }
+.progress span.retry { background: #F2B544; }
 
 .answers {
   display: grid;
@@ -213,6 +237,10 @@ a { color: inherit; text-decoration: none; }
 .answer.correct { background: var(--good-bg); border-color: var(--good); }
 .answer.wrong { background: var(--bad-bg); border-color: var(--bad); animation: shake 0.35s ease; }
 .answer:disabled { cursor: default; }
+.answer.used { opacity: 0.35; }
+.answer.word { font-size: clamp(1.2rem, 4vw, 1.8rem); }
+.answer.clock-choice { min-height: 0; padding: 6px; display: flex; align-items: center; justify-content: center; }
+.answer.clock-choice svg { width: 100%; max-width: 140px; height: auto; }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -233,7 +261,8 @@ a { color: inherit; text-decoration: none; }
 .end-card h2 { font-size: clamp(1.8rem, 6vw, 2.6rem); margin: 6px 0 10px; }
 .big-stars { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
 .end-card p { font-size: 1.25rem; margin: 6px 0; }
-.end-card .best { color: var(--muted); font-weight: 700; }
+.end-card .best { color: var(--muted); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.inline-stars { display: inline-flex; gap: 2px; }
 
 .btn-primary {
   font-family: inherit;
@@ -303,6 +332,8 @@ a { color: inherit; text-decoration: none; }
 .mcard.matched { cursor: default; }
 
 .diff-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+.level-btn { min-width: 150px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.level-btn .lv-stars { display: inline-flex; gap: 2px; }
 
 /* ---- clock game ---- */
 .digital {
@@ -340,6 +371,7 @@ a { color: inherit; text-decoration: none; }
 .clock-num:active { transform: scale(0.92); }
 .clock-num.correct { background: var(--good-bg); border-color: var(--good); }
 .clock-num.wrong { background: var(--bad-bg); border-color: var(--bad); animation: shake 0.35s ease; }
+.clock-num.used { opacity: 0.35; }
 
 /* ---- language toggle ---- */
 .lang-toggle { display: flex; gap: 6px; flex: none; }

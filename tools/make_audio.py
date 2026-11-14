@@ -2,9 +2,15 @@
 """Generate the spoken-audio vocabulary for krakkaleikir (neural TTS mp3s).
 
 Reads the string tables from js/i18n.js, synthesizes every spoken key with
-Edge neural TTS (da-DK-ChristelNeural / is-IS-GudrunNeural) into
-audio/<lang>/<key>.mp3 (UTF-8 filename; the browser requests it percent-encoded and the server decodes it), and writes js/audio-manifest.js mapping
-key -> text per language (used as the Web Speech fallback).
+Edge neural TTS (is-IS-GudrunNeural / da-DK-JeppeNeural, with a second voice as
+fallback) into audio/<lang>/<key>.mp3 (UTF-8 filename; the browser requests it
+percent-encoded and the server decodes it), and writes js/audio-manifest.js
+mapping key -> text per language (also used as the Web Speech fallback).
+
+The previous manifest records which text each mp3 was made from: an mp3 whose
+text changed in js/i18n.js is regenerated, and mp3s for keys that no longer
+exist are deleted. Afterwards run `node tools/check.js --write` to refresh the
+offline file list in sw.js.
 
 Usage:
     python tools/make_audio.py            # Edge TTS (no key needed)
@@ -12,16 +18,15 @@ Usage:
                                                       # (note: Voxtral language
                                                       # coverage may not include da/is)
 
-Requires: pip install edge-tts requests
+Requires: node, pip install edge-tts (or requests for Mistral)
 """
 import asyncio
 import json
 import os
-import re
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
-from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent.parent
 I18N = ROOT / "js" / "i18n.js"
@@ -35,30 +40,16 @@ VOICES = {
 RATE = "-8%"  # slightly slower, friendlier for kids
 
 PHRASE_KEYS = [
-    "tolur.count_q", "tolur.plus", "tolur.add_q",
+    "tolur.count_q", "tolur.plus", "tolur.minus", "tolur.add_q",
     "bokstafir.q", "litir.q", "form.q",
-    "klukkan.read_q", "klukkan.set_a", "klukkan.set_b", "klukkan.clock_is_a",
+    "klukkan.read_q", "klukkan.set_a", "klukkan.set_b", "klukkan.pick_b", "klukkan.clock_is_a",
     "minni.start", "minni.end_title", "end.title", "try_again",
 ] + [f"praise.{i}" for i in range(6)]
+SPOKEN_PREFIXES = ("num.", "hour.", "half.", "color.", "shape.")
 
 
 def load_tables() -> dict:
-    """Evaluate js/i18n.js in node with stubs and dump STR/ALPHABETS/LETTER_NAMES."""
-    js = """
-      const fs = require('fs');
-      global.window = global;
-      global.localStorage = { getItem: () => null, setItem: () => {} };
-      global.document = { documentElement: {}, addEventListener: () => {}, querySelectorAll: () => [] };
-      eval(fs.readFileSync(process.argv[1], 'utf8'));
-      const s = {};
-      for (const lang of ['is','da']) {
-        const d = {};
-        for (const k of Object.keys(KL_I18N.t('x') === 'x' ? {} : {})) {}
-        // dump STR via t() over a known key list is awkward; expose via closure instead
-      }
-      console.log(JSON.stringify({ KL: { ALPHABETS: KL_I18N.ALPHABETS, LETTER_NAMES: KL_I18N.LETTER_NAMES } }));
-    """
-    # simpler: grab STR by evaluating the file and reading the internal table through a probe
+    """Evaluate js/i18n.js in node with stubs and dump the string tables and syllables."""
     probe = """
       const fs = require('fs');
       global.window = global;
@@ -69,11 +60,11 @@ def load_tables() -> dict:
       const src = fs.readFileSync(process.argv[1], 'utf8');
       const keys = [...new Set([...src.matchAll(/'([^']+)'\\s*:/g)].map(m => m[1]))];
       const out = { is: {}, da: {} };
-      global.localStorage.getItem = (k) => k === 'kl.lang' ? 'is' : null;
-      for (const k of keys) out.is[k] = KL_I18N.t(k);
-      global.localStorage.getItem = (k) => k === 'kl.lang' ? 'da' : null;
-      for (const k of keys) out.da[k] = KL_I18N.t(k);
-      console.log(JSON.stringify({ STR: out, ALPHABETS: KL_I18N.ALPHABETS, LETTER_NAMES: KL_I18N.LETTER_NAMES, SYLLABLES: KL_I18N.SYLLABLES }));
+      for (const lang of ['is', 'da']) {
+        global.localStorage.getItem = (k) => k === 'kl.lang' ? lang : null;
+        for (const k of keys) out[lang][k] = KL_I18N.t(k);
+      }
+      console.log(JSON.stringify({ STR: out, SYLLABLES: KL_I18N.SYLLABLES }));
     """
     res = subprocess.run(["node", "-e", probe, str(I18N)], capture_output=True, text=True, check=True)
     return json.loads(res.stdout)
@@ -84,21 +75,38 @@ def build_vocab(tables: dict) -> dict:
     vocab = {}
     for lang in ("is", "da"):
         strs = tables["STR"][lang]
-        v = {}
-        for k in PHRASE_KEYS:
-            v[k] = strs[k]
-        for i in range(1, 13):
-            v[f"num.{i}"] = strs[f"num.{i}"]
+        v = {k: strs[k] for k in PHRASE_KEYS}
         for k, val in strs.items():
-            if k.startswith("color.") or k.startswith("shape."):
+            if k.startswith(SPOKEN_PREFIXES):
                 v[k] = val
-        for letter in tables["ALPHABETS"][lang]:
-            name = tables["LETTER_NAMES"].get(lang, {}).get(letter, letter)
-            v[f"letter.{letter}"] = name
         for syl in tables["SYLLABLES"][lang]:
             v[f"syl.{syl}"] = syl
         vocab[lang] = v
     return vocab
+
+
+def load_old_manifest() -> dict:
+    try:
+        text = OUT_MANIFEST.read_text(encoding="utf-8")
+        return json.loads(text[text.index("{"):text.rindex("}") + 1])
+    except (OSError, ValueError):
+        return {}
+
+
+def prune(vocab: dict, old: dict) -> None:
+    """Delete mp3s whose key is gone or whose text changed, so they get (re)generated."""
+    for lang, v in vocab.items():
+        folder = OUT_AUDIO / lang
+        if not folder.is_dir():
+            continue
+        for mp3 in folder.glob("*.mp3"):
+            key = unicodedata.normalize("NFC", mp3.stem)
+            if key not in v:
+                print(f"  delete orphan {lang}/{mp3.name}")
+                mp3.unlink()
+            elif old.get(lang, {}).get(key) != v[key]:
+                print(f"  text changed, regenerate {lang}/{mp3.name}")
+                mp3.unlink()
 
 
 async def gen_edge(vocab: dict) -> None:
@@ -112,6 +120,7 @@ async def gen_edge(vocab: dict) -> None:
         if dest.exists() and dest.stat().st_size > 1000:
             return
         async with sem:
+            print(f"  generate {lang}/{key}: {text}")
             for voice in VOICES[lang]:
                 for attempt in range(6):
                     try:
@@ -157,8 +166,9 @@ def gen_mistral(vocab: dict) -> None:
 
 
 def main() -> None:
-    tables = load_tables()
-    vocab = build_vocab(tables)
+    vocab = build_vocab(load_tables())
+    prune(vocab, load_old_manifest())
+    failed = False
     if os.environ.get("MISTRAL_API_KEY"):
         print("provider: Mistral Voxtral TTS")
         gen_mistral(vocab)
@@ -166,14 +176,19 @@ def main() -> None:
         print("provider: Edge neural TTS (set MISTRAL_API_KEY to use Mistral instead)")
         try:
             asyncio.run(gen_edge(vocab))
-        except RuntimeError:
-            pass  # manifest is still written below; re-run fills the gaps
+        except RuntimeError as e:
+            failed = True
+            print(e, file=sys.stderr)
 
+    # A missing mp3 is regenerated on the next run whatever the manifest says,
+    # so the manifest can always be written.
     manifest = "window.KL_AUDIO = " + json.dumps(vocab, ensure_ascii=False, indent=1) + ";\n"
-    OUT_MANIFEST.write_text(manifest)
+    OUT_MANIFEST.write_text(manifest, encoding="utf-8")
     total = sum(len(v) for v in vocab.values())
     size = sum(p.stat().st_size for p in OUT_AUDIO.rglob("*.mp3"))
-    print(f"wrote {total} mp3 files ({size/1e6:.1f} MB) and {OUT_MANIFEST}")
+    print(f"wrote manifest for {total} mp3 files ({size/1e6:.1f} MB): {OUT_MANIFEST}")
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
