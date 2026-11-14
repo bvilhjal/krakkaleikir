@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('kl-6').addEventListener('click', function () { play(6); });
     document.getElementById('kl-8').addEventListener('click', function () { play(8); });
     KL.speak(KL.t('minni.start'));
+    KL.onUnlock(function () { KL.speak(KL.t('minni.start')); });
   }
 
   function play(nPairs) {

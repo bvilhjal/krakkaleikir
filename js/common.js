@@ -11,27 +11,32 @@
       u.lang = l;
       u.rate = 0.85;
       u.pitch = 1.1;
+      u.volume = 1;
       // pick an explicit voice when the list is available (iOS loads it lazily)
       var prefix = l.slice(0, 2).toLowerCase();
       var vs = window.speechSynthesis.getVoices() || [];
       for (var i = 0; i < vs.length; i++) {
         if (vs[i].lang && vs[i].lang.toLowerCase().indexOf(prefix) === 0) { u.voice = vs[i]; break; }
       }
-      var synth = window.speechSynthesis;
-      if (synth.speaking || synth.pending) synth.cancel();
-      // iOS drops speak() when called in the same tick as cancel(); defer slightly
-      setTimeout(function () {
-        try { synth.speak(u); } catch (e) { /* ignore */ }
-      }, 30);
+      // NOTE: never call speechSynthesis.cancel() here — on iOS it can wedge
+      // the speech queue permanently and all later speak() calls go silent.
+      try { window.speechSynthesis.speak(u); } catch (e) { /* ignore */ }
     } catch (e) { /* speech unsupported: ignore */ }
   }
 
-  // iOS only allows speechSynthesis inside/after a user gesture: unlock on first tap.
+  // iOS only allows speechSynthesis inside/after a user gesture: unlock on first
+  // tap, then re-speak whatever the current screen wants to say.
+  var unlockCbs = [];
+  function onUnlock(fn) { unlockCbs.length = 0; unlockCbs.push(fn); }
   function unlockSpeech() {
     try {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.getVoices(); // also triggers voice loading on iOS
       window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+      var cbs = unlockCbs.slice();
+      setTimeout(function () {
+        cbs.forEach(function (f) { try { f(); } catch (e) { /* ignore */ } });
+      }, 150);
     } catch (e) { /* ignore */ }
   }
   document.addEventListener('pointerdown', unlockSpeech, { once: true });
@@ -240,6 +245,7 @@
 
       // Speak the question when the round appears (works after the first user tap on iOS).
       speak(cfg.promptSpeech(q));
+      onUnlock(function () { speak(cfg.promptSpeech(q)); });
     }
 
     updateScore();
@@ -262,6 +268,7 @@
     shapeSVG: shapeSVG,
     ballSVG: ballSVG,
     runGame: runGame,
+    onUnlock: onUnlock,
     t: function (k) { return window.KL_I18N.t(k); },
     fmt: function (k, p) { return window.KL_I18N.fmt(k, p); }
   };
