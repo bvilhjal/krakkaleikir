@@ -1,4 +1,5 @@
-/* Form / Former: name the shown shape. Shape keys stay Icelandic internally. */
+/* Form / Former: hear a shape's name and pick its picture.
+   All four choices share a color, so the outline is the only clue. */
 (function () {
   'use strict';
 
@@ -16,17 +17,25 @@
           });
         },
         promptText: function () { return KL.t('form.q'); },
-        promptSpeech: function () { return ['form.q']; },
+        promptSpeech: function (q) { return ['form.q', 'shape.' + q.shape]; },
+        retrySpeech: function (q) { return ['shape.' + q.shape]; },
         build: function (q, promptEl, answersEl) {
-          promptEl.innerHTML = '<div class="shape-pop">' + KL.shapeSVG(q.shape, q.color, 170) + '</div>';
-          var correct = 'shape.' + q.shape;
-          return KL.pickDistinct(SHAPES.map(function (s) { return 'shape.' + s; }), correct, 4).map(function (key) {
+          var again = document.createElement('button');
+          again.type = 'button';
+          again.className = 'sound-btn';
+          again.setAttribute('aria-label', KL.t('speak.aria'));
+          again.innerHTML = KL.speakerSVG(64, '#fff');
+          again.addEventListener('click', function () { KL.replay(again, 'pulse-once'); KL.say(['shape.' + q.shape]); });
+          promptEl.appendChild(again);
+          return KL.pickDistinct(SHAPES, q.shape, 4).map(function (shape) {
+            var key = 'shape.' + shape;
             var btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'answer word';
-            btn.textContent = KL.t(key);
+            btn.className = 'answer shape-choice';
+            btn.setAttribute('aria-label', KL.t(key));
+            btn.innerHTML = KL.shapeSVG(shape, q.color, 110);
             answersEl.appendChild(btn);
-            return { el: btn, isCorrect: key === correct, speechParts: [key] };
+            return { el: btn, isCorrect: shape === q.shape, speechParts: [key] };
           });
         }
       });

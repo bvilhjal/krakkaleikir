@@ -13,6 +13,7 @@
   var ART = window.KL_ART;
 
   function say(parts, onDone) {
+    if (window.KL_SOUND) window.KL_SOUND.stopAnimal();
     if (window.KL_TTS) window.KL_TTS.say(parts, onDone);
     else if (onDone) setTimeout(onDone, 0);
   }
@@ -57,7 +58,7 @@
   }
   document.addEventListener('pointerdown', warmSpeech, { once: true });
   document.addEventListener('touchstart', warmSpeech, { once: true });
-  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .sound-btn, #kl-replay';
+  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .sound-btn, #kl-replay';
   function onGesture(e) {
     var T = window.KL_TTS;
     if (!T) return;
@@ -237,6 +238,14 @@
   }
   document.addEventListener('click', function (e) {
     if (!e.target.closest) return;
+    var sticker = e.target.closest('[data-animal-sound]');
+    if (sticker) {
+      if (window.KL_TTS) window.KL_TTS.stop();
+      onUnlock(null);
+      if (window.KL_SOUND) window.KL_SOUND.animal(sticker.getAttribute('data-animal-sound'));
+      replay(sticker, 'sticker-play');
+      return;
+    }
     if (e.target.closest('.guide .koala, .guide .bubble') && replayParts) {
       var g = guideEl();
       if (g) g.querySelector('.koala').classList.remove('hint');
@@ -338,7 +347,7 @@
         '<div class="big-stars">' + starsRow(o.stars, 3, 56) + '</div>' +
         o.lines.map(function (l) { return '<p>' + l + '</p>'; }).join('') +
         '<p class="best">' + I.t('end.best') + ' <span class="inline-stars">' + starsRow(best, 3, 24) + '</span></p>' +
-        (sticker ? '<div class="sticker-reveal"><div class="sticker-new">' + ART.animal(sticker, 92) + '</div>' +
+        (sticker ? '<div class="sticker-reveal"><button type="button" class="sticker-new" data-animal-sound="' + sticker + '" aria-label="' + I.fmt('sticker.sound', { a: I.t('animal.' + sticker) }) + '">' + ART.animal(sticker, 92) + '</button>' +
           '<p>' + I.fmt('sticker.new', { a: I.t('animal.' + sticker) }) + '</p></div>' : '') +
         '<div class="end-buttons">' +
           '<button type="button" class="btn-primary" id="kl-replay">' + I.t('end.replay') + '</button>' +
@@ -495,6 +504,7 @@
   function show(id) {
     current = id;
     clearTimers();
+    if (window.KL_SOUND) window.KL_SOUND.stopAnimal();
     onUnlock(null);
     setReplay(null);
     if (window.KL_TTS) window.KL_TTS.stop();

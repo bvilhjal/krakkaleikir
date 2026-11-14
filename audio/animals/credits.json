@@ -1,0 +1,55 @@
+{
+  "processing": "Trimmed leading/trailing silence, loudness normalized to -22 LUFS / -3 dBTP, mono 24 kHz / 64 kbps MP3.",
+  "clips": {
+    "ljon": {
+      "title": "Fading Breath Lion Roar (3.3 s) – Free CC0 Sound Effect #02",
+      "source": "https://sfxmint.com/sounds/lion-roar-02",
+      "download": "https://sfxmint.com/dl/lion-roar-02.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://sfxmint.com/license",
+      "kind": "AI-generated sound effect",
+      "source_sha256": "8251ff0b5b9335dbec3b6bc7a225d80a4c67d887f18edcf07e2f9e5e0aa143dc",
+      "sha256": "a2dd5aaf143a7d5d286abb044fc26bf836b96c63a28ac12260d5eb2187b3a61c"
+    },
+    "kottur": {
+      "title": "Single Soft Cat Meowing (1.1 s) – Free CC0 Sound Effect #34",
+      "source": "https://sfxmint.com/sounds/animal-cat-meow-34",
+      "download": "https://sfxmint.com/dl/animal-cat-meow-34.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://sfxmint.com/license",
+      "kind": "AI-generated sound effect",
+      "source_sha256": "738619e7816b44115441e127b0abfbd20beab3fab7a6398ae39eed84f3a30d6b",
+      "sha256": "0130b5e5351b81dc75bfe119dfff5a460a1a6f3d572c128e86a9326e808ca293"
+    },
+    "svin": {
+      "title": "Fading Pig Oink (2.4 s) – Free CC0 Sound Effect #02",
+      "source": "https://sfxmint.com/sounds/pig-oink-02",
+      "download": "https://sfxmint.com/dl/pig-oink-02.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://sfxmint.com/license",
+      "kind": "AI-generated sound effect",
+      "source_sha256": "7584fed8f57932f3d0616a63da9e2ba5e8ce302cf98b1d572f7b36acc8965810",
+      "sha256": "550d13d6ea67a113b5c462c6b07451ac8713a718bf0626b7fccc017f35c0ebda"
+    },
+    "bjorn": {
+      "title": "Short Throaty Bear Growl (2.4 s) – Free CC0 Sound Effect #01",
+      "source": "https://sfxmint.com/sounds/bear-growl-01",
+      "download": "https://sfxmint.com/dl/bear-growl-01.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://sfxmint.com/license",
+      "kind": "AI-generated sound effect",
+      "source_sha256": "b5a26b6f90a42fa49d7929828105651127e1dda67d69cf207b396ba98f05b2ec",
+      "sha256": "53447098d7a33722eca894b47bb2e59ee66d17810f1545c625079bce769a514a"
+    },
+    "koala": {
+      "title": "Grunting Koala (1.5 s) – Free CC0 Sound Effect #05",
+      "source": "https://sfxmint.com/sounds/koala-05",
+      "download": "https://sfxmint.com/dl/koala-05.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://sfxmint.com/license",
+      "kind": "AI-generated sound effect",
+      "source_sha256": "1d72a89c5a7c7188e97cf20848b3280d46e65d9d56e5b47e51138dc31faed33f",
+      "sha256": "6f8c76a2e48071d3ccdec143bca2639622fa4e74259faf38fdeb1330bb71f9e8"
+    }
+  }
+}

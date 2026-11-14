@@ -20,8 +20,9 @@
     document.getElementById('sticker-count').textContent = have.length + ' / ' + KL_ART.ANIMALS.length;
     document.getElementById('sticker-grid').innerHTML = KL_ART.ANIMALS.map(function (id) {
       var got = have.indexOf(id) >= 0;
-      return '<span class="sticker' + (got ? '' : ' missing') + '" title="' + (got ? KL.t('animal.' + id) : '?') + '">' +
-        (got ? KL_ART.animal(id, 56) : KL_ART.silhouette(id, 56)) + '</span>';
+      if (!got) return '<span class="sticker missing" title="?">' + KL_ART.silhouette(id, 56) + '</span>';
+      return '<button type="button" class="sticker" data-animal-sound="' + id + '" aria-label="' + KL.fmt('sticker.sound', { a: KL.t('animal.' + id) }) + '">' +
+        KL_ART.animal(id, 56) + '</button>';
     }).join('');
   }
 

@@ -229,6 +229,8 @@ a { color: inherit; text-decoration: none; }
 .answer.read { font-size: clamp(1.7rem, 6vw, 2.6rem); }
 .answer.clock-choice { min-height: 0; padding: 6px; display: flex; align-items: center; justify-content: center; }
 .answer.clock-choice svg { width: 100%; max-width: 140px; height: auto; }
+.answer.shape-choice { min-height: 140px; padding: 12px; display: flex; align-items: center; justify-content: center; }
+.answer.shape-choice svg { width: 100%; max-width: 120px; height: auto; }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -559,6 +561,7 @@ a { color: inherit; text-decoration: none; }
 .sticker-reveal { margin: 14px auto 0; }
 .sticker-new {
   display: inline-flex;
+  border: none;
   padding: 10px;
   border-radius: 50%;
   background: #FFF3D6;
@@ -590,6 +593,11 @@ a { color: inherit; text-decoration: none; }
 .sticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 10px; justify-items: center; }
 .sticker { display: inline-flex; padding: 4px; border-radius: 50%; background: #FFF8EE; }
 .sticker.missing { background: #F1F2F6; }
+button.sticker, button.sticker-new { cursor: pointer; touch-action: manipulation; }
+button.sticker { border: none; }
+button.sticker:active, button.sticker-new:active { transform: scale(0.92); }
+button.sticker:focus-visible, button.sticker-new:focus-visible { outline: 3px solid #5C6BC0; outline-offset: 3px; }
+.sticker-play { animation: hop-in 0.4s ease-out; }
 .sil svg { filter: grayscale(1) brightness(1.6) contrast(0.25); opacity: 0.55; }
 
 @media (prefers-reduced-motion: reduce) {

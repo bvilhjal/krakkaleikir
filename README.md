@@ -12,7 +12,7 @@ Educational browser games for young kids, guided by Kóli the koala; bilingual I
 | Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, eða finna tíu tölur sem Kóli les | Frjáls könnun eða talnaleit |
 | Bókstafir | Hlusta á stutt orð (t.d. „mús“) og finna það skrifað | Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
 | Litir | Litarheiti; hver litur kemur einu sinni | — |
-| Form | Formheiti (hringur, ferningur, þríhyrningur, ...) | — |
+| Form | Hlusta á formheiti og velja réttu myndina (hringur, ferningur, þríhyrningur, ...) | — |
 | Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar, vísirinn snýst að tölunni sem bankað er á · 3:30: líka hálfir tímar („hálf fjögur“), finna réttu klukkuna |
 | Minni (DA: Vendespil) | Finna dýrin sem eru eins | 6 eða 8 pör |
 
@@ -22,7 +22,11 @@ Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á h
 
 ## Hljóð
 
-Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Edge (rödd Kóla: is-IS-Gunnar og da-DK-Jeppe; sjá `tools/make_audio.py`). Heilar setningar eru teknar upp í einu lagi („Hvað eru þrír plús tveir?“, „Klukkan er hálf fjögur.“) og þögnin fremst og aftast í hverri skrá er klippt burt, svo talið flæðir án hléa. Bókstafir notar raunveruleg orð en ekki atkvæði eins og „ba“, sem talgervillinn stafar oft eins og skammstöfun; hvert orð er sagt í setningu („Hlustaðu: mús.“) og klippt út. Á `tools/listen.html` (á netinu: https://bvilhjal.github.io/krakkaleikir/tools/listen.html) er hægt að hlusta á allar skrárnar og merkja þær sem hljóma rangt. Ef skrá vantar er Web Speech API notað. Hljóðáhrifin eru búin til í vafranum með Web Audio API. Hljóðhnappurinn efst slekkur á öllu hljóði, líka tali sem er í gangi.
+Bankaðu á límmiða sem þú hefur safnað til að heyra hljóð dýrsins, líka þegar nýr límmiði birtist eftir leik. Ljónið öskrar, kötturinn mjálmar og grísinn rýtur. Fiskurinn fær fjörugar loftbólur og maríuhænan létt vængjablak. Hljóðin virka án nettengingar og hlýða hljóðhnappnum.
+
+Fimm stutt dýrahljóð eru tilbúnar, gervigreindargerðar CC0-hljóðskrár frá [SFXMint](https://sfxmint.com/license), geymdar í `audio/animals/`; uppruni, vinnsla og SHA256 eru í `audio/animals/credits.json`. Hin sjö eru leikræn Web Audio-hljóð.
+
+Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Edge (rödd Kóla: is-IS-Gunnar og da-DK-Jeppe; sjá `tools/make_audio.py`). Heilar setningar eru teknar upp í einu lagi („Hvað eru þrír plús tveir?“, „Klukkan er hálf fjögur.“) og þögnin fremst og aftast í hverri skrá er klippt burt, svo talið flæðir án hléa. Bókstafir notar raunveruleg orð en ekki atkvæði eins og „ba“, sem talgervillinn stafar oft eins og skammstöfun; hvert orð er sagt í setningu („Hlustaðu: mús.“) og klippt út. Á `tools/listen.html` (á netinu: https://bvilhjal.github.io/krakkaleikir/tools/listen.html) er hægt að hlusta á allar skrárnar og merkja þær sem hljóma rangt. Ef skrá vantar er Web Speech API notað. Almenn leikjahljóð eru búin til í vafranum með Web Audio API. Hljóðhnappurinn efst slekkur á öllu hljóði, líka tali sem er í gangi.
 
 Á iOS þarf eitt bank áður en hljóð má spilast. Eftir það les hver leikur spurninguna um leið og hann opnast, því allt appið er ein síða. Ef Kóli vaggar sér þarf að banka á hann til að heyra spurninguna.
 
@@ -33,7 +37,7 @@ Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Ed
 
 ### Á iPad
 
-Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 6,8 MB) og sækir nýja útgáfu þegar hún er komin á netið.
+Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 6,9 MB) og sækir nýja útgáfu þegar hún er komin á netið.
 
 ## Uppbygging
 

@@ -5,9 +5,15 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = '8bf0a37945a8';
+var VERSION = 'f388f15fbf2c';
 var FILES = [
   './',
+  'audio/animals/bjorn.mp3',
+  'audio/animals/credits.json',
+  'audio/animals/koala.mp3',
+  'audio/animals/kottur.mp3',
+  'audio/animals/ljon.mp3',
+  'audio/animals/svin.mp3',
   'audio/da/add.1.1.mp3',
   'audio/da/add.1.2.mp3',
   'audio/da/add.1.3.mp3',

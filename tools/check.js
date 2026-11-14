@@ -9,6 +9,7 @@
    match audioVocab() in js/i18n.js one-to-one and audio/manifest.json says each
    was made from the current text (else re-run tools/make_audio.py); file names
    are NFC; games are registered, linked from the menu and have a redirect page;
+   every sticker has a sound and downloaded clips match their credits;
    sw.js lists exactly the current files. */
 'use strict';
 const fs = require('fs');
@@ -75,6 +76,27 @@ for (const l of LANGS) {
   }
   for (const k of files) if (!(k in vocab)) err(`audio/${l}/${k}.mp3 is no longer used (run tools/make_audio.py)`);
 }
+
+/* ---- every sticker has a sound; local animal clips retain their provenance ---- */
+ctx.navigator = {};
+vm.runInContext(read('js/art.js'), ctx);
+vm.runInContext(read('js/sound.js'), ctx);
+const animals = ctx.KL_ART.ANIMALS;
+const sounds = ctx.KL_SOUND;
+for (const id of animals) if (!sounds.animals.includes(id)) err(`sticker '${id}' has no animal sound`);
+for (const id of sounds.animals) if (!animals.includes(id)) err(`animal sound '${id}' has no sticker`);
+let animalCredits = {};
+try { animalCredits = JSON.parse(read('audio/animals/credits.json')).clips || {}; }
+catch (e) { err('audio/animals/credits.json missing or unreadable'); }
+for (const file of sounds.animalFiles) {
+  const rel = 'audio/animals/' + file;
+  const credit = animalCredits[path.basename(file, '.mp3')];
+  if (!fs.existsSync(path.join(ROOT, rel))) { err(`${rel} missing`); continue; }
+  if (!credit || !credit.source || !credit.license || !credit.license_url) { err(`${rel} has no source/license credit`); continue; }
+  const sha = crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, rel))).digest('hex');
+  if (sha !== credit.sha256) err(`${rel} differs from its credited SHA256`);
+}
+for (const id of Object.keys(animalCredits)) if (!sounds.animalFiles.includes(id + '.mp3')) err(`animal credit '${id}' has no clip`);
 
 /* ---- games: registered, on the menu, loaded, redirect page ---- */
 const index = read('index.html');
