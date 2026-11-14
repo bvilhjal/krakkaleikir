@@ -1,27 +1,28 @@
-/* Bókstafir / Bogstaver: a listening game — hear a letter, pick it from four choices. */
+/* Bókstafir / Bogstaver: a listening game — hear a syllable (one consonant +
+   one vowel, e.g. "ba"), pick the matching two letters from four choices. */
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
-  var LETTERS = KL_I18N.ALPHABETS[KL_I18N.lang()];
-  var questions = KL.sample(LETTERS, 10).map(function (l) { return { letter: l }; });
+  var SYL = KL_I18N.SYLLABLES[KL_I18N.lang()];
+  var questions = KL.sample(SYL, 10).map(function (s) { return { syl: s }; });
 
   KL.runGame({
     gameId: 'bokstafir',
     main: document.getElementById('game'),
     scoreEl: document.getElementById('score'),
     questions: questions,
-    promptSpeech: function (q) { return ['letter.' + q.letter]; },
+    promptSpeech: function (q) { return ['bokstafir.q', 'syl.' + q.syl]; },
     build: function (q, promptEl, answersEl) {
       promptEl.innerHTML =
         '<div style="margin:6px 0">' + KL.speakerSVG(84) + '</div>' +
         '<p class="q-text">' + KL.t('bokstafir.q') + '</p>';
       var answers = [];
-      KL.pickDistinct(LETTERS, q.letter, 4).forEach(function (c) {
+      KL.pickDistinct(SYL, q.syl, 4).forEach(function (c) {
         var btn = document.createElement('button');
         btn.className = 'answer';
         btn.textContent = c.toUpperCase();
         answersEl.appendChild(btn);
-        answers.push({ el: btn, isCorrect: c === q.letter, speechParts: ['letter.' + c] });
+        answers.push({ el: btn, isCorrect: c === q.syl, speechParts: ['syl.' + c] });
       });
       return answers;
     }

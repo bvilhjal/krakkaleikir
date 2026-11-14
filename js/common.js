@@ -224,22 +224,27 @@
             if (window.KL_SOUND) window.KL_SOUND.play('correct');
             msg.textContent = I.t(p);
             msg.className = 'message good';
-            // Advance only after the praise has actually been read (plus a
-            // short beat), but never wait longer than 4.5s — otherwise the
-            // next question's say() would cut the praise off mid-word.
+            // Advance only after the praise has actually been read aloud
+            // (plus a short beat), with a 1.1s minimum so the praise stays
+            // visible and a 4.5s hard cap — otherwise the next question's
+            // say() would cut the praise off mid-word.
+            var t0 = Date.now();
             var advanced = false;
             function advance() {
               if (advanced) return;
+              var wait = 1100 - (Date.now() - t0);
+              if (wait > 0) { setTimeout(advance, wait); return; }
               advanced = true;
               state.i++;
               state.locked = false;
               if (state.i >= cfg.questions.length) endScreen(); else render();
             }
-            setTimeout(advance, 1100); // minimum beat so the praise is visible
             if (window.KL_TTS) {
               setTimeout(function () {
                 window.KL_TTS.say([p].concat(a.speechParts || []), function () { setTimeout(advance, 300); });
               }, 250); // let the 'correct' sound effect finish first
+            } else {
+              setTimeout(advance, 0);
             }
             setTimeout(advance, 4500); // hard cap
           } else {

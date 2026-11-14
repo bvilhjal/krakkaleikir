@@ -17,7 +17,7 @@
       'game.klukkan': 'Klukkan',
       'game.minni': 'Minni',
       'desc.tolur': 'Teldu kúlurnar og leystu einföld dæmi',
-      'desc.bokstafir': 'Hlustaðu á stafinn og finndu hann',
+      'desc.bokstafir': 'Hlustaðu á hljóðið og finndu stafina tvo',
       'desc.litir': 'Hvaða litur er á myndinni?',
       'desc.form': 'Hvað heitir þetta form?',
       'desc.klukkan': 'Lærðu hvað klukkan er og stilltu vísana',
@@ -53,7 +53,7 @@
       'tolur.count_q': 'Hvað eru margar kúlur?',
       'tolur.plus': 'plús',
       'tolur.add_q': 'Hvað er útkoman?',
-      'bokstafir.q': 'Hvaða stafur heyrist?',
+      'bokstafir.q': 'Hvaða hljóð heyrist? Finndu stafina tvo sem mynda það.',
       'litir.q': 'Hvaða litur er þetta?',
       'form.q': 'Hvað heitir þetta form?',
       'klukkan.read_q': 'Hvað er klukkan?',
@@ -93,7 +93,7 @@
       'game.klukkan': 'Uret',
       'game.minni': 'Hukommelse',
       'desc.tolur': 'Tæl kuglerne og løs simple regnestykker',
-      'desc.bokstafir': 'Lyt til bogstavet og find det',
+      'desc.bokstafir': 'Lyt til lyden og find de to bogstaver',
       'desc.litir': 'Hvilken farve er der på billedet?',
       'desc.form': 'Hvad hedder denne form?',
       'desc.klukkan': 'Lær hvad klokken er, og sæt viserne',
@@ -129,7 +129,7 @@
       'tolur.count_q': 'Hvor mange kugler er der?',
       'tolur.plus': 'plus',
       'tolur.add_q': 'Hvad er resultatet?',
-      'bokstafir.q': 'Hvilket bogstav kan du høre?',
+      'bokstafir.q': 'Hvilken lyd hører du? Find de to bogstaver, der laver den.',
       'litir.q': 'Hvilken farve er det?',
       'form.q': 'Hvad hedder denne form?',
       'klukkan.read_q': 'Hvad er klokken?',
@@ -172,6 +172,11 @@
   var LETTER_NAMES = {
     is: { 'ð': 'eð', 'þ': 'þorn' },
     da: {}
+  };
+  // syllables for the listening game: one consonant + one vowel
+  var SYLLABLES = {
+    is: ['ba','be','bi','bu','da','de','di','du','ga','gu','ha','la','le','ma','me','mi','na','ne','ra','sa','ta','va'],
+    da: ['ba','be','bi','bo','bu','da','de','di','du','ga','ha','ka','la','le','ma','me','mi','na','ne','ra','sa','ta','va']
   };
 
   function lang() {
@@ -223,6 +228,6 @@
 
   window.KL_I18N = {
     lang: lang, setLang: setLang, t: t, fmt: fmt, speechLang: speechLang,
-    LANGS: LANGS, ALPHABETS: ALPHABETS, LETTER_NAMES: LETTER_NAMES
+    LANGS: LANGS, ALPHABETS: ALPHABETS, LETTER_NAMES: LETTER_NAMES, SYLLABLES: SYLLABLES
   };
 })();

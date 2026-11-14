@@ -73,7 +73,7 @@ def load_tables() -> dict:
       for (const k of keys) out.is[k] = KL_I18N.t(k);
       global.localStorage.getItem = (k) => k === 'kl.lang' ? 'da' : null;
       for (const k of keys) out.da[k] = KL_I18N.t(k);
-      console.log(JSON.stringify({ STR: out, ALPHABETS: KL_I18N.ALPHABETS, LETTER_NAMES: KL_I18N.LETTER_NAMES }));
+      console.log(JSON.stringify({ STR: out, ALPHABETS: KL_I18N.ALPHABETS, LETTER_NAMES: KL_I18N.LETTER_NAMES, SYLLABLES: KL_I18N.SYLLABLES }));
     """
     res = subprocess.run(["node", "-e", probe, str(I18N)], capture_output=True, text=True, check=True)
     return json.loads(res.stdout)
@@ -95,6 +95,8 @@ def build_vocab(tables: dict) -> dict:
         for letter in tables["ALPHABETS"][lang]:
             name = tables["LETTER_NAMES"].get(lang, {}).get(letter, letter)
             v[f"letter.{letter}"] = name
+        for syl in tables["SYLLABLES"][lang]:
+            v[f"syl.{syl}"] = syl
         vocab[lang] = v
     return vocab
 
