@@ -29,7 +29,11 @@
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       if (!ctx) ctx = new AC();
-      if (ctx.state === 'suspended') ctx.resume();
+      // iOS leaves the context 'interrupted' after a call or an app switch
+      if (ctx.state !== 'running' && ctx.state !== 'closed') {
+        var r = ctx.resume();
+        if (r && r.catch) r.catch(function () { /* needs a tap */ });
+      }
       return ctx;
     } catch (e) { return null; }
   }

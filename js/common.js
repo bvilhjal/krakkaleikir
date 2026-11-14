@@ -63,10 +63,10 @@
     var T = window.KL_TTS;
     if (!T) return;
     var own = e && e.target && e.target.closest && e.target.closest(OWN_AUDIO);
+    // keep the callback: a touchend that ends a scroll is no gesture, so the
+    // prompt is refused again and the next real tap has to say it
     if (!own && T.blocked() && unlockCb) {
-      var fn = unlockCb;
-      unlockCb = null;
-      try { fn(); } catch (err) { /* ignore */ }
+      try { unlockCb(); } catch (err) { /* ignore */ }
     } else {
       T.prime();
     }
@@ -521,7 +521,7 @@
   function routeFromHash() {
     var h = window.location.hash.replace(/^#\/?/, '');
     try { h = decodeURIComponent(h); } catch (e) { /* malformed: show the menu */ }
-    return GAMES[h] ? h : '';
+    return Object.prototype.hasOwnProperty.call(GAMES, h) ? h : '';
   }
 
   function show(id) {
@@ -542,6 +542,7 @@
     game.innerHTML = '';
     window.scrollTo(0, 0);
     if (!id) {
+      if (updateReady) { window.location.reload(); return; } // a new version is installed
       game.hidden = true;
       menu.hidden = false;
       back.hidden = true;
@@ -602,11 +603,26 @@
     show(routeFromHash());
   });
 
-  // offline support (sw.js); service workers need https or localhost
+  /* offline support (sw.js); service workers need https or localhost.
+     A home-screen app is mostly resumed, not reloaded, so look for a new version
+     whenever it comes back to the screen. Once a new version has taken over,
+     reload at the menu (never in the middle of a game). */
+  var updateReady = false;
   window.addEventListener('load', function () {
     if (!('serviceWorker' in navigator)) return;
     if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') return;
-    navigator.serviceWorker.register('sw.js').catch(function () { /* offline support unavailable */ });
+    var sw = navigator.serviceWorker;
+    var hadController = !!sw.controller;
+    sw.addEventListener('controllerchange', function () {
+      if (!hadController) { hadController = true; return; } // first install, nothing old to replace
+      updateReady = true;
+      if (!current) window.location.reload();
+    });
+    sw.register('sw.js').then(function (reg) {
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') reg.update().catch(function () { /* offline */ });
+      });
+    }).catch(function () { /* offline support unavailable */ });
   });
 
   var KL = window.KL = {

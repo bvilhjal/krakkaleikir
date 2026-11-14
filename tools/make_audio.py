@@ -99,6 +99,13 @@ def trim(ff: str, src: Path, dest: Path) -> None:
                     "-map_metadata", "-1", str(dest)], check=True)
 
 
+def spoken(text: str, lang: str) -> str:
+    """Text as sent to the voice. The Danish voice reads a short last word with its
+    full stop as an abbreviation ("Klokken er ti." -> tirsdag, "fem." -> femininum),
+    so Danish clips are synthesized without the final full stop."""
+    return text[:-1] if lang == "da" and text.endswith(".") and not text.endswith("..") else text
+
+
 async def synth(text: str, voice: str, dest: Path) -> None:
     """Synthesize text into dest."""
     c = edge_tts.Communicate(text, voice, rate=RATE)
@@ -152,7 +159,7 @@ async def generate(vocab: dict, overrides: dict) -> int:
             for voice in ([voice_override] if voice_override else VOICES[lang]):
                 for attempt in range(5):
                     try:
-                        await synth(text, voice, raw)
+                        await synth(spoken(text, lang), voice, raw)
                         if raw.exists() and raw.stat().st_size > 1000:
                             ok = True
                             break

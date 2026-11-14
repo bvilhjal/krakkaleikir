@@ -30,7 +30,7 @@ Fimm stutt dýrahljóð eru tilbúnar, gervigreindargerðar CC0-hljóðskrár fr
 
 Raddir foreldra eru stilltar sérstaklega í `FAMILY` í `js/i18n.js`: Gunnar fyrir pabba og Emma Multilingual fyrir mömmu (Christel skilar engu hljóði). `audio/manifest.json` skráir þessi frávik frá rödd Kóla; aðeins viðkomandi skrár eru endurgerðar þegar rödd breytist.
 
-Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Edge (rödd Kóla: is-IS-Gunnar og da-DK-Jeppe; sjá `tools/make_audio.py`). Heilar setningar eru teknar upp í einu lagi („Hvað eru þrír plús tveir?“, „Klukkan er hálf fjögur.“) og þögnin fremst og aftast í hverri skrá er klippt burt, svo talið flæðir án hléa. Bókstafir notar raunveruleg orð en ekki atkvæði eins og „ba“, sem talgervillinn stafar oft eins og skammstöfun; hvert orð er sagt í setningu („Hlustaðu: mús.“) og klippt út. Á `tools/listen.html` (á netinu: https://bvilhjal.github.io/krakkaleikir/tools/listen.html) er hægt að hlusta á allar skrárnar og merkja þær sem hljóma rangt. Ef skrá vantar er Web Speech API notað. Almenn leikjahljóð eru búin til í vafranum með Web Audio API. Hljóðhnappurinn efst slekkur á öllu hljóði, líka tali sem er í gangi.
+Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Edge (rödd Kóla: is-IS-Gunnar og da-DK-Jeppe; sjá `tools/make_audio.py`). Heilar setningar eru teknar upp í einu lagi („Hvað eru þrír plús tveir?“, „Klukkan er hálf fjögur.“) og þögnin fremst og aftast í hverri skrá er klippt burt, svo talið flæðir án hléa. Bókstafir notar raunveruleg orð en ekki atkvæði eins og „ba“, sem talgervillinn stafar oft eins og skammstöfun; hvert orð er tekið upp eitt og sér. Danska röddin les stutt lokaorð með punkti sem skammstöfun („Klokken er ti.“ verður „tirsdag“), svo punkturinn er tekinn af dönskum texta áður en hann er lesinn inn. Á `tools/listen.html` (á netinu: https://bvilhjal.github.io/krakkaleikir/tools/listen.html) er hægt að hlusta á allar skrárnar og merkja þær sem hljóma rangt. Ef skrá vantar er Web Speech API notað. Almenn leikjahljóð eru búin til í vafranum með Web Audio API. Hljóðhnappurinn efst slekkur á öllu hljóði, líka tali sem er í gangi.
 
 Á iOS þarf eitt bank áður en hljóð má spilast. Eftir það les hver leikur spurninguna um leið og hann opnast, því allt appið er ein síða. Ef Kóli vaggar sér þarf að banka á hann til að heyra spurninguna.
 
@@ -41,7 +41,7 @@ Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Ed
 
 ### Á iPad
 
-Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 6,9 MB) og sækir nýja útgáfu þegar hún er komin á netið.
+Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 6,9 MB) og leitar að nýrri útgáfu í hvert sinn sem appið er opnað. Ný útgáfa tekur gildi næst þegar valmyndin birtist, aldrei í miðjum leik.
 
 ## Uppbygging
 

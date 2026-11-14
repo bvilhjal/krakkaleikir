@@ -12,18 +12,17 @@
     KL.sample(hard ? KL.range(3, 10) : KL.range(1, 5), 5).forEach(function (n) {
       qs.push({ type: 'count', n: n, animal: COUNT_ANIMALS[KL.randInt(0, COUNT_ANIMALS.length - 1)] });
     });
-    for (var i = 0; i < 5; i++) {
-      var a, b;
-      if (hard && i % 2 === 1) {
-        a = KL.randInt(3, 10); b = KL.randInt(1, a - 1);
-        qs.push({ type: 'sub', a: a, b: b });
-      } else if (hard) {
-        a = KL.randInt(2, 8); b = KL.randInt(1, 10 - a);
-        qs.push({ type: 'add', a: a, b: b });
-      } else {
-        a = KL.randInt(1, 5); b = KL.randInt(1, 5);
-        qs.push({ type: 'add', a: a, b: b });
-      }
+    var seen = {};
+    for (var i = 0; i < 5; ) {
+      var a, b, type = hard && i % 2 === 1 ? 'sub' : 'add';
+      if (type === 'sub') { a = KL.randInt(3, 10); b = KL.randInt(1, a - 1); }
+      else if (hard) { a = KL.randInt(2, 8); b = KL.randInt(1, 10 - a); }
+      else { a = KL.randInt(1, 5); b = KL.randInt(1, 5); }
+      var k = type + '.' + a + '.' + b;
+      if (seen[k]) continue; // never the same sum twice in one round
+      seen[k] = true;
+      qs.push({ type: type, a: a, b: b });
+      i++;
     }
     // two different animals for the two numbers of a sum
     qs.forEach(function (q) { if (q.type !== 'count') q.pair = KL.sample(COUNT_ANIMALS, 2); });
