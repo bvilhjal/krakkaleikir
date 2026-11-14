@@ -30,7 +30,7 @@
     <div id="menu">
     <section class="hero">
       <h1 data-i18n="title.menu">Krakkaleikir</h1>
-      <p data-i18n="menu.subtitle">Veldu leik og byrjaðu að spila!</p>
+      <div id="menu-guide"></div>
     </section>
 
     <section class="menu-grid">
@@ -46,7 +46,7 @@
           </svg>
         </span>
         <h2 data-i18n="game.tolur">Tölur</h2>
-        <p data-i18n="desc.tolur">Teldu kúlurnar og leystu einföld dæmi</p>
+        <p data-i18n="desc.tolur">Teldu dýrin og leystu dæmi</p>
         <span class="badge" data-game="tolur"></span>
       </a>
 
@@ -58,7 +58,7 @@
           </svg>
         </span>
         <h2 data-i18n="game.bokstafir">Bókstafir</h2>
-        <p data-i18n="desc.bokstafir">Hlustaðu á hljóðið og finndu stafina tvo</p>
+        <p data-i18n="desc.bokstafir">Hlustaðu og finndu stafina</p>
         <span class="badge" data-game="bokstafir"></span>
       </a>
 
@@ -84,7 +84,7 @@
           </svg>
         </span>
         <h2 data-i18n="game.form">Form</h2>
-        <p data-i18n="desc.form">Hvað heitir þetta form?</p>
+        <p data-i18n="desc.form">Hvað heitir formið?</p>
         <span class="badge" data-game="form"></span>
       </a>
 
@@ -98,7 +98,7 @@
           </svg>
         </span>
         <h2 data-i18n="game.klukkan">Klukkan</h2>
-        <p data-i18n="desc.klukkan">Lærðu hvað klukkan er og stilltu vísana</p>
+        <p data-i18n="desc.klukkan">Lærðu á klukkuna</p>
         <span class="badge" data-game="klukkan"></span>
       </a>
 
@@ -110,14 +110,19 @@
           </svg>
         </span>
         <h2 data-i18n="game.minni">Minni</h2>
-        <p data-i18n="desc.minni">Finndu pörin í minnisleiknum</p>
+        <p data-i18n="desc.minni">Finndu dýrin sem eru eins</p>
         <span class="badge" data-game="minni"></span>
       </a>
     </section>
 
+    <section class="sticker-book">
+      <h2><span data-i18n="menu.stickers">Límmiðarnir mínir</span> <span class="count" id="sticker-count"></span></h2>
+      <div class="sticker-grid" id="sticker-grid"></div>
+    </section>
+
     <footer class="menu-footer">
-      <p data-i18n="footer.note">Bestu stig geymast í vafranum þínum.</p>
-      <button type="button" class="link-btn" id="reset-scores" data-i18n="footer.reset">Hreinsa stig</button>
+      <p data-i18n="footer.note">Stjörnur og límmiðar geymast í þessum vafra.</p>
+      <button type="button" class="link-btn" id="reset-scores" data-i18n="footer.reset">Byrja upp á nýtt</button>
     </footer>
     </div>
 
@@ -127,7 +132,7 @@
   <script src="js/i18n.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/tts.js"></script>
-  <script src="js/audio-manifest.js"></script>
+  <script src="js/art.js"></script>
   <script src="js/common.js"></script>
   <script src="js/tolur.js"></script>
   <script src="js/bokstafir.js"></script>

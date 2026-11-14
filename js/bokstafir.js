@@ -1,7 +1,8 @@
 /* Bókstafir / Bogstaver: a listening game — hear a syllable (one consonant +
    one vowel, e.g. "ba"), pick the matching two letters from four choices.
    Easy: random other syllables.  Hard: syllables that share the consonant or
-   the vowel (ba / bi / da), so the child has to listen to each sound. */
+   the vowel (ba / bi / da), so the child has to listen to each sound.
+   The big speaker button plays just the syllable again. */
 (function () {
   'use strict';
 
@@ -24,12 +25,17 @@
         gameId: 'bokstafir',
         levels: this.levels,
         makeQuestions: function () { return KL.sample(SYL, 10).map(function (s) { return { syl: s }; }); },
+        promptText: function () { return KL.t('bokstafir.q'); },
         promptSpeech: function (q) { return ['bokstafir.q', 'syl.' + q.syl]; },
         retrySpeech: function (q) { return ['syl.' + q.syl]; },
         build: function (q, promptEl, answersEl, level) {
-          promptEl.innerHTML =
-            '<div style="margin:6px 0">' + KL.speakerSVG(84) + '</div>' +
-            '<p class="q-text">' + KL.t('bokstafir.q') + '</p>';
+          var again = document.createElement('button');
+          again.type = 'button';
+          again.className = 'sound-btn';
+          again.setAttribute('aria-label', KL.t('speak.aria'));
+          again.innerHTML = KL.speakerSVG(64, '#fff');
+          again.addEventListener('click', function () { KL.replay(again, 'pulse-once'); KL.say(['syl.' + q.syl]); });
+          promptEl.appendChild(again);
           var choices = level === 'hard' ? similar(q.syl, SYL) : KL.pickDistinct(SYL, q.syl, 4);
           return choices.map(function (c) {
             var btn = document.createElement('button');

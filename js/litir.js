@@ -27,11 +27,10 @@
             return { color: c, shape: SHAPES[KL.randInt(0, SHAPES.length - 1)] };
           });
         },
+        promptText: function () { return KL.t('litir.q'); },
         promptSpeech: function () { return ['litir.q']; },
         build: function (q, promptEl, answersEl) {
-          promptEl.innerHTML =
-            KL.shapeSVG(q.shape, q.color.hex, 170) +
-            '<p class="q-text">' + KL.t('litir.q') + '</p>';
+          promptEl.innerHTML = '<div class="shape-pop">' + KL.shapeSVG(q.shape, q.color.hex, 170) + '</div>';
           var correct = q.color.key;
           return KL.pickDistinct(COLORS.map(function (c) { return c.key; }), correct, 4).map(function (key) {
             var btn = document.createElement('button');

@@ -15,11 +15,10 @@
             return { shape: s, color: SHAPE_COLORS[KL.randInt(0, SHAPE_COLORS.length - 1)] };
           });
         },
+        promptText: function () { return KL.t('form.q'); },
         promptSpeech: function () { return ['form.q']; },
         build: function (q, promptEl, answersEl) {
-          promptEl.innerHTML =
-            KL.shapeSVG(q.shape, q.color, 170) +
-            '<p class="q-text">' + KL.t('form.q') + '</p>';
+          promptEl.innerHTML = '<div class="shape-pop">' + KL.shapeSVG(q.shape, q.color, 170) + '</div>';
           var correct = 'shape.' + q.shape;
           return KL.pickDistinct(SHAPES.map(function (s) { return 'shape.' + s; }), correct, 4).map(function (key) {
             var btn = document.createElement('button');

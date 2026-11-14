@@ -1,16 +1,17 @@
-/* Tölur / Tal: count the balls, then simple sums with dots to count on.
-   Level 1: count 1-5, add two numbers 1-5.  Level 2: count up to 10, add and subtract within 10. */
+/* Tölur / Tal: count the animals, then simple sums with little animals to count on.
+   Level 1: count 1-5, add two numbers 1-5.  Level 2: count up to 10, add and subtract within 10.
+   Sums are spoken as one sentence ('add.3.2' = "Hvað eru þrír plús tveir?"). */
 (function () {
   'use strict';
 
-  var BALL_COLORS = ['#E53935', '#1E88E5', '#FDD835', '#43A047', '#8E24AA', '#FB8C00', '#F48FB1', '#26C6DA', '#8D6E63', '#66BB6A'];
-  var DOT_A = '#5C6BC0';
-  var DOT_B = '#E07A5F';
+  var COUNT_ANIMALS = ['fiskur', 'froskur', 'ungi', 'kottur'];
 
   function makeQuestions(level) {
     var hard = level === '2';
     var qs = [];
-    KL.sample(hard ? KL.range(3, 10) : KL.range(1, 5), 5).forEach(function (n) { qs.push({ type: 'count', n: n }); });
+    KL.sample(hard ? KL.range(3, 10) : KL.range(1, 5), 5).forEach(function (n) {
+      qs.push({ type: 'count', n: n, animal: COUNT_ANIMALS[KL.randInt(0, COUNT_ANIMALS.length - 1)] });
+    });
     for (var i = 0; i < 5; i++) {
       var a, b;
       if (hard && i % 2 === 1) {
@@ -24,18 +25,15 @@
         qs.push({ type: 'add', a: a, b: b });
       }
     }
+    // two different animals for the two numbers of a sum
+    qs.forEach(function (q) { if (q.type !== 'count') q.pair = KL.sample(COUNT_ANIMALS, 2); });
     return KL.shuffle(qs);
   }
 
-  // up to five dots per row, like a ten-frame; 'crossed' dots are taken away
-  function dots(n, color, crossed) {
-    var s = '<span class="dots" style="grid-template-columns: repeat(' + Math.min(n, 5) + ', 22px)">';
-    for (var i = 0; i < n; i++) {
-      s += '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">' +
-        '<circle cx="11" cy="11" r="9" fill="' + (crossed ? '#E6E7EF' : color) + '"/>' +
-        (crossed ? '<path d="M5 5l12 12M17 5L5 17" stroke="#D64550" stroke-width="2.5" stroke-linecap="round"/>' : '') +
-        '</svg>';
-    }
+  // up to five per row, like a ten-frame; 'gone' ones are taken away (greyed out)
+  function group(n, animal, size, gone) {
+    var s = '<span class="dots' + (gone ? ' gone' : '') + '" style="--sz: ' + size + 'px; grid-template-columns: repeat(' + Math.min(n, 5) + ', auto)">';
+    for (var i = 0; i < n; i++) s += KL_ART.animal(animal, size);
     return s + '</span>';
   }
 
@@ -62,17 +60,17 @@
         gameId: 'tolur',
         levels: this.levels,
         makeQuestions: makeQuestions,
+        promptText: function (q) {
+          if (q.type === 'count') return KL.t('tolur.count_q.' + q.animal);
+          return KL.fmt(q.type === 'sub' ? 'tolur.sub' : 'tolur.add', { a: q.a, b: q.b });
+        },
         promptSpeech: function (q) {
-          if (q.type === 'count') return ['tolur.count_q'];
-          return ['num.' + q.a, q.type === 'sub' ? 'tolur.minus' : 'tolur.plus', 'num.' + q.b, 'tolur.add_q'];
+          if (q.type === 'count') return ['tolur.count_q.' + q.animal];
+          return [q.type + '.' + q.a + '.' + q.b];
         },
         build: function (q, promptEl, answersEl, level) {
           if (q.type === 'count') {
-            var balls = '';
-            var size = q.n > 5 ? 54 : 62;
-            for (var i = 0; i < q.n; i++) balls += KL.ballSVG(BALL_COLORS[i % BALL_COLORS.length], size);
-            promptEl.innerHTML = '<div class="balls' + (q.n > 5 ? ' frame' : '') + '">' + balls + '</div>' +
-              '<p class="q-text">' + KL.t('tolur.count_q') + '</p>';
+            promptEl.innerHTML = '<div class="herd">' + group(q.n, q.animal, q.n > 5 ? 58 : 70) + '</div>';
             var choices = level === '2' ? near(q.n, 10) : KL.pickDistinct(KL.range(1, 5), q.n, 4);
             return numberButtons(answersEl, choices, q.n);
           }
@@ -81,8 +79,8 @@
           promptEl.innerHTML =
             '<p class="q-big">' + q.a + (sub ? ' − ' : ' + ') + q.b + ' = ?</p>' +
             '<div class="sum-dots">' +
-              (sub ? dots(q.a - q.b, DOT_A) + dots(q.b, DOT_A, true)
-                   : dots(q.a, DOT_A) + '<span class="op">+</span>' + dots(q.b, DOT_B)) +
+              (sub ? group(q.a - q.b, q.pair[0], 34) + group(q.b, q.pair[0], 34, true)
+                   : group(q.a, q.pair[0], 34) + '<span class="op">+</span>' + group(q.b, q.pair[1], 34)) +
             '</div>';
           return numberButtons(answersEl, near(result, 10), result);
         }

@@ -1,194 +1,163 @@
 #!/usr/bin/env python3
-"""Generate the spoken-audio vocabulary for krakkaleikir (neural TTS mp3s).
+"""Generate the spoken audio for krakkaleikir (neural TTS mp3s).
 
-Reads the string tables from js/i18n.js, synthesizes every spoken key with
-Edge neural TTS (is-IS-GudrunNeural / da-DK-JeppeNeural, with a second voice as
-fallback) into audio/<lang>/<key>.mp3 (UTF-8 filename; the browser requests it
-percent-encoded and the server decodes it), and writes js/audio-manifest.js
-mapping key -> text per language (also used as the Web Speech fallback).
+The list of clips comes from audioVocab() in js/i18n.js (audio key -> text per
+language). Each clip is synthesized with Edge neural TTS into
+audio/<lang>/<key>.mp3 (UTF-8 file name; the browser asks for it percent-encoded)
+and the silence Edge puts before and after the speech is cut away (lossless, at
+mp3 frame boundaries), so clips played one after another flow without gaps.
 
-The previous manifest records which text each mp3 was made from: an mp3 whose
-text changed in js/i18n.js is regenerated, and mp3s for keys that no longer
-exist are deleted. Afterwards run `node tools/check.js --write` to refresh the
-offline file list in sw.js.
+audio/manifest.json records the text and settings each mp3 was made from: a clip
+whose text or settings changed is regenerated, and mp3s for keys that no longer
+exist are deleted. Afterwards run `node tools/check.js --write`.
 
-Usage:
-    python tools/make_audio.py            # Edge TTS (no key needed)
-    MISTRAL_API_KEY=sk-... python tools/make_audio.py   # Mistral Voxtral TTS instead
-                                                      # (note: Voxtral language
-                                                      # coverage may not include da/is)
-
-Requires: node, pip install edge-tts (or requests for Mistral)
+Usage:   python tools/make_audio.py
+Requires: node, pip install edge-tts imageio-ffmpeg (or an ffmpeg on PATH)
 """
 import asyncio
 import json
-import os
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import unicodedata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 I18N = ROOT / "js" / "i18n.js"
 OUT_AUDIO = ROOT / "audio"
-OUT_MANIFEST = ROOT / "js" / "audio-manifest.js"
+RECORD = OUT_AUDIO / "manifest.json"
 
+# Kóli has the same (male) voice in both languages: his Icelandic cheers are
+# mixed into Danish sentences. da-DK-ChristelNeural returns no audio (2026-11).
 VOICES = {
-    "da": ["da-DK-JeppeNeural", "da-DK-ChristelNeural"],
-    "is": ["is-IS-GudrunNeural", "is-IS-GunnarNeural"],
+    "is": ["is-IS-GunnarNeural"],
+    "da": ["da-DK-JeppeNeural"],
 }
-RATE = "-8%"  # slightly slower, friendlier for kids
-
-PHRASE_KEYS = [
-    "tolur.count_q", "tolur.plus", "tolur.minus", "tolur.add_q",
-    "bokstafir.q", "litir.q", "form.q",
-    "klukkan.read_q", "klukkan.set_a", "klukkan.set_b", "klukkan.pick_b", "klukkan.clock_is_a",
-    "minni.start", "minni.end_title", "end.title", "try_again",
-] + [f"praise.{i}" for i in range(6)]
-SPOKEN_PREFIXES = ("num.", "hour.", "half.", "color.", "shape.")
+RATE = "-8%"            # a little slower, friendlier for small kids
+LEAD, TAIL = 0.05, 0.12  # seconds of silence kept before / after the speech
+SETTINGS = {"voices": VOICES, "rate": RATE, "trim": [LEAD, TAIL]}
 
 
-def load_tables() -> dict:
-    """Evaluate js/i18n.js in node with stubs and dump the string tables and syllables."""
+def load_vocab() -> dict:
+    """lang -> {audio_key: text}, from audioVocab() in js/i18n.js."""
     probe = """
-      const fs = require('fs');
-      global.window = global;
-      global.localStorage = { getItem: () => null, setItem: () => {} };
-      global.document = { documentElement: {}, addEventListener: () => {}, querySelectorAll: () => [] };
-      eval(fs.readFileSync(process.argv[1], 'utf8'));
-      // STR is private; rebuild it by probing keys parsed from the source
-      const src = fs.readFileSync(process.argv[1], 'utf8');
-      const keys = [...new Set([...src.matchAll(/'([^']+)'\\s*:/g)].map(m => m[1]))];
-      const out = { is: {}, da: {} };
-      for (const lang of ['is', 'da']) {
-        global.localStorage.getItem = (k) => k === 'kl.lang' ? lang : null;
-        for (const k of keys) out[lang][k] = KL_I18N.t(k);
-      }
-      console.log(JSON.stringify({ STR: out, SYLLABLES: KL_I18N.SYLLABLES }));
+      const fs = require('fs'), vm = require('vm');
+      const ctx = { localStorage: { getItem: () => null, setItem() {} },
+                    document: { documentElement: {}, addEventListener() {}, querySelectorAll: () => [] } };
+      ctx.window = ctx; vm.createContext(ctx);
+      vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), ctx);
+      const I = ctx.KL_I18N, out = {};
+      for (const l of I.LANGS) out[l] = I.audioVocab(l);
+      console.log(JSON.stringify(out));
     """
     res = subprocess.run(["node", "-e", probe, str(I18N)], capture_output=True, text=True, check=True)
     return json.loads(res.stdout)
 
 
-def build_vocab(tables: dict) -> dict:
-    """lang -> {audio_key: text_to_speak}"""
-    vocab = {}
-    for lang in ("is", "da"):
-        strs = tables["STR"][lang]
-        v = {k: strs[k] for k in PHRASE_KEYS}
-        for k, val in strs.items():
-            if k.startswith(SPOKEN_PREFIXES):
-                v[k] = val
-        for syl in tables["SYLLABLES"][lang]:
-            v[f"syl.{syl}"] = syl
-        vocab[lang] = v
-    return vocab
-
-
-def load_old_manifest() -> dict:
+def ffmpeg_exe() -> str:
     try:
-        text = OUT_MANIFEST.read_text(encoding="utf-8")
-        return json.loads(text[text.index("{"):text.rindex("}") + 1])
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError:
+        exe = shutil.which("ffmpeg")
+        if not exe:
+            sys.exit("needs ffmpeg: pip install imageio-ffmpeg")
+        return exe
+
+
+def trim(ff: str, src: Path, dest: Path) -> None:
+    """Cut leading/trailing silence without re-encoding."""
+    out = subprocess.run([ff, "-hide_banner", "-i", str(src), "-af", "silencedetect=noise=-45dB:d=0.04", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    m = re.search(r"Duration: (\d+):(\d+):([\d.]+)", out)
+    dur = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
+    starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", out)]
+    ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", out)]
+    begin, finish = 0.0, dur
+    if starts and starts[0] < 0.01 and ends:
+        begin = ends[0]
+    if starts and starts[-1] > begin and (len(ends) < len(starts) or ends[-1] >= dur - 0.06):
+        finish = starts[-1]
+    a, b = max(0.0, begin - LEAD), min(dur, finish + TAIL)
+    subprocess.run([ff, "-hide_banner", "-loglevel", "error", "-y", "-i", str(src), "-ss", f"{a:.3f}", "-to", f"{b:.3f}",
+                    "-c", "copy", "-map_metadata", "-1", str(dest)], check=True)
+
+
+def load_record() -> dict:
+    try:
+        return json.loads(RECORD.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
 
 
-def prune(vocab: dict, old: dict) -> None:
-    """Delete mp3s whose key is gone or whose text changed, so they get (re)generated."""
-    for lang, v in vocab.items():
+def prune(vocab: dict, record: dict) -> None:
+    """Delete mp3s whose key is gone or whose text/settings changed, so they get (re)generated."""
+    same_settings = record.get("settings") == json.loads(json.dumps(SETTINGS))
+    for lang in VOICES:
         folder = OUT_AUDIO / lang
         if not folder.is_dir():
             continue
+        v = vocab.get(lang, {})
+        old = record.get(lang, {})
         for mp3 in folder.glob("*.mp3"):
             key = unicodedata.normalize("NFC", mp3.stem)
             if key not in v:
-                print(f"  delete orphan {lang}/{mp3.name}")
+                print(f"  delete {lang}/{mp3.name} (no longer used)")
                 mp3.unlink()
-            elif old.get(lang, {}).get(key) != v[key]:
-                print(f"  text changed, regenerate {lang}/{mp3.name}")
+            elif not same_settings or old.get(key) != v[key]:
                 mp3.unlink()
 
 
-async def gen_edge(vocab: dict) -> None:
+async def generate(vocab: dict) -> int:
     import edge_tts
 
-    sem = asyncio.Semaphore(1)  # Edge throttles aggressively; go sequential
-
-    async def one(lang: str, key: str, text: str) -> None:
+    ff = ffmpeg_exe()
+    tmpdir = Path(tempfile.mkdtemp(prefix="kl_tts_"))
+    todo = [(lang, k, t) for lang, v in vocab.items() for k, t in v.items()
+            if not (OUT_AUDIO / lang / (k + ".mp3")).exists()]
+    print(f"{len(todo)} clips to generate")
+    failed = 0
+    for n, (lang, key, text) in enumerate(todo, 1):
         dest = OUT_AUDIO / lang / (key + ".mp3")
         dest.parent.mkdir(parents=True, exist_ok=True)
-        if dest.exists() and dest.stat().st_size > 1000:
-            return
-        async with sem:
-            print(f"  generate {lang}/{key}: {text}")
-            for voice in VOICES[lang]:
-                for attempt in range(6):
-                    try:
-                        c = edge_tts.Communicate(text, voice, rate=RATE)
-                        await c.save(str(dest))
-                        if dest.stat().st_size > 1000:
-                            return
-                    except Exception as e:
-                        print(f"  retry {attempt+1} {voice} {key}: {type(e).__name__}", file=sys.stderr)
-                        await asyncio.sleep(2 + attempt * 2)
-            raise RuntimeError(f"failed to generate {lang} {key}")
-
-    tasks = [one(lang, k, t) for lang, v in vocab.items() for k, t in v.items()]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    failed = [r for r in results if isinstance(r, Exception)]
-    for r in failed:
-        print(f"FAILED: {r}", file=sys.stderr)
-    if failed:
-        raise RuntimeError(f"{len(failed)} files failed; re-run to fill gaps")
-
-
-def gen_mistral(vocab: dict) -> None:
-    """Alternative provider: Mistral Voxtral TTS. Requires MISTRAL_API_KEY.
-    Note: Voxtral's supported languages may not include Danish/Icelandic."""
-    import requests
-
-    key = os.environ["MISTRAL_API_KEY"]
-    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-    for lang, v in vocab.items():
-        for k, text in v.items():
-            dest = OUT_AUDIO / lang / (k + ".mp3")
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            if dest.exists() and dest.stat().st_size > 1000:
-                continue
-            r = requests.post(
-                "https://api.mistral.ai/v1/audio/speech",
-                headers=headers,
-                json={"model": "voxtral-mini-tts-2507", "input": text, "voice": "default"},
-                timeout=60,
-            )
-            r.raise_for_status()
-            dest.write_bytes(r.content)
+        raw = tmpdir / "raw.mp3"
+        ok = False
+        for voice in VOICES[lang]:
+            for attempt in range(5):
+                try:
+                    await edge_tts.Communicate(text, voice, rate=RATE).save(str(raw))
+                    if raw.stat().st_size > 1000:
+                        ok = True
+                        break
+                except Exception as e:  # network hiccups, throttling
+                    print(f"  retry {attempt + 1} {voice} {key}: {type(e).__name__}", file=sys.stderr)
+                    await asyncio.sleep(2 + attempt * 2)
+            if ok:
+                break
+        if not ok:
+            print(f"FAILED {lang}/{key}", file=sys.stderr)
+            failed += 1
+            continue
+        trim(ff, raw, dest)
+        if n % 25 == 0 or n == len(todo):
+            print(f"  {n}/{len(todo)}  {lang}/{key}: {text}", flush=True)
+    shutil.rmtree(tmpdir, ignore_errors=True)
+    return failed
 
 
 def main() -> None:
-    vocab = build_vocab(load_tables())
-    prune(vocab, load_old_manifest())
-    failed = False
-    if os.environ.get("MISTRAL_API_KEY"):
-        print("provider: Mistral Voxtral TTS")
-        gen_mistral(vocab)
-    else:
-        print("provider: Edge neural TTS (set MISTRAL_API_KEY to use Mistral instead)")
-        try:
-            asyncio.run(gen_edge(vocab))
-        except RuntimeError as e:
-            failed = True
-            print(e, file=sys.stderr)
-
-    # A missing mp3 is regenerated on the next run whatever the manifest says,
-    # so the manifest can always be written.
-    manifest = "window.KL_AUDIO = " + json.dumps(vocab, ensure_ascii=False, indent=1) + ";\n"
-    OUT_MANIFEST.write_text(manifest, encoding="utf-8")
+    vocab = load_vocab()
+    prune(vocab, load_record())
+    failed = asyncio.run(generate(vocab))
+    # A missing mp3 is regenerated on the next run whatever the record says.
+    RECORD.write_text(json.dumps({"settings": SETTINGS, **vocab}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     total = sum(len(v) for v in vocab.values())
     size = sum(p.stat().st_size for p in OUT_AUDIO.rglob("*.mp3"))
-    print(f"wrote manifest for {total} mp3 files ({size/1e6:.1f} MB): {OUT_MANIFEST}")
+    print(f"{total} clips ({size / 1e6:.1f} MB); record: {RECORD.relative_to(ROOT)}")
     if failed:
-        sys.exit(1)
+        sys.exit(f"{failed} clips failed; re-run to fill the gaps")
 
 
 if __name__ == "__main__":

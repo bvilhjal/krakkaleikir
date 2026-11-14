@@ -59,7 +59,8 @@
     wrong: function () { tone(196.0, 0, 0.18, 'triangle', 0.16); tone(146.83, 0.12, 0.25, 'triangle', 0.14); },
     flip: function () { tone(880, 0, 0.05, 'square', 0.05); },
     win: function () { [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { tone(f, i * 0.12, 0.18, 'sine', 0.25); }); },
-    click: function () { tone(660, 0, 0.04, 'sine', 0.07); }
+    click: function () { tone(660, 0, 0.04, 'sine', 0.07); },
+    pop: function () { tone(440, 0, 0.08, 'sine', 0.2); tone(880, 0.06, 0.1, 'sine', 0.2); tone(1318.5, 0.12, 0.18, 'triangle', 0.15); }
   };
 
   function play(name) {

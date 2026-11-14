@@ -1,7 +1,8 @@
 /* Klukkan / Uret: read an analog clock and set it.
    Level 1 (whole hours): read the clock; set the hour hand by tapping a number.
    Level 2 (half hours too): read the clock; pick the clock that shows a time.
-   Spoken times use the hour.N / half.N keys (3:30 is "hálf fjögur" / "halv fire" = half.4). */
+   Times are spoken as whole sentences: time.3.0 = "Klukkan er þrjú.", time.3.30 =
+   "Klukkan er hálf fjögur." (both languages count half hours toward the coming hour). */
 (function () {
   'use strict';
 
@@ -16,7 +17,8 @@
   function f1(n) { return n.toFixed(1); }
 
   // times are { h: 1..12, m: 0 | 30 }
-  function timeKey(t) { return t.m ? 'half.' + (t.h % 12 + 1) : 'hour.' + t.h; }
+  function timeKey(t) { return 'time.' + t.h + '.' + t.m; }
+  function timeText(t) { return KL_I18N.audioVocab(KL_I18N.lang())[timeKey(t)]; }
   function digital(t) { return t.h + ':' + (t.m ? '30' : '00'); }
   function shift(t, halves) {
     var mins = (((t.h % 12) * 60 + t.m + halves * 30) % 720 + 720) % 720;
@@ -117,14 +119,19 @@
         gameId: 'klukkan',
         levels: this.levels,
         makeQuestions: makeQuestions,
+        promptText: function (q) {
+          if (q.type === 'read') return KL.t('klukkan.read_q');
+          return timeText(q.time) + ' ' + KL.t(q.type === 'pick' ? 'klukkan.pick_b' : 'klukkan.set_b');
+        },
         promptSpeech: function (q) {
           if (q.type === 'read') return ['klukkan.read_q'];
-          return ['klukkan.set_a', timeKey(q.time), q.type === 'pick' ? 'klukkan.pick_b' : 'klukkan.set_b'];
+          return [timeKey(q.time), q.type === 'pick' ? 'klukkan.pick_b' : 'klukkan.set_b'];
         },
+        retrySpeech: function (q) { return q.type === 'read' ? ['klukkan.read_q'] : [timeKey(q.time)]; },
         build: function (q, promptEl, answersEl, level) {
           var t = q.time;
           if (q.type === 'read') {
-            promptEl.innerHTML = clockSVG({ time: t, numbers: true }) + '<p class="q-text">' + KL.t('klukkan.read_q') + '</p>';
+            promptEl.innerHTML = clockSVG({ time: t, numbers: true });
             var choices = level === 'half' ? nearTimes(t) : KL.pickDistinct(HOURS, t.h, 4).map(function (h) { return { h: h, m: 0 }; });
             return choices.map(function (c) {
               var btn = document.createElement('button');
@@ -132,22 +139,22 @@
               btn.className = 'answer';
               btn.textContent = level === 'half' ? digital(c) : c.h;
               answersEl.appendChild(btn);
-              return { el: btn, isCorrect: digital(c) === digital(t), speechParts: ['klukkan.clock_is_a', timeKey(c)] };
+              return { el: btn, isCorrect: digital(c) === digital(t), speechParts: [timeKey(c)] };
             });
           }
           if (q.type === 'pick') {
-            promptEl.innerHTML = '<div class="digital">' + digital(t) + '</div><p class="q-text">' + KL.t('klukkan.pick_b') + '</p>';
+            promptEl.innerHTML = '<div class="digital">' + digital(t) + '</div>';
             return nearTimes(t).map(function (c) {
               var btn = document.createElement('button');
               btn.type = 'button';
               btn.className = 'answer clock-choice';
               btn.innerHTML = clockSVG({ time: c, numbers: true, size: 130 });
               answersEl.appendChild(btn);
-              return { el: btn, isCorrect: digital(c) === digital(t), speechParts: ['klukkan.clock_is_a', timeKey(c)] };
+              return { el: btn, isCorrect: digital(c) === digital(t), speechParts: [timeKey(c)] };
             });
           }
           // set: tap the number the hour hand should point to; the hand swings there
-          promptEl.innerHTML = '<div class="digital">' + digital(t) + '</div><p class="q-text">' + KL.t('klukkan.set_b') + '</p>';
+          promptEl.innerHTML = '<div class="digital">' + digital(t) + '</div>';
           var wrap = document.createElement('div');
           wrap.className = 'clock-wrap';
           wrap.innerHTML = clockSVG({ settable: true });
@@ -165,7 +172,7 @@
             return {
               el: btn,
               isCorrect: h === t.h,
-              speechParts: ['klukkan.clock_is_a', 'hour.' + h],
+              speechParts: [timeKey({ h: h, m: 0 })],
               onTap: function (correct) {
                 swing(wrap, handState, h, false);
                 if (!correct) KL.later(function () { swing(wrap, handState, h, true); }, 750);
