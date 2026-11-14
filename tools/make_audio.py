@@ -3,7 +3,7 @@
 
 Reads the string tables from js/i18n.js, synthesizes every spoken key with
 Edge neural TTS (da-DK-ChristelNeural / is-IS-GudrunNeural) into
-audio/<lang>/<urlencoded-key>.mp3, and writes js/audio-manifest.js mapping
+audio/<lang>/<key>.mp3 (UTF-8 filename; the browser requests it percent-encoded and the server decodes it), and writes js/audio-manifest.js mapping
 key -> text per language (used as the Web Speech fallback).
 
 Usage:
@@ -105,7 +105,7 @@ async def gen_edge(vocab: dict) -> None:
     sem = asyncio.Semaphore(1)  # Edge throttles aggressively; go sequential
 
     async def one(lang: str, key: str, text: str) -> None:
-        dest = OUT_AUDIO / lang / (quote(key, safe="") + ".mp3")
+        dest = OUT_AUDIO / lang / (key + ".mp3")
         dest.parent.mkdir(parents=True, exist_ok=True)
         if dest.exists() and dest.stat().st_size > 1000:
             return
@@ -140,7 +140,7 @@ def gen_mistral(vocab: dict) -> None:
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     for lang, v in vocab.items():
         for k, text in v.items():
-            dest = OUT_AUDIO / lang / (quote(k, safe="") + ".mp3")
+            dest = OUT_AUDIO / lang / (k + ".mp3")
             dest.parent.mkdir(parents=True, exist_ok=True)
             if dest.exists() and dest.stat().st_size > 1000:
                 continue
