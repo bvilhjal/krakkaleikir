@@ -1,49 +1,55 @@
-/* Bókstafir / Bogstaver: a listening game — hear a syllable (one consonant +
-   one vowel, e.g. "ba"), pick the matching two letters from four choices.
-   Easy: random other syllables.  Hard: syllables that share the consonant or
-   the vowel (ba / bi / da), so the child has to listen to each sound.
-   The big speaker button plays just the syllable again. */
+/* Bókstafir / Bogstaver: a listening and reading game — hear a short word
+   ("mús"), pick the written word from four choices.
+   Easy: other random words.  Hard: look-alike words that differ by one letter
+   (mús / hús / lús), so every letter has to be read.
+   Real words rather than syllables: the speech engine spells unknown letter
+   pairs ("ba") out as abbreviations. The big speaker button says the word again. */
 (function () {
   'use strict';
 
-  function similar(target, syl) {
-    var others = syl.filter(function (s) { return s !== target; });
-    var sameC = KL.shuffle(others.filter(function (s) { return s[0] === target[0]; }));
-    var sameV = KL.shuffle(others.filter(function (s) { return s.slice(1) === target.slice(1); }));
-    var pick = sameC.slice(0, 2);
-    sameV.forEach(function (s) { if (pick.length < 3) pick.push(s); });
-    KL.shuffle(others).forEach(function (s) { if (pick.length < 3 && pick.indexOf(s) < 0) pick.push(s); });
-    return KL.shuffle([target].concat(pick));
+  // how alike two words look: same length, the same letters in the same places,
+  // shared letters (mús ~ hús ~ lús rank above dós, which ranks above kaka)
+  function likeness(a, b) {
+    var score = a.length === b.length ? 2 : -Math.abs(a.length - b.length);
+    for (var i = 0; i < Math.min(a.length, b.length); i++) if (a[i] === b[i]) score += 2;
+    for (var j = 0; j < b.length; j++) if (a.indexOf(b[j]) >= 0) score += 1;
+    return score;
+  }
+
+  function lookAlikes(target, words) {
+    var others = KL.shuffle(words.filter(function (w) { return w !== target; }));
+    others.sort(function (x, y) { return likeness(target, y) - likeness(target, x); });
+    return KL.shuffle([target].concat(others.slice(0, 3)));
   }
 
   KL.register('bokstafir', {
     levels: [{ id: 'easy', labelKey: 'level.easy' }, { id: 'hard', labelKey: 'level.hard' }],
     start: function (ctx) {
-      var SYL = KL_I18N.SYLLABLES[KL_I18N.lang()];
+      var WORDS = KL_I18N.WORDS[KL_I18N.lang()];
       KL.runGame({
         ctx: ctx,
         gameId: 'bokstafir',
         levels: this.levels,
-        makeQuestions: function () { return KL.sample(SYL, 10).map(function (s) { return { syl: s }; }); },
+        makeQuestions: function () { return KL.sample(WORDS, 10).map(function (w) { return { word: w }; }); },
         promptText: function () { return KL.t('bokstafir.q'); },
-        promptSpeech: function (q) { return ['bokstafir.q', 'syl.' + q.syl]; },
-        retrySpeech: function (q) { return ['syl.' + q.syl]; },
+        promptSpeech: function (q) { return ['bokstafir.q', 'word.' + q.word]; },
+        retrySpeech: function (q) { return ['word.' + q.word]; },
         build: function (q, promptEl, answersEl, level) {
           var again = document.createElement('button');
           again.type = 'button';
           again.className = 'sound-btn';
           again.setAttribute('aria-label', KL.t('speak.aria'));
           again.innerHTML = KL.speakerSVG(64, '#fff');
-          again.addEventListener('click', function () { KL.replay(again, 'pulse-once'); KL.say(['syl.' + q.syl]); });
+          again.addEventListener('click', function () { KL.replay(again, 'pulse-once'); KL.say(['word.' + q.word]); });
           promptEl.appendChild(again);
-          var choices = level === 'hard' ? similar(q.syl, SYL) : KL.pickDistinct(SYL, q.syl, 4);
+          var choices = level === 'hard' ? lookAlikes(q.word, WORDS) : KL.pickDistinct(WORDS, q.word, 4);
           return choices.map(function (c) {
             var btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'answer';
-            btn.textContent = c; // lowercase, so it always reads as the syllable "ba", never spelled out as "B-A"
+            btn.className = 'answer read';
+            btn.textContent = c;
             answersEl.appendChild(btn);
-            return { el: btn, isCorrect: c === q.syl, speechParts: ['syl.' + c] };
+            return { el: btn, isCorrect: c === q.word, speechParts: ['word.' + c] };
           });
         }
       });

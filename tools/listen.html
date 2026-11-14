@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hljóðprófun — Krakkaleikir</title>
+  <link rel="icon" type="image/png" href="../icons/icon-192.png">
+  <style>
+    :root { --ink: #3D405B; --muted: #8A8DA3; --accent: #E07A5F; --bg: #FFF6E9; --card: #fff; --bad: #D64550; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    main { max-width: 760px; margin: 0 auto; padding: 16px; }
+    h1 { margin: 8px 0 4px; font-size: 1.6rem; }
+    p.lead { margin: 0 0 14px; color: var(--muted); }
+    .bar { position: sticky; top: 0; background: var(--bg); padding: 8px 0; display: flex; gap: 8px; flex-wrap: wrap; z-index: 1; }
+    button { font: inherit; border: none; border-radius: 10px; padding: 8px 14px; cursor: pointer; background: var(--card); color: var(--ink); box-shadow: 0 2px 8px rgba(61,64,91,.12); }
+    button.on { background: var(--accent); color: #fff; }
+    section { background: var(--card); border-radius: 14px; padding: 10px 12px; margin: 12px 0; box-shadow: 0 4px 14px rgba(61,64,91,.08); }
+    section h2 { font-size: 1.05rem; margin: 4px 0 8px; display: flex; justify-content: space-between; align-items: center; }
+    .row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid #F0F0F5; }
+    .row.playing { background: #FFF3D6; }
+    .row.bad .txt { color: var(--bad); text-decoration: line-through; }
+    .row .play { padding: 6px 0; width: 40px; }
+    .txt { font-size: 1.1rem; }
+    .key { color: var(--muted); font-size: .8rem; display: block; }
+    label { font-size: .85rem; color: var(--muted); white-space: nowrap; }
+    textarea { width: 100%; min-height: 70px; font: inherit; border-radius: 10px; border: 1px solid #DDD; padding: 8px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Hljóðprófun / Lydtjek</h1>
+  <p class="lead">Every clip the app plays. Tap ▶ to hear one, or play a whole group. Tick the ones that sound wrong; the list at the bottom can be copied and sent back.</p>
+  <div class="bar">
+    <button type="button" data-lang="is">IS</button>
+    <button type="button" data-lang="da">DA</button>
+    <button type="button" id="stop">■ Stop</button>
+  </div>
+  <div id="groups"></div>
+  <section>
+    <h2>Sounds wrong</h2>
+    <textarea id="flagged" readonly placeholder="(nothing ticked yet)"></textarea>
+  </section>
+</main>
+<script src="../js/i18n.js"></script>
+<script>
+(function () {
+  'use strict';
+  var I = window.KL_I18N;
+  var GROUPS = [
+    ['word.', 'Bókstafir: words'], ['praise.', "Kóli's Icelandic cheers"], ['num.', 'Numbers'],
+    ['add.', 'Sums (+)'], ['sub.', 'Sums (−)'], ['time.', 'Clock'], ['color.', 'Colours'],
+    ['shape.', 'Shapes'], ['sticker.', 'Stickers'], ['', 'Questions and phrases']
+  ];
+  var audio = new Audio();
+  var queue = [];
+  var lang = 'is';
+  var flagged = {};
+
+  function url(l, key) { return '../audio/' + l + '/' + encodeURIComponent(key) + '.mp3'; }
+  function mark(row) {
+    document.querySelectorAll('.row.playing').forEach(function (r) { r.classList.remove('playing'); });
+    if (row) { row.classList.add('playing'); row.scrollIntoView({ block: 'nearest' }); }
+  }
+  function playRows(rows) {
+    queue = rows.slice();
+    next();
+  }
+  function next() {
+    var row = queue.shift();
+    if (!row) { mark(null); return; }
+    mark(row);
+    audio.onended = function () { setTimeout(next, 350); };
+    audio.src = url(row.dataset.lang, row.dataset.key);
+    audio.play().catch(function () { mark(null); });
+  }
+  function updateFlagged() {
+    var keys = Object.keys(flagged).filter(function (k) { return flagged[k]; });
+    document.getElementById('flagged').value = keys.join('\n');
+  }
+
+  function render() {
+    var v = I.audioVocab(lang);
+    var keys = Object.keys(v);
+    var used = {};
+    var html = '';
+    GROUPS.forEach(function (g) {
+      var mine = keys.filter(function (k) { return !used[k] && (g[0] ? k.indexOf(g[0]) === 0 : true); });
+      if (!mine.length) return;
+      mine.forEach(function (k) { used[k] = true; });
+      html += '<section><h2>' + g[1] + ' <button type="button" class="group">▶ all ' + mine.length + '</button></h2>' +
+        mine.map(function (k) {
+          var id = lang + '/' + k;
+          return '<div class="row' + (flagged[id] ? ' bad' : '') + '" data-lang="' + lang + '" data-key="' + k + '">' +
+            '<button type="button" class="play">▶</button>' +
+            '<span class="txt">' + v[k] + '<span class="key">' + id + '</span></span>' +
+            '<label><input type="checkbox" class="flag"' + (flagged[id] ? ' checked' : '') + '> wrong</label></div>';
+        }).join('') + '</section>';
+    });
+    document.getElementById('groups').innerHTML = html;
+    document.querySelectorAll('.bar [data-lang]').forEach(function (b) { b.classList.toggle('on', b.dataset.lang === lang); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.dataset && t.dataset.lang && t.closest('.bar')) { lang = t.dataset.lang; render(); return; }
+    if (t.id === 'stop') { queue = []; audio.pause(); mark(null); return; }
+    if (t.classList.contains('play')) { playRows([t.closest('.row')]); return; }
+    if (t.classList.contains('group')) { playRows(Array.prototype.slice.call(t.closest('section').querySelectorAll('.row'))); }
+  });
+  document.addEventListener('change', function (e) {
+    if (!e.target.classList.contains('flag')) return;
+    var row = e.target.closest('.row');
+    var id = row.dataset.lang + '/' + row.dataset.key;
+    flagged[id] = e.target.checked;
+    row.classList.toggle('bad', e.target.checked);
+    updateFlagged();
+  });
+  render();
+})();
+</script>
+</body>
+</html>

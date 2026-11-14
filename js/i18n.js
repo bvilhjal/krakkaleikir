@@ -20,7 +20,7 @@
       'game.klukkan': 'Klukkan',
       'game.minni': 'Minni',
       'desc.tolur': 'Teldu dýrin og leystu dæmi',
-      'desc.bokstafir': 'Hlustaðu og finndu stafina',
+      'desc.bokstafir': 'Hlustaðu og finndu orðið',
       'desc.litir': 'Hvaða litur er þetta?',
       'desc.form': 'Hvað heitir formið?',
       'desc.klukkan': 'Lærðu á klukkuna',
@@ -65,7 +65,7 @@
       'tolur.count_q.kottur': 'Hvað eru margir kettir?',
       'tolur.add': 'Hvað eru {a} plús {b}?',
       'tolur.sub': 'Hvað eru {a} mínus {b}?',
-      'bokstafir.q': 'Hlustaðu vel! Hvaða stafir segja þetta hljóð?',
+      'bokstafir.q': 'Hlustaðu vel! Hvaða orð heyrirðu?',
       'litir.q': 'Hvaða litur er þetta?',
       'form.q': 'Hvað heitir þetta form?',
       'klukkan.read_q': 'Hvað er klukkan?',
@@ -119,7 +119,7 @@
       'game.klukkan': 'Klokken',
       'game.minni': 'Vendespil',
       'desc.tolur': 'Tæl dyrene og løs regnestykker',
-      'desc.bokstafir': 'Lyt og find bogstaverne',
+      'desc.bokstafir': 'Lyt og find ordet',
       'desc.litir': 'Hvilken farve er det?',
       'desc.form': 'Hvad hedder formen?',
       'desc.klukkan': 'Lær klokken',
@@ -164,7 +164,7 @@
       'tolur.count_q.kottur': 'Hvor mange katte er der?',
       'tolur.add': 'Hvad er {a} plus {b}?',
       'tolur.sub': 'Hvad er {a} minus {b}?',
-      'bokstafir.q': 'Lyt godt efter! Hvilke bogstaver siger denne lyd?',
+      'bokstafir.q': 'Lyt godt efter! Hvilket ord hører du?',
       'litir.q': 'Hvilken farve er det?',
       'form.q': 'Hvad hedder denne form?',
       'klukkan.read_q': 'Hvad er klokken?',
@@ -226,10 +226,16 @@
   var KEY = 'kl.lang';
   var LANGS = ['is', 'da'];
 
-  // syllables for the listening game: one consonant + one vowel
-  var SYLLABLES = {
-    is: ['ba','be','bi','bu','da','de','di','du','ga','gu','ha','la','le','ma','me','mi','na','ne','ra','sa','ta','va'],
-    da: ['ba','be','bi','bo','bu','da','de','di','du','ga','ha','ka','la','le','ma','me','mi','na','ne','ra','sa','ta','va']
+  // short real words for the listening game (Bókstafir). Real words, not syllables like
+  // "ba": the speech engine spells unknown letter pairs out as abbreviations ("B-A").
+  // Families that differ by one letter (mús / hús / lús) make the hard level.
+  var WORDS = {
+    is: ['mús', 'hús', 'lús', 'hár', 'tár', 'sár', 'kýr', 'dýr', 'api', 'afi', 'amma', 'mamma', 'rós', 'dós',
+         'sól', 'sel', 'bók', 'bak', 'lok', 'rok', 'nef', 'net', 'egg', 'ís', 'já', 'nú', 'þú', 'bú', 'bað', 'búð',
+         'tré', 'ský', 'kaka', 'taka', 'önd', 'hönd', 'bíll', 'fíll', 'pera', 'lamb'],
+    da: ['mus', 'hus', 'bus', 'kat', 'hat', 'is', 'ko', 'so', 'bo', 'bi', 'sol', 'sæl', 'bog', 'tog', 'bil', 'pil',
+         'mor', 'far', 'and', 'ost', 'æg', 'sky', 'ske', 'kop', 'top', 'dør', 'bær', 'hår', 'får', 'tå', 'gå',
+         'sø', 'ja', 'nu', 'du', 'abe', 'fisk', 'gris', 'kage', 'frø']
   };
 
   // phrases spoken as they are; combined sentences are built in audioVocab()
@@ -290,7 +296,7 @@
       if (/^(color|shape)\./.test(k)) v[k] = S[k];
       if (k.indexOf('animal.') === 0) v['sticker.' + k.slice(7)] = fill(S['sticker.new'], { a: S[k] });
     });
-    SYLLABLES[l].forEach(function (s) { v['syl.' + s] = s; });
+    WORDS[l].forEach(function (w) { v['word.' + w] = w; });
     if (l === 'is') PRAISE.forEach(function (p, i) { v['praise.' + i] = p.is; });
     vocabCache[l] = v;
     return v;
@@ -328,6 +334,6 @@
 
   window.KL_I18N = {
     lang: lang, setLang: setLang, t: t, fmt: fmt, fill: fill, speechLang: speechLang, apply: apply, onChange: onChange,
-    audioVocab: audioVocab, LANGS: LANGS, SYLLABLES: SYLLABLES, STR: STR, PRAISE: PRAISE, HURRA: HURRA
+    audioVocab: audioVocab, LANGS: LANGS, WORDS: WORDS, STR: STR, PRAISE: PRAISE, HURRA: HURRA
   };
 })();

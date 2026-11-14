@@ -6,6 +6,9 @@ language). Each clip is synthesized with Edge neural TTS into
 audio/<lang>/<key>.mp3 (UTF-8 file name; the browser asks for it percent-encoded)
 and the silence Edge puts before and after the speech is cut away (lossless, at
 mp3 frame boundaries), so clips played one after another flow without gaps.
+Single words for the reading game (word.*) are said inside a short sentence
+("Hlustaðu: mús.") and cut out using Edge's word timings, so the engine always
+reads them as words, with a natural ending, never as letter-by-letter abbreviations.
 
 audio/manifest.json records the text and settings each mp3 was made from: a clip
 whose text or settings changed is regenerated, and mp3s for keys that no longer
@@ -24,6 +27,8 @@ import tempfile
 import unicodedata
 from pathlib import Path
 
+import edge_tts
+
 ROOT = Path(__file__).resolve().parent.parent
 I18N = ROOT / "js" / "i18n.js"
 OUT_AUDIO = ROOT / "audio"
@@ -38,6 +43,7 @@ VOICES = {
 RATE = "-8%"            # a little slower, friendlier for small kids
 LEAD, TAIL = 0.05, 0.12  # seconds of silence kept before / after the speech
 SETTINGS = {"voices": VOICES, "rate": RATE, "trim": [LEAD, TAIL]}
+CARRIER = {"is": "Hlustaðu: {w}.", "da": "Lyt: {w}.", "cut": "-0.01s re-encoded, blips dropped"}  # sentence a word.* clip is cut from
 
 
 def load_vocab() -> dict:
@@ -75,14 +81,44 @@ def trim(ff: str, src: Path, dest: Path) -> None:
     dur = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
     starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", out)]
     ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", out)]
-    begin, finish = 0.0, dur
-    if starts and starts[0] < 0.01 and ends:
-        begin = ends[0]
-    if starts and starts[-1] > begin and (len(ends) < len(starts) or ends[-1] >= dur - 0.06):
-        finish = starts[-1]
+    # stretches of sound between the silences; a blip under 50 ms set apart by
+    # silence (e.g. the tail of the carrier's lead-in word) is not speech
+    segs, t = [], 0.0
+    for s0, s1 in zip(starts, ends + [dur] * (len(starts) - len(ends))):
+        if s0 - t > 0.005:
+            segs.append((t, s0))
+        t = s1
+    if dur - t > 0.005:
+        segs.append((t, dur))
+    while len(segs) > 1 and segs[0][1] - segs[0][0] < 0.05:
+        segs.pop(0)
+    while len(segs) > 1 and segs[-1][1] - segs[-1][0] < 0.05:
+        segs.pop()
+    begin, finish = (segs[0][0], segs[-1][1]) if segs else (0.0, dur)
     a, b = max(0.0, begin - LEAD), min(dur, finish + TAIL)
     subprocess.run([ff, "-hide_banner", "-loglevel", "error", "-y", "-i", str(src), "-ss", f"{a:.3f}", "-to", f"{b:.3f}",
                     "-c", "copy", "-map_metadata", "-1", str(dest)], check=True)
+
+
+async def synth(text: str, voice: str, dest: Path) -> list:
+    """Synthesize text into dest; return the word timings [(word, start_s, dur_s)]."""
+    words = []
+    c = edge_tts.Communicate(text, voice, rate=RATE, boundary="WordBoundary")
+    with open(dest, "wb") as f:
+        async for chunk in c.stream():
+            if chunk["type"] == "audio":
+                f.write(chunk["data"])
+            elif chunk["type"] == "WordBoundary":
+                words.append((chunk["text"], chunk["offset"] / 1e7, chunk["duration"] / 1e7))
+    return words
+
+
+def cut_from(ff: str, src: Path, start: float, dest: Path) -> None:
+    """Keep src from start (seconds, sample-accurate) to the end, with a 20 ms fade-in.
+    Re-encodes: the pause before the word can be under 0.1 s, finer than mp3 frames."""
+    subprocess.run([ff, "-hide_banner", "-loglevel", "error", "-y", "-ss", f"{max(0.0, start):.3f}", "-i", str(src),
+                    "-af", "afade=t=in:d=0.02", "-ac", "1", "-ar", "24000", "-c:a", "libmp3lame", "-b:a", "64k",
+                    "-map_metadata", "-1", str(dest)], check=True)
 
 
 def load_record() -> dict:
@@ -95,6 +131,7 @@ def load_record() -> dict:
 def prune(vocab: dict, record: dict) -> None:
     """Delete mp3s whose key is gone or whose text/settings changed, so they get (re)generated."""
     same_settings = record.get("settings") == json.loads(json.dumps(SETTINGS))
+    same_carrier = record.get("carrier") == CARRIER
     for lang in VOICES:
         folder = OUT_AUDIO / lang
         if not folder.is_dir():
@@ -106,13 +143,11 @@ def prune(vocab: dict, record: dict) -> None:
             if key not in v:
                 print(f"  delete {lang}/{mp3.name} (no longer used)")
                 mp3.unlink()
-            elif not same_settings or old.get(key) != v[key]:
+            elif not same_settings or old.get(key) != v[key] or (key.startswith("word.") and not same_carrier):
                 mp3.unlink()
 
 
 async def generate(vocab: dict) -> int:
-    import edge_tts
-
     ff = ffmpeg_exe()
     tmpdir = Path(tempfile.mkdtemp(prefix="kl_tts_"))
     todo = [(lang, k, t) for lang, v in vocab.items() for k, t in v.items()
@@ -123,11 +158,19 @@ async def generate(vocab: dict) -> int:
         dest = OUT_AUDIO / lang / (key + ".mp3")
         dest.parent.mkdir(parents=True, exist_ok=True)
         raw = tmpdir / "raw.mp3"
+        carrier = key.startswith("word.")
         ok = False
         for voice in VOICES[lang]:
             for attempt in range(5):
                 try:
-                    await edge_tts.Communicate(text, voice, rate=RATE).save(str(raw))
+                    if carrier:
+                        timings = await synth(CARRIER[lang].format(w=text), voice, tmpdir / "sentence.mp3")
+                        hits = [t for t in timings if t[0].strip(".:,!").lower() == text.lower()]
+                        if not hits:
+                            raise RuntimeError(f"no timing for {text!r} in {timings}")
+                        cut_from(ff, tmpdir / "sentence.mp3", hits[-1][1] - 0.01, raw)
+                    else:
+                        await synth(text, voice, raw)
                     if raw.stat().st_size > 1000:
                         ok = True
                         break
@@ -152,7 +195,8 @@ def main() -> None:
     prune(vocab, load_record())
     failed = asyncio.run(generate(vocab))
     # A missing mp3 is regenerated on the next run whatever the record says.
-    RECORD.write_text(json.dumps({"settings": SETTINGS, **vocab}, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    RECORD.write_text(json.dumps({"settings": SETTINGS, "carrier": CARRIER, **vocab}, ensure_ascii=False, indent=1) + "\n",
+                      encoding="utf-8")
     total = sum(len(v) for v in vocab.values())
     size = sum(p.stat().st_size for p in OUT_AUDIO.rglob("*.mp3"))
     print(f"{total} clips ({size / 1e6:.1f} MB); record: {RECORD.relative_to(ROOT)}")

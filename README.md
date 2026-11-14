@@ -9,7 +9,7 @@ Educational browser games for young kids, guided by Kóli the koala; bilingual I
 | Leikur | Hvað er æft | Erfiðleikastig |
 |---|---|---|
 | Tölur | Telja dýr og leysa einföld dæmi, með dýrum til að telja | 1–5: telja upp í 5, samlagning · 1–10: telja upp í 10, samlagning og frádráttur |
-| Bókstafir | Hlusta á atkvæði (t.d. „ba“) og finna stafina tvo | Létt: ólík atkvæði · Erfitt: atkvæði með sama samhljóða eða sérhljóða (ba / bi / da) |
+| Bókstafir | Hlusta á stutt orð (t.d. „mús“) og finna það skrifað | Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
 | Litir | Litarheiti; hver litur kemur einu sinni | — |
 | Form | Formheiti (hringur, ferningur, þríhyrningur, ...) | — |
 | Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar, vísirinn snýst að tölunni sem bankað er á · 3:30: líka hálfir tímar („hálf fjögur“), finna réttu klukkuna |
@@ -19,7 +19,7 @@ Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á h
 
 ## Hljóð
 
-Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Edge (rödd Kóla: is-IS-Gunnar og da-DK-Jeppe; sjá `tools/make_audio.py`). Heilar setningar eru teknar upp í einu lagi („Hvað eru þrír plús tveir?“, „Klukkan er hálf fjögur.“) og þögnin fremst og aftast í hverri skrá er klippt burt, svo talið flæðir án hléa. Ef skrá vantar er Web Speech API notað. Hljóðáhrifin eru búin til í vafranum með Web Audio API. Hljóðhnappurinn efst slekkur á öllu hljóði, líka tali sem er í gangi.
+Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Edge (rödd Kóla: is-IS-Gunnar og da-DK-Jeppe; sjá `tools/make_audio.py`). Heilar setningar eru teknar upp í einu lagi („Hvað eru þrír plús tveir?“, „Klukkan er hálf fjögur.“) og þögnin fremst og aftast í hverri skrá er klippt burt, svo talið flæðir án hléa. Bókstafir notar raunveruleg orð en ekki atkvæði eins og „ba“, sem talgervillinn stafar oft eins og skammstöfun; hvert orð er sagt í setningu („Hlustaðu: mús.“) og klippt út. Á `tools/listen.html` (á netinu: https://bvilhjal.github.io/krakkaleikir/tools/listen.html) er hægt að hlusta á allar skrárnar og merkja þær sem hljóma rangt. Ef skrá vantar er Web Speech API notað. Hljóðáhrifin eru búin til í vafranum með Web Audio API. Hljóðhnappurinn efst slekkur á öllu hljóði, líka tali sem er í gangi.
 
 Á iOS þarf eitt bank áður en hljóð má spilast. Eftir það les hver leikur spurninguna um leið og hann opnast, því allt appið er ein síða. Ef Kóli vaggar sér þarf að banka á hann til að heyra spurninguna.
 
@@ -50,6 +50,7 @@ audio/manifest.json   úr hvaða texta og stillingum hver mp3-skrá var gerð (m
 icons/                app-tákn (tools/make_icons.py)
 tools/check.js        samræmisprófanir; keyrt í GitHub Actions við hvert push
 tools/make_audio.py   býr til mp3-skrárnar og klippir þögnina burt
+tools/listen.html     hlusta á allar mp3-skrárnar og merkja þær sem hljóma rangt
 ```
 
 ## Eftir breytingar

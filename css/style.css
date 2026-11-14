@@ -225,6 +225,7 @@ a { color: inherit; text-decoration: none; }
 .answer:disabled { cursor: default; }
 .answer.used { opacity: 0.35; }
 .answer.word { font-size: clamp(1.2rem, 4vw, 1.8rem); }
+.answer.read { font-size: clamp(1.7rem, 6vw, 2.6rem); }
 .answer.clock-choice { min-height: 0; padding: 6px; display: flex; align-items: center; justify-content: center; }
 .answer.clock-choice svg { width: 100%; max-width: 140px; height: auto; }
 
