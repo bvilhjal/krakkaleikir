@@ -145,7 +145,8 @@
     return src;
   }
 
-  // Clips are shared by both languages. Five animals have real CC0 recordings
+  // Clips are shared by both languages. Five local clips: four AI-generated
+  // CC0 SFXMint effects and one real royalty-free Mixkit cat recording
   // (audio/animals/, credits.json); the other seven are synthesized voices.
   var ANIMAL_SOUNDS = {
     koala: 'koala.mp3',

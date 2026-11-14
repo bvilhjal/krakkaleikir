@@ -98,6 +98,14 @@ a { color: inherit; text-decoration: none; }
 }
 .score-pill:empty { display: none; }
 
+/* Keep every control on screen on small phones. The score moves to its own
+   row instead of squeezing the game title to zero width. */
+@media (max-width: 520px) {
+  .topbar { flex-wrap: wrap; gap: 8px; padding: 12px 12px 4px; }
+  .topbar h1 { flex-basis: 60px; }
+  .score-pill:not(:empty) { margin-left: auto; }
+}
+
 .stage {
   max-width: 900px;
   margin: 0 auto;

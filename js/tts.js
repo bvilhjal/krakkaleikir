@@ -104,15 +104,16 @@
     var i = 0;
     busy = true;
     refused = false;
-    function fallback(p) {
-      try { window.KL.speak(textFor(p), p.lang); } catch (e) { /* ignore */ }
+    function fallback(p, onFallbackDone) {
+      try { window.KL.speak(textFor(p), p.lang, onFallbackDone); }
+      catch (e) { if (onFallbackDone) onFallbackDone(); }
     }
     function next() {
       if (gen !== token) return; // a newer say()/stop() superseded this sequence
       if (i >= parts.length) { busy = false; state('quiet'); if (onDone) onDone(); return; }
       var p = split(parts[i++]);
       var a = audio();
-      if (!a) { fallback(p); next(); return; }
+      if (!a) { fallback(p, next); return; }
       var done = false;
       function finish(err) {
         if (done || gen !== token) return;
@@ -126,7 +127,9 @@
           if (onDone) onDone();
           return;
         }
-        if (err) fallback(p);
+        // Web Speech is asynchronous: wait for its onend/onerror callback
+        // instead of playing the following clip over the fallback voice.
+        if (err) { fallback(p, next); return; }
         next();
       }
       a.onended = function () { finish(null); };

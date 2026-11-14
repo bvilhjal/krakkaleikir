@@ -5,8 +5,9 @@
      node tools/audition.js [--out DIR] [--only id,id]
 
    Synthesized voices are rendered with OfflineAudioContext — the exact functions
-   the app plays. Recorded CC0 clips are decoded with the browser's own Web Audio
-   (the same pipeline the app uses). Each is written as a 16-bit WAV preview
+   the app plays. Local audio clips (four AI-generated CC0 effects and one real
+   Mixkit recording) are decoded with the browser's own Web Audio (the same
+   pipeline the app uses). Each is written as a 16-bit WAV preview
    (default: ../krakkaleikir-sounds-preview, outside the repo so nothing ships)
    and measured: spectral peak, band energies, phrase count, trill rate and a
    pitch contour. Synthesized voices are asserted to still have the character of
@@ -210,7 +211,7 @@ const CHECKS = {
   mus: { desc: 'high squeaks', test: (s) => s.high + s.air > 0.6 && s.bursts >= 3 },
   morgaes: { desc: 'mid-range bray, two phrases', test: (s) => s.peakHz >= 250 && s.peakHz <= 1300 && s.bursts >= 2 }
 };
-const RECORDED = ['koala', 'kottur', 'svin', 'bjorn', 'ljon'];
+const LOCAL_CLIPS = ['koala', 'kottur', 'svin', 'bjorn', 'ljon'];
 
 async function main() {
   const exe = findChrome();
@@ -283,9 +284,9 @@ async function main() {
         (ok ? 'ok (' + CHECKS[id].desc + ')' : 'FAIL (expected ' + CHECKS[id].desc + ')'));
     }
 
-    console.log('\nRECORDED CC0 (reported; pitch contour shows the vocal arc)');
+    console.log('\nLOCAL CLIPS (reported; pitch contour shows the vocal arc)');
     console.log('voice        dur s   peak Hz   f0 start->peak->end   voiced   result');
-    for (const id of RECORDED) {
+    for (const id of LOCAL_CLIPS) {
       if (!want(id)) continue;
       const r = await evaluate(`__kl.analyzeFile(${JSON.stringify('audio/animals/' + id + '.mp3')})`);
       fs.writeFileSync(path.join(OUT, id + '.wav'), Buffer.from(r.wav, 'base64'));

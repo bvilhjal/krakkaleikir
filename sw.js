@@ -5,7 +5,7 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = '00231b959eb8';
+var VERSION = 'f71c57b2e56e';
 var FILES = [
   './',
   'audio/animals/bjorn.mp3',
@@ -711,9 +711,13 @@ self.addEventListener('fetch', function (e) {
   e.respondWith(caches.open(CACHE).then(function (c) {
     return c.match(req, { ignoreSearch: true }).then(function (hit) {
       if (hit) return partial(req, hit);
-      // an uncached page opened offline (old bookmark, stray link) still gets the app
+      // An uncached page opened offline returns to the app root. Serving the
+      // shell at a nested URL would resolve its relative CSS/JS under that
+      // nonexistent directory and leave an inert, unstyled page.
       if (req.mode === 'navigate') {
-        return c.match('./').then(function (home) { return home || fetch(req); });
+        return c.match('./').then(function (home) {
+          return home ? Response.redirect(new URL('./', self.location.href).href, 302) : fetch(req);
+        });
       }
       return fetch(req);
     });

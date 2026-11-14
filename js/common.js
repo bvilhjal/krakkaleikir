@@ -19,17 +19,27 @@
   }
   function sfx(name) { if (window.KL_SOUND) window.KL_SOUND.play(name); }
 
-  /* ---- Web Speech fallback (used by tts.js when an mp3 is missing) ---- */
-  function speak(text, lang) {
+  /* ---- Web Speech fallback (used by tts.js when an mp3 is missing) ----
+     onDone runs once, after the utterance ends or fails. tts.js needs that
+     callback to avoid playing the next mp3 on top of the fallback voice. */
+  function speak(text, lang, onDone) {
+    var finished = false;
+    function done() {
+      if (finished) return;
+      finished = true;
+      if (onDone) onDone();
+    }
     try {
-      if (window.KL_SOUND && !window.KL_SOUND.on()) return;
-      if (!('speechSynthesis' in window)) return;
+      if (window.KL_SOUND && !window.KL_SOUND.on()) { if (onDone) setTimeout(done, 0); return; }
+      if (!('speechSynthesis' in window)) { if (onDone) setTimeout(done, 0); return; }
       var u = new SpeechSynthesisUtterance(String(text));
       var l = I.speechLang(lang);
       u.lang = l;
       u.rate = 0.85;
       u.pitch = 1.1;
       u.volume = 1;
+      u.onend = done;
+      u.onerror = done;
       // pick an explicit voice when the list is available (iOS loads it lazily)
       var prefix = l.slice(0, 2).toLowerCase();
       var vs = window.speechSynthesis.getVoices() || [];
@@ -38,8 +48,8 @@
       }
       // NOTE: never call speechSynthesis.cancel() here — on iOS it can wedge
       // the speech queue permanently and all later speak() calls go silent.
-      try { window.speechSynthesis.speak(u); } catch (e) { /* ignore */ }
-    } catch (e) { /* speech unsupported: ignore */ }
+      try { window.speechSynthesis.speak(u); } catch (e) { done(); }
+    } catch (e) { done(); }
   }
 
   /* ---- audio unlock ----

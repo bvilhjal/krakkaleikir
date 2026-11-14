@@ -41,10 +41,11 @@
       '<line x1="' + CX + '" y1="' + CY + '" x2="' + f1(p[0]) + '" y2="' + f1(p[1]) + '" stroke="' + color + '" stroke-width="' + width + '" stroke-linecap="round"/></g>';
   }
 
-  /* opts: { time, numbers, size, settable } — settable draws a hidden hour hand (#kl-hour) to swing */
+  /* opts: { time, numbers, size, settable, ariaLabel } — settable draws a hidden hour hand (#kl-hour) to swing */
   function clockSVG(opts) {
     var size = opts.size || 240;
-    var s = ['<svg width="' + size + '" height="' + size + '" viewBox="0 0 240 240" aria-hidden="true">'];
+    var a11y = opts.ariaLabel ? ' role="img" aria-label="' + opts.ariaLabel + '"' : ' aria-hidden="true"';
+    var s = ['<svg width="' + size + '" height="' + size + '" viewBox="0 0 240 240"' + a11y + '>'];
     s.push('<circle cx="' + CX + '" cy="' + CY + '" r="' + FACE_R + '" fill="#fff" stroke="#3D405B" stroke-width="6"/>');
     var i, a, p1, p2;
     for (i = 0; i < 60; i++) {
@@ -140,7 +141,7 @@
         build: function (q, promptEl, answersEl, level) {
           var t = q.time;
           if (q.type === 'read') {
-            promptEl.innerHTML = clockSVG({ time: t, numbers: true });
+            promptEl.innerHTML = clockSVG({ time: t, numbers: true, ariaLabel: digital(t) });
             var choices = level === 'half' ? nearTimes(t) : KL.pickDistinct(HOURS, t.h, 4).map(function (h) { return { h: h, m: 0 }; });
             return choices.map(function (c) {
               var btn = document.createElement('button');
@@ -157,6 +158,7 @@
               var btn = document.createElement('button');
               btn.type = 'button';
               btn.className = 'answer clock-choice';
+              btn.setAttribute('aria-label', digital(c));
               btn.innerHTML = clockSVG({ time: c, numbers: true, size: 130 });
               answersEl.appendChild(btn);
               return { el: btn, isCorrect: digital(c) === digital(t), speechParts: [timeKey(c)] };

@@ -144,32 +144,59 @@ const PLAY_TALNATAFLA = `(async () => {
   return false;
 })()`;
 
-// the clock: 'set' shows the target digitally; 'read' hides it in the hour hand
+// Play both clock levels and check that analog clocks and picture choices have
+// usable accessible names. 'set' shows the target digitally; 'read' requires
+// decoding both hands (the hour hand is halfway between hours at half past).
 const PLAY_KLUKKAN = `(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const angle = (el) => parseFloat(/rotate\\(([-\\d.]+)/.exec(el.getAttribute('transform'))[1]);
+  let read = 0, pick = 0, set = 0;
   for (let guard = 0; guard < 300; guard++) {
-    if (document.querySelector('.end-card')) return true;
+    if (document.querySelector('.end-card')) return { ok: true, read, pick, set };
     const stage = document.querySelector('.q-stage');
     if (stage) {
-      let target = null;
       const digital = stage.querySelector('.digital');
-      if (digital) target = parseInt(digital.textContent.split(':')[0], 10);
-      else {
-        const hands = stage.querySelectorAll('.prompt svg > g[transform]');
-        if (hands.length >= 2) {
-          const m = /rotate\\(([-\\d.]+)/.exec(hands[1].getAttribute('transform'));
-          if (m) target = Math.round(parseFloat(m[1]) / 30) % 12 || 12;
+      if (digital) {
+        const parts = digital.textContent.split(':');
+        const h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+        const nums = [...stage.querySelectorAll('.clock-num')].filter((b) => !b.disabled);
+        if (nums.length) {
+          const btn = nums.find((b) => parseInt(b.textContent, 10) === h);
+          if (btn) { btn.click(); set++; await sleep(150); continue; }
         }
-      }
-      if (target) {
-        const btn = [...stage.querySelectorAll('.answer, .clock-num')]
-          .find((b) => !b.disabled && parseInt(b.textContent, 10) === target);
-        if (btn) { btn.click(); await sleep(150); continue; }
+        const choices = [...stage.querySelectorAll('.clock-choice')].filter((b) => !b.disabled);
+        if (choices.length) {
+          if (choices.some((b) => !/^\\d{1,2}:(00|30)$/.test(b.getAttribute('aria-label') || ''))) {
+            throw new Error('clock picture choice has no accessible digital-time name');
+          }
+          const btn = choices.find((b) => {
+            const hands = b.querySelectorAll('svg > g[transform]');
+            return hands.length >= 2 && Math.abs(angle(hands[0]) - m * 6) < 0.11 &&
+              Math.abs(angle(hands[1]) - ((h % 12) + m / 60) * 30) < 0.11;
+          });
+          if (btn) { btn.click(); pick++; await sleep(150); continue; }
+        }
+      } else {
+        const svg = stage.querySelector('.prompt svg');
+        const hands = stage.querySelectorAll('.prompt svg > g[transform]');
+        if (svg && hands.length >= 2) {
+          const m = (Math.round(angle(hands[0]) / 6) % 60 + 60) % 60;
+          const h = Math.floor((angle(hands[1]) + 0.01) / 30) % 12 || 12;
+          const expected = h + ':' + (m ? '30' : '00');
+          if (svg.getAttribute('role') !== 'img' || svg.getAttribute('aria-label') !== expected) {
+            throw new Error('analog clock lacks its accessible time label');
+          }
+          const buttons = [...stage.querySelectorAll('.answer')].filter((b) => !b.disabled);
+          const digitalChoices = buttons.some((b) => b.textContent.includes(':'));
+          const text = digitalChoices ? expected : String(h);
+          const btn = buttons.find((b) => b.textContent === text);
+          if (btn) { btn.click(); read++; await sleep(150); continue; }
+        }
       }
     }
     await sleep(150);
   }
-  return false;
+  return { ok: false, read, pick, set };
 })()`;
 
 // memory: always turn the true pair (the faces are identical SVG); one card may
@@ -309,13 +336,74 @@ async function main() {
       await shot('menu-desktop');
     });
 
-    await test('animal voices: all 12 play via the live path (5 recorded + 7 synth)', async () => {
+    await test('speech fallback waits for speech before the next clip and completion', async () => {
+      const result = await cdp.eval(`(async () => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const originalPlay = Audio.prototype.play, originalSpeak = speechSynthesis.speak;
+        const plays = [];
+        let utterance = null, rejected = false, done = false;
+        try {
+          KL_TTS.stop();
+          Audio.prototype.play = function () {
+            plays.push(this.src);
+            if (!rejected && /koala\\.hello/.test(this.src)) {
+              rejected = true;
+              return Promise.reject(new DOMException('injected media failure', 'NotSupportedError'));
+            }
+            return originalPlay.call(this);
+          };
+          speechSynthesis.speak = (u) => { utterance = u; };
+          KL_TTS.say(['koala.hello', 'num.1'], () => { done = true; });
+          for (let i = 0; i < 30 && !utterance; i++) await sleep(50);
+          await sleep(250);
+          const nextBeforeEnd = plays.some((src) => /num\\.1/.test(src));
+          const doneBeforeEnd = done;
+          if (utterance && typeof utterance.onend === 'function') utterance.onend();
+          for (let i = 0; i < 80 && !done; i++) await sleep(50);
+          return { utterance: !!utterance, nextBeforeEnd, doneBeforeEnd, done,
+            nextAfterEnd: plays.some((src) => /num\\.1/.test(src)) };
+        } finally {
+          KL_TTS.stop();
+          Audio.prototype.play = originalPlay;
+          speechSynthesis.speak = originalSpeak;
+        }
+      })()`);
+      assert(result.utterance, 'fallback utterance created');
+      assert(!result.nextBeforeEnd && !result.doneBeforeEnd, 'advanced before fallback speech ended: ' + JSON.stringify(result));
+      assert(result.nextAfterEnd && result.done, 'sequence completed after fallback speech');
+    });
+
+    await test('animal voices: all 12 start via the live path (5 files + 7 synth)', async () => {
       assert(await cdp.eval(`KL_SOUND.animals.length === 12`), '12 animals');
-      assert(await cdp.eval(`KL_SOUND.animalFiles.length === 5`), '5 recorded clips');
-      for (const id of await cdp.eval(`KL_SOUND.animals`)) {
-        await cdp.eval(`KL_SOUND.animal(${JSON.stringify(id)})`);
-        await sleep(60);
-        await cdp.eval(`KL_SOUND.stopAnimal()`);
+      assert(await cdp.eval(`KL_SOUND.animalFiles.length === 5`), '5 local clips');
+      await cdp.eval(`(() => {
+        KL_TTS.stop();
+        window.__animalOriginalPlay = Audio.prototype.play;
+        window.__animalOriginalStart = OscillatorNode.prototype.start;
+        window.__animalPlays = [];
+        window.__animalOscStarts = 0;
+        Audio.prototype.play = function () { window.__animalPlays.push(this.src); return window.__animalOriginalPlay.call(this); };
+        OscillatorNode.prototype.start = function () { window.__animalOscStarts++; return window.__animalOriginalStart.apply(this, arguments); };
+      })()`);
+      try {
+        for (const id of await cdp.eval(`KL_SOUND.animals`)) {
+          const before = await cdp.eval(`({ plays: window.__animalPlays.length, oscillators: window.__animalOscStarts })`);
+          await cdp.eval(`KL_SOUND.animal(${JSON.stringify(id)})`);
+          await sleep(80);
+          const after = await cdp.eval(`({ plays: window.__animalPlays, oscillators: window.__animalOscStarts })`);
+          if (await cdp.eval(`KL_SOUND.animalFiles.includes(${JSON.stringify(id + '.mp3')})`)) {
+            assert(after.plays.slice(before.plays).some((src) => src.includes('/audio/animals/' + id + '.mp3')), id + ' file playback requested');
+          } else {
+            assert(after.oscillators > before.oscillators, id + ' synth started an oscillator');
+          }
+          await cdp.eval(`KL_SOUND.stopAnimal()`);
+        }
+      } finally {
+        await cdp.eval(`(() => {
+          KL_SOUND.stopAnimal();
+          Audio.prototype.play = window.__animalOriginalPlay;
+          OscillatorNode.prototype.start = window.__animalOriginalStart;
+        })()`);
       }
     });
 
@@ -332,6 +420,15 @@ async function main() {
       await shot('tolur-end-desktop', 1500); // the sticker pops in over ~1.3s
       await toMenu();
       assert(await cdp.eval(`document.querySelector('.badge[data-game="tolur"] svg') !== null`), 'badge shows stars');
+    });
+
+    await test('tolur: level 1–10 with subtraction finishes', async () => {
+      await openGame('tolur');
+      await pickLevel(1);
+      await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first hard question');
+      assert(await cdp.eval(PLAY_ROUND), 'hard round finished');
+      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.tolur.2') || '0', 10) >= 1`), 'hard-level stars saved');
+      await toMenu();
     });
 
     await test('minni: keyboard flip, labels, full round, fewest flips, replay', async () => {
@@ -370,6 +467,16 @@ async function main() {
       await toMenu();
     });
 
+    await test('minni: eight-pair board finishes and stores its own best', async () => {
+      await openGame('minni');
+      await pickLevel(1);
+      await waitFor(`document.querySelectorAll('.mcard').length === 16`, '16-card board');
+      assert(await cdp.eval(PLAY_MINNI), 'eight-pair round finished');
+      assert(await cdp.eval(`localStorage.getItem('kl.flips.minni.8') === '8'`), 'perfect memory: 8 moves');
+      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.minni.8') || '0', 10) === 3`), '3 stars');
+      await toMenu();
+    });
+
     await test('talnatafla: explore speaks a number, listening round finishes', async () => {
       await openGame('talnatafla');
       await cdp.eval(`document.querySelectorAll('.number-cell')[41].click()`);
@@ -387,8 +494,19 @@ async function main() {
       await openGame('klukkan');
       await pickLevel(0);
       await waitFor(`document.querySelector('.q-stage .answer, .q-stage .clock-num')`, 'first question');
-      assert(await cdp.eval(PLAY_KLUKKAN), 'round finished');
+      const result = await cdp.eval(PLAY_KLUKKAN);
+      assert(result.ok && result.read === 5 && result.set === 5, 'whole-hour round: ' + JSON.stringify(result));
       assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.klukkan.whole') || '0', 10) >= 1`), 'stars saved');
+      await toMenu();
+    });
+
+    await test('klukkan: half-hour read/pick round is playable and accessibly named', async () => {
+      await openGame('klukkan');
+      await pickLevel(1);
+      await waitFor(`document.querySelector('.q-stage .answer')`, 'first half-hour question');
+      const result = await cdp.eval(PLAY_KLUKKAN);
+      assert(result.ok && result.read === 5 && result.pick === 5, 'half-hour round: ' + JSON.stringify(result));
+      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.klukkan.half') || '0', 10) >= 1`), 'stars saved');
       await toMenu();
     });
 
@@ -407,6 +525,15 @@ async function main() {
       });
     }
 
+    await test('bokstafir: look-alike hard round finishes', async () => {
+      await openGame('bokstafir');
+      await pickLevel(1);
+      await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first hard word question');
+      assert(await cdp.eval(PLAY_ROUND), 'hard word round finished');
+      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.bokstafir.hard') || '0', 10) >= 1`), 'hard-level stars saved');
+      await toMenu();
+    });
+
     await test('language switch: Danish menu and game, aria-pressed, back to IS', async () => {
       await cdp.eval(`document.querySelector('[data-lang="da"]').click()`);
       await waitFor(`document.documentElement.lang === 'da'`, 'lang attribute');
@@ -415,6 +542,7 @@ async function main() {
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.indexOf('Hej') === 0`), 'Kóli greets in Danish');
       await openGame('litir');
       assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === 'Hvilken farve er det?'`), 'Danish prompt');
+      assert(await cdp.eval(PLAY_ROUND), 'full Danish round finished');
       await toMenu();
       await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
       await waitFor(`document.documentElement.lang === 'is'`, 'back to Icelandic');
@@ -433,24 +561,31 @@ async function main() {
       assert(await cdp.eval(`KL.stickers().length === 1`), 'sticker book back to Kóli');
     });
 
-    await test('narrow screen (390px): no horizontal overflow', async () => {
-      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
-      const fits = `document.documentElement.scrollWidth <= window.innerWidth + 1`;
-      await waitFor(fits, 'menu fits');
-      await shot('menu-mobile');
-      await openGame('minni');
-      await pickLevel(0);
-      await waitFor(`document.querySelectorAll('.mcard').length === 12`, 'board');
-      assert(await cdp.eval(fits), 'memory board fits');
-      await shot('minni-mobile');
-      await toMenu();
-      await openGame('talnatafla');
-      assert(await cdp.eval(fits), 'hundred chart fits (scrolls inside)');
-      await toMenu();
-      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await test('narrow screens (320/390px): controls fit and Minni title stays visible', async () => {
+      try {
+        for (const width of [320, 390]) {
+          await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 2, mobile: true });
+          const fits = `window.innerWidth === ${width} && document.documentElement.scrollWidth <= ${width} + 1`;
+          await waitFor(fits, 'menu fits at ' + width);
+          if (width === 390) await shot('menu-mobile');
+          await openGame('minni');
+          await pickLevel(0);
+          await waitFor(`document.querySelectorAll('.mcard').length === 12`, 'board');
+          assert(await cdp.eval(fits), 'memory board fits at ' + width);
+          assert(await cdp.eval(`document.querySelector('#game-title').getBoundingClientRect().width >= 40`), 'usable title width at ' + width);
+          assert(await cdp.eval(`document.querySelector('#score').getBoundingClientRect().right <= window.innerWidth + 1`), 'score stays on screen at ' + width);
+          if (width === 390) await shot('minni-mobile');
+          await toMenu();
+          await openGame('talnatafla');
+          assert(await cdp.eval(fits), 'hundred chart fits at ' + width);
+          await toMenu();
+        }
+      } finally {
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+      }
     });
 
-    await test('offline: app loads from cache, stray URL falls back to the app', async () => {
+    await test('offline: app loads from cache, nested stray URL redirects to the app', async () => {
       await waitFor(`navigator.serviceWorker.controller !== null`, 'service worker controls the page', 30000);
       await waitFor(`caches.match('./').then((r) => !!r)`, 'app shell cached');
       offline = true;
@@ -460,8 +595,9 @@ async function main() {
       await openGame('tolur');
       await waitFor(`document.querySelectorAll('.level-btn').length === 2`, 'game opens offline');
       await toMenu();
-      await cdp.send('Page.navigate', { url: base + '/no-such-page' });
+      await cdp.send('Page.navigate', { url: base + '/nested/no-such-page' });
       await waitForApp();
+      await waitFor(`window.location.pathname === '/'`, 'offline fallback returned to the app root');
       offline = false;
       await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1, connectionType: 'wifi' });
     });
