@@ -1,11 +1,29 @@
-/* Bókstafir / Bogstaver: a listening and reading game — hear a short word
-   ("mús"), pick the written word from four choices.
-   Easy: other random words.  Hard: look-alike words that differ by one letter
-   (mús / hús / lús), so every letter has to be read.
-   Real words rather than syllables: the speech engine spells unknown letter
-   pairs ("ba") out as abbreviations. The big speaker button says the word again. */
+/* Bókstafir / Bogstaver: letters, first letters of words, and listening/reading.
+   Letters: match uppercase to lowercase + find the first letter of an animal word.
+   Easy: other random short words.  Hard: look-alike words that differ by one letter
+   (mús / hús / lús), so every letter has to be read. */
 (function () {
   'use strict';
+
+  var ALPHABET = {
+    is: 'AÁBDÐEÉFGHIÍJKLMNOÓPRSTUÚVXYÝÞÆÖ'.split(''),
+    da: 'ABCDEFGHIJKLMNOPRSTUVYÆØÅ'.split('')
+  };
+
+  var CONFUSE = {
+    'A': 'ÁOÆ', 'Á': 'AOÓ', 'B': 'DPÞ', 'D': 'BPÐ', 'Ð': 'DBÞ',
+    'E': 'ÉÆA', 'É': 'EÆI', 'F': 'EPT', 'G': 'CJO', 'H': 'NMK',
+    'I': 'ÍLJ', 'Í': 'ILJ', 'J': 'IÍL', 'K': 'HXR', 'L': 'IÍJ',
+    'M': 'NWK', 'N': 'MHV', 'O': 'ÓÖØ', 'Ó': 'OÖÁ', 'P': 'BDÞ',
+    'R': 'KPB', 'S': 'ZCG', 'T': 'FLI', 'U': 'ÚVÖ', 'Ú': 'UVY',
+    'V': 'UWÝ', 'Y': 'ÝUV', 'Ý': 'YUV', 'Þ': 'PBÐ', 'Æ': 'EÖØ',
+    'Ö': 'OØÆ', 'Ø': 'OÖÆ', 'Å': 'AÆØ', 'C': 'GOE'
+  };
+
+  var WORD_ART = {
+    is: { 'mús': 'mus' },
+    da: { 'mus': 'mus', 'kat': 'kottur', 'gris': 'svin', 'frø': 'froskur', 'fisk': 'fiskur' }
+  };
 
   // how alike two words look: same length, the same letters in the same places,
   // shared letters (mús ~ hús ~ lús rank above dós, which ranks above kaka)
@@ -26,19 +44,111 @@
     return KL.shuffle([target].concat(others.slice(0, 3)));
   }
 
+  function letterChoices(target, alpha) {
+    var pool = [];
+    (CONFUSE[target] || '').split('').forEach(function (ch) {
+      if (ch !== target && alpha.indexOf(ch) >= 0 && pool.indexOf(ch) < 0) pool.push(ch);
+    });
+    KL.shuffle(alpha).forEach(function (ch) {
+      if (pool.length < 3 && ch !== target && pool.indexOf(ch) < 0) pool.push(ch);
+    });
+    return KL.shuffle([target].concat(pool.slice(0, 3)));
+  }
+
+  function makeQuestions(level, lang, WORDS) {
+    if (level === 'letters') {
+      var alpha = ALPHABET[lang] || ALPHABET.is;
+      var qs = [];
+      KL.sample(alpha, 5).forEach(function (ch) {
+        qs.push({ type: 'case', ch: ch, alpha: alpha });
+      });
+      KL.sample(KL_ART.ANIMALS, 5).forEach(function (id) {
+        var name = KL.t('animal.' + id);
+        qs.push({ type: 'first', animal: id, word: name, ch: name.charAt(0).toUpperCase(), alpha: alpha });
+      });
+      return KL.shuffle(qs);
+    }
+    return KL.sample(WORDS, 10).map(function (w) { return { type: 'word', word: w }; });
+  }
+
   KL.register('bokstafir', {
-    levels: [{ id: 'easy', labelKey: 'level.easy' }, { id: 'hard', labelKey: 'level.hard' }],
+    levels: [
+      { id: 'letters', labelKey: 'level.letters' },
+      { id: 'easy', labelKey: 'level.easy' },
+      { id: 'hard', labelKey: 'level.hard' }
+    ],
     start: function (ctx) {
-      var WORDS = KL_I18N.WORDS[KL_I18N.lang()];
+      var lang = KL_I18N.lang();
+      var WORDS = KL_I18N.WORDS[lang];
       KL.runGame({
         ctx: ctx,
         gameId: 'bokstafir',
         levels: this.levels,
-        makeQuestions: function () { return KL.sample(WORDS, 10).map(function (w) { return { word: w }; }); },
-        promptText: function () { return KL.t('bokstafir.q'); },
-        promptSpeech: function (q) { return ['bokstafir.q', 'word.' + q.word]; },
-        retrySpeech: function (q) { return ['word.' + q.word]; },
+        makeQuestions: function (lv) { return makeQuestions(lv, lang, WORDS); },
+        promptText: function (q) {
+          if (q.type === 'case') return KL.t('bokstafir.match_q');
+          if (q.type === 'first') return KL.t('bokstafir.first_q');
+          return KL.t('bokstafir.q');
+        },
+        promptSpeech: function (q) {
+          if (q.type === 'case') return ['bokstafir.match_q'];
+          if (q.type === 'first') return ['bokstafir.first_q', 'animal.' + q.animal];
+          return ['bokstafir.q', 'word.' + q.word];
+        },
+        retrySpeech: function (q) {
+          if (q.type === 'case') return ['bokstafir.match_q'];
+          if (q.type === 'first') return ['animal.' + q.animal];
+          return ['word.' + q.word];
+        },
+        onCorrect: function (q, _a, promptEl) {
+          if (q.type === 'first') {
+            var lbl = document.createElement('p');
+            lbl.className = 'word-reveal';
+            lbl.innerHTML = '<strong>' + q.ch + '</strong>' + q.word.slice(1);
+            promptEl.appendChild(lbl);
+            return;
+          }
+          var art = WORD_ART[lang] && WORD_ART[lang][q.word];
+          if (art) {
+            var badge = document.createElement('div');
+            badge.className = 'word-art-reveal';
+            badge.innerHTML = KL_ART.animal(art, 84);
+            promptEl.appendChild(badge);
+          }
+        },
         build: function (q, promptEl, answersEl, level) {
+          if (q.type === 'case') {
+            promptEl.innerHTML = '<p class="q-big">' + q.ch + '</p>';
+            return letterChoices(q.ch, q.alpha).map(function (c) {
+              var low = c.toLowerCase();
+              var btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'answer';
+              btn.textContent = low;
+              answersEl.appendChild(btn);
+              return { el: btn, isCorrect: c === q.ch, speechParts: [] };
+            });
+          }
+          if (q.type === 'first') {
+            var pic = document.createElement('button');
+            pic.type = 'button';
+            pic.className = 'animal-prompt';
+            pic.setAttribute('aria-label', q.word);
+            pic.innerHTML = KL_ART.animal(q.animal, 128);
+            pic.addEventListener('click', function () {
+              KL.replay(pic, 'sticker-play');
+              KL.say(['animal.' + q.animal]);
+            });
+            promptEl.appendChild(pic);
+            return letterChoices(q.ch, q.alpha).map(function (c) {
+              var btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'answer';
+              btn.textContent = c;
+              answersEl.appendChild(btn);
+              return { el: btn, isCorrect: c === q.ch, speechParts: c === q.ch ? ['animal.' + q.animal] : [] };
+            });
+          }
           var again = document.createElement('button');
           again.type = 'button';
           again.className = 'sound-btn';

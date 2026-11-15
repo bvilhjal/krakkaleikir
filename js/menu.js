@@ -1,4 +1,4 @@
-/* Menu: best-stars badges on the game cards, the sticker book and the reset button. */
+/* Menu: best-stars badges on the game cards, total stars pill, sticker book and reset button. */
 (function () {
   'use strict';
 
@@ -10,9 +10,22 @@
     levels.forEach(function (lv) {
       var stars = KL.getBest('stars.' + KL.slot(id, lv.id));
       if (!stars) return;
-      parts.push('<span class="slot">' + (lv.id ? '<span>' + KL.levelLabel(lv) + '</span>' : '') + KL.starsRow(stars, 3, 16) + '</span>');
+      parts.push('<span class="slot">' + ((lv.id || lv.label) ? '<span>' + KL.levelLabel(lv) + '</span>' : '') + KL.starsRow(stars, 3, 16) + '</span>');
     });
     return parts.length ? parts.join('') : KL.t('badge.not_played');
+  }
+
+  function totalStars() {
+    var earned = 0, total = 0;
+    KL.gameOrder.forEach(function (id) {
+      var def = KL.games[id];
+      var levels = (def && def.levels) || [{ id: null }];
+      levels.forEach(function (lv) {
+        total += 3;
+        earned += KL.getBest('stars.' + KL.slot(id, lv.id));
+      });
+    });
+    return { earned: earned, total: total };
   }
 
   function stickerBook() {
@@ -30,6 +43,17 @@
     document.querySelectorAll('.badge[data-game]').forEach(function (el) {
       el.innerHTML = badgeHTML(el.getAttribute('data-game'));
     });
+    var score = document.getElementById('score');
+    if (score) {
+      var st = totalStars();
+      if (st.earned > 0) {
+        score.innerHTML = KL.starSVG(true, 22) + '<span>' + st.earned + '/' + st.total + '</span>';
+        score.setAttribute('aria-label', KL.fmt('menu.stars_aria', { n: st.earned }));
+      } else {
+        score.innerHTML = '';
+        score.removeAttribute('aria-label');
+      }
+    }
     stickerBook();
   };
 

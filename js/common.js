@@ -68,7 +68,7 @@
   }
   document.addEventListener('pointerdown', warmSpeech, { once: true });
   document.addEventListener('touchstart', warmSpeech, { once: true });
-  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], [data-family], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .sound-btn, #kl-replay';
+  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], [data-family], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .number-play-20, .sound-btn, .animal-prompt, #kl-replay';
   function onGesture(e) {
     var T = window.KL_TTS;
     if (!T) return;
@@ -225,6 +225,18 @@
       case 'hjarta':
         inner = '<path d="M50 86 C22 64 10 46 10 32 C10 18 21 10 32 10 C40 10 47 14 50 22 C53 14 60 10 68 10 C79 10 90 18 90 32 C90 46 78 64 50 86 Z" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
         break;
+      case 'sporbaugur':
+        inner = '<ellipse cx="50" cy="50" rx="42" ry="27" fill="' + color + '" ' + common + '/>';
+        break;
+      case 'tígull':
+        inner = '<polygon points="50,8 88,50 50,92 12,50" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        break;
+      case 'hálfmáni':
+        inner = '<path d="M64 14 A38 38 0 1 0 64 86 A29 33 0 1 1 64 14 Z" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        break;
+      case 'sexhyrningur':
+        inner = '<polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        break;
       case 'hringur':
       default:
         inner = '<circle cx="50" cy="50" r="40" fill="' + color + '" ' + common + '/>';
@@ -235,11 +247,12 @@
   /* ---- Kóli the guide: koala + speech bubble ----
      Tapping Kóli or the bubble repeats what he last asked (setReplay). */
   var replayParts = null;
-  function setReplay(parts) { replayParts = parts; }
+  var replayAfter = null;
+  function setReplay(parts, onAfter) { replayParts = parts; replayAfter = onAfter || null; }
   function guideHTML(size) {
     return '<div class="guide">' +
       '<button type="button" class="koala" aria-label="' + I.t('speak.aria') + '">' + ART.koala(size || 76) + '</button>' +
-      '<div class="bubble" role="status" aria-live="polite"><div class="bubble-text"></div><div class="bubble-sub"></div></div>' +
+      '<div class="bubble" role="status" aria-live="polite"><div class="bubble-text"></div><div class="bubble-sub"></div><span class="bubble-ear" aria-hidden="true">' + speakerSVG(18, '#7A82A6') + '</span></div>' +
     '</div>';
   }
   function screenEl() { return document.getElementById(current ? 'game' : 'menu'); }
@@ -281,7 +294,10 @@
     if (e.target.closest('.guide .koala, .guide .bubble') && replayParts) {
       var g = guideEl();
       if (g) g.querySelector('.koala').classList.remove('hint');
-      say(replayParts);
+      var after = replayAfter;
+      say(replayParts, after ? function () {
+        if (!(window.KL_TTS && window.KL_TTS.blocked())) after();
+      } : undefined);
     }
   });
   if (window.KL_TTS) {
@@ -444,7 +460,7 @@
       var total = questions.length;
       var c = state.firstTry;
       finish(cfg.ctx, {
-        slotKey: slot(cfg.gameId, level),
+        slotKey: cfg.slotKey || slot(cfg.gameId, level),
         stars: c === total ? 3 : (c >= total - 2 ? 2 : 1),
         titleKey: 'end.title',
         lines: [I.fmt('end.score', { c: c, t: total })],
@@ -462,9 +478,13 @@
       var promptEl = stageEl.querySelector('.prompt');
       var answersEl = stageEl.querySelector('.answers');
       var answers = cfg.build(q, promptEl, answersEl, level) || [];
-      var prompt = cfg.promptSpeech(q);
-      koalaSay(cfg.promptText(q));
-      setReplay(prompt);
+      var prompt = cfg.promptSpeech(q, level);
+      var promptStr = cfg.promptText(q, level);
+      var afterSpoken = cfg.onPromptSpoken ? function () {
+        if (!locked && !(window.KL_TTS && window.KL_TTS.blocked())) cfg.onPromptSpoken(q, level);
+      } : null;
+      koalaSay(promptStr);
+      setReplay(prompt, afterSpoken);
 
       answers.forEach(function (a) {
         a.el.addEventListener('click', function () {
@@ -476,6 +496,7 @@
             answers.forEach(function (x) { x.el.disabled = true; });
             state.results[state.i] = mistakes === 0;
             if (mistakes === 0) state.firstTry++;
+            if (cfg.onCorrect) cfg.onCorrect(q, a, promptEl, level);
             var p = praise();
             sfx('correct');
             burst(a.el);
@@ -502,10 +523,15 @@
             sfx('wrong');
             a.el.classList.add('wrong');
             a.el.disabled = true;
-            koalaSay(I.t('try_again'), cfg.promptText(q));
+            var sub = cfg.wrongSub ? cfg.wrongSub(q, a, level) : promptStr;
+            koalaSay(I.t('try_again'), sub);
             koalaMood('oops');
-            say(['try_again'].concat(cfg.retrySpeech ? cfg.retrySpeech(q) : prompt), function () {
-              if (!locked) koalaSay(cfg.promptText(q));
+            var retry = cfg.retrySpeech ? cfg.retrySpeech(q, level) : prompt;
+            say(['try_again'].concat(retry), function () {
+              if (!locked) {
+                koalaSay(promptStr);
+                if (afterSpoken) afterSpoken();
+              }
             });
             later(function () { a.el.classList.remove('wrong'); a.el.classList.add('used'); }, 450);
           }
@@ -513,8 +539,8 @@
       });
 
       // Speak the question when it appears (after a refused autoplay: on the next tap).
-      say(prompt);
-      onUnlock(function () { say(prompt); });
+      say(prompt, afterSpoken || undefined);
+      onUnlock(function () { say(prompt, afterSpoken || undefined); });
     }
 
     if (cfg.levels) levelScreen(cfg.ctx, cfg.levels, { gameId: cfg.gameId, textKey: 'level.q' }, start);

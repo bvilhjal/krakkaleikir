@@ -16,33 +16,32 @@
       'game.tolur': 'Tölur',
       'game.talnatafla': 'Tölutafla',
       'game.bokstafir': 'Bókstafir',
-      'game.litir': 'Litir',
-      'game.form': 'Form',
       'game.klukkan': 'Klukkan',
       'game.minni': 'Minni',
+      'game.mynstur': 'Mynstur',
       'desc.tolur': 'Teldu dýrin og leystu dæmi',
       'desc.talnatafla': 'Kannaðu tölurnar frá 1 upp í 100',
-      'desc.bokstafir': 'Hlustaðu og finndu orðið',
-      'desc.litir': 'Hvaða litur er þetta?',
-      'desc.form': 'Hlustaðu og finndu formið',
+      'desc.bokstafir': 'Hlustaðu og finndu staf eða orð',
       'desc.klukkan': 'Lærðu á klukkuna',
       'desc.minni': 'Finndu dýrin sem eru eins',
+      'desc.mynstur': 'Hvað kemur næst í röðinni?',
       'footer.note': 'Stjörnur og límmiðar geymast í þessum vafra.',
       'footer.reset': 'Byrja upp á nýtt',
       'reset.confirm': 'Eyða öllum stjörnum og límmiðum?',
       'badge.not_played': 'Ekki prófað enn',
       'back.aria': 'Til baka í valmynd',
       'speak.aria': 'Hlusta aftur',
+      'menu.stars_aria': 'Samtals stjörnur: {n}',
       'title.tolur': 'Tölur — Krakkaleikir',
       'title.talnatafla': 'Tölutafla — Krakkaleikir',
       'title.bokstafir': 'Bókstafir — Krakkaleikir',
-      'title.litir': 'Litir — Krakkaleikir',
-      'title.form': 'Form — Krakkaleikir',
       'title.klukkan': 'Klukkan — Krakkaleikir',
       'title.minni': 'Minni — Krakkaleikir',
+      'title.mynstur': 'Mynstur — Krakkaleikir',
       'level.q': 'Hvað eigum við að prófa?',
       'level.easy': 'Létt',
       'level.hard': 'Erfitt',
+      'level.letters': 'Stafir',
       'end.title': 'Þú kláraðir leikinn!',
       'end.score': 'Rétt í fyrstu tilraun: <strong>{c} af {t}</strong>',
       'end.best': 'Besti árangur:',
@@ -67,19 +66,31 @@
       'half.1': 'hálf eitt', 'half.2': 'hálf tvö', 'half.3': 'hálf þrjú', 'half.4': 'hálf fjögur',
       'half.5': 'hálf fimm', 'half.6': 'hálf sex', 'half.7': 'hálf sjö', 'half.8': 'hálf átta',
       'half.9': 'hálf níu', 'half.10': 'hálf tíu', 'half.11': 'hálf ellefu', 'half.12': 'hálf tólf',
+      'klukkan.q_past': 'korter yfir {h}',
+      'klukkan.q_to': 'korter í {h}',
       'tolur.count_q.fiskur': 'Hvað eru margir fiskar?',
       'tolur.count_q.froskur': 'Hvað eru margir froskar?',
       'tolur.count_q.ungi': 'Hvað eru margir ungar?',
       'tolur.count_q.kottur': 'Hvað eru margir kettir?',
       'tolur.add': 'Hvað eru {a} plús {b}?',
       'tolur.sub': 'Hvað eru {a} mínus {b}?',
+      'tolur.miss_q': 'Hvað vantar í dæmið?',
+      'tolur.miss_add': '{a} plús hvað er {c}?',
+      'tolur.miss_sub': '{a} mínus hvað er {c}?',
       'talnatafla.start': 'Bankaðu á tölu og hlustum saman!',
       'talnatafla.play': 'Finndu tölu',
+      'talnatafla.play20': '1–20',
       'talnatafla.find': 'Finndu töluna {n}!',
       'talnatafla.range': 'Tölur frá 1 til 100',
+      'talnatafla.all': 'Allar',
+      'talnatafla.tens': 'Tugir',
+      'talnatafla.fives': 'Fimm',
+      'talnatafla.evens': 'Sléttar',
+      'talnatafla.higher': '↑ Hærra!',
+      'talnatafla.lower': '↓ Lægra!',
       'bokstafir.q': 'Hlustaðu vel! Hvaða orð heyrirðu?',
-      'litir.q': 'Hvaða litur er þetta?',
-      'form.q': 'Hlustaðu og finndu formið!',
+      'bokstafir.match_q': 'Finndu litla stafinn!',
+      'bokstafir.first_q': 'Á hvaða staf byrjar orðið?',
       'klukkan.read_q': 'Hvað er klukkan?',
       'klukkan.time': 'Klukkan er {t}.',
       'klukkan.set_b': 'Hvert á litli vísirinn að benda?',
@@ -87,27 +98,22 @@
       'minni.start': 'Finndu dýrin sem eru eins! Snúðu við tveimur spjöldum í einu.',
       'minni.pairs6': '6 pör',
       'minni.pairs8': '8 pör',
+      'minni.pairs10': '10 pör',
+      'minni.pairs12': '12 pör',
       'minni.end_title': 'Þú fannst öll pörin!',
       'minni.end_flips': 'Þú notaðir <strong>{n}</strong> snúninga.',
       'minni.end_best': 'Fæstu snúningar: {n}',
       'minni.card': 'Spjald {n}',
       'minni.flips': 'Snúningar',
-      'color.rauður': 'rauður',
-      'color.blár': 'blár',
-      'color.gulur': 'gulur',
-      'color.grænn': 'grænn',
-      'color.fjólublár': 'fjólublár',
-      'color.appelsínugulur': 'appelsínugulur',
-      'color.bleikur': 'bleikur',
-      'color.brúnn': 'brúnn',
-      'color.svartur': 'svartur',
-      'color.grár': 'grár',
+      'mynstur.q': 'Hvað kemur næst?',
       'shape.hringur': 'hringur',
       'shape.ferningur': 'ferningur',
       'shape.þríhyrningur': 'þríhyrningur',
-      'shape.rétthyrningur': 'rétthyrningur',
       'shape.stjarna': 'stjarna',
       'shape.hjarta': 'hjarta',
+      'shape.tígull': 'tígull',
+      'shape.hálfmáni': 'hálfmáni',
+      'shape.sexhyrningur': 'sexhyrningur',
       'animal.koala': 'kóala',
       'animal.froskur': 'froskur',
       'animal.ungi': 'ungi',
@@ -129,33 +135,32 @@
       'game.tolur': 'Tal',
       'game.talnatafla': 'Taltavle',
       'game.bokstafir': 'Bogstaver',
-      'game.litir': 'Farver',
-      'game.form': 'Former',
       'game.klukkan': 'Klokken',
       'game.minni': 'Vendespil',
+      'game.mynstur': 'Mønstre',
       'desc.tolur': 'Tæl dyrene og løs regnestykker',
       'desc.talnatafla': 'Gå på opdagelse i tallene fra 1 til 100',
-      'desc.bokstafir': 'Lyt og find ordet',
-      'desc.litir': 'Hvilken farve er det?',
-      'desc.form': 'Lyt og find formen',
+      'desc.bokstafir': 'Lyt og find bogstav eller ord',
       'desc.klukkan': 'Lær klokken',
       'desc.minni': 'Find de dyr, der er ens',
+      'desc.mynstur': 'Hvad kommer næst i rækken?',
       'footer.note': 'Stjerner og klistermærker gemmes i denne browser.',
       'footer.reset': 'Start forfra',
       'reset.confirm': 'Slette alle stjerner og klistermærker?',
       'badge.not_played': 'Ikke prøvet endnu',
       'back.aria': 'Tilbage til menuen',
       'speak.aria': 'Lyt igen',
+      'menu.stars_aria': 'Stjerner i alt: {n}',
       'title.tolur': 'Tal — Krakkaleikir',
       'title.talnatafla': 'Taltavle — Krakkaleikir',
       'title.bokstafir': 'Bogstaver — Krakkaleikir',
-      'title.litir': 'Farver — Krakkaleikir',
-      'title.form': 'Former — Krakkaleikir',
       'title.klukkan': 'Klokken — Krakkaleikir',
       'title.minni': 'Vendespil — Krakkaleikir',
+      'title.mynstur': 'Mønstre — Krakkaleikir',
       'level.q': 'Hvad skal vi prøve?',
       'level.easy': 'Let',
       'level.hard': 'Svær',
+      'level.letters': 'Bogstaver',
       'end.title': 'Du klarede spillet!',
       'end.score': 'Rigtigt i første forsøg: <strong>{c} af {t}</strong>',
       'end.best': 'Bedste resultat:',
@@ -180,19 +185,31 @@
       'half.1': 'halv et', 'half.2': 'halv to', 'half.3': 'halv tre', 'half.4': 'halv fire',
       'half.5': 'halv fem', 'half.6': 'halv seks', 'half.7': 'halv syv', 'half.8': 'halv otte',
       'half.9': 'halv ni', 'half.10': 'halv ti', 'half.11': 'halv elleve', 'half.12': 'halv tolv',
+      'klukkan.q_past': 'kvart over {h}',
+      'klukkan.q_to': 'kvart i {h}',
       'tolur.count_q.fiskur': 'Hvor mange fisk er der?',
       'tolur.count_q.froskur': 'Hvor mange frøer er der?',
       'tolur.count_q.ungi': 'Hvor mange kyllinger er der?',
       'tolur.count_q.kottur': 'Hvor mange katte er der?',
       'tolur.add': 'Hvad er {a} plus {b}?',
       'tolur.sub': 'Hvad er {a} minus {b}?',
+      'tolur.miss_q': 'Hvad mangler?',
+      'tolur.miss_add': '{a} plus hvad er {c}?',
+      'tolur.miss_sub': '{a} minus hvad er {c}?',
       'talnatafla.start': 'Tryk på et tal, så lytter vi sammen!',
       'talnatafla.play': 'Find et tal',
+      'talnatafla.play20': '1–20',
       'talnatafla.find': 'Find tallet {n}!',
       'talnatafla.range': 'Tal fra 1 til 100',
+      'talnatafla.all': 'Alle',
+      'talnatafla.tens': 'Tiere',
+      'talnatafla.fives': 'Femmere',
+      'talnatafla.evens': 'Lige',
+      'talnatafla.higher': '↑ Højere!',
+      'talnatafla.lower': '↓ Lavere!',
       'bokstafir.q': 'Lyt godt efter! Hvilket ord hører du?',
-      'litir.q': 'Hvilken farve er det?',
-      'form.q': 'Lyt og find formen!',
+      'bokstafir.match_q': 'Find det lille bogstav!',
+      'bokstafir.first_q': 'Hvilket bogstav begynder ordet med?',
       'klukkan.read_q': 'Hvad er klokken?',
       'klukkan.time': 'Klokken er {t}.',
       'klukkan.set_b': 'Hvor skal den lille viser pege hen?',
@@ -200,27 +217,22 @@
       'minni.start': 'Find de dyr, der er ens! Vend to kort ad gangen.',
       'minni.pairs6': '6 par',
       'minni.pairs8': '8 par',
+      'minni.pairs10': '10 par',
+      'minni.pairs12': '12 par',
       'minni.end_title': 'Du fandt alle parrene!',
       'minni.end_flips': 'Du brugte <strong>{n}</strong> træk.',
       'minni.end_best': 'Færrest træk: {n}',
       'minni.card': 'Kort {n}',
       'minni.flips': 'Træk',
-      'color.rauður': 'rød',
-      'color.blár': 'blå',
-      'color.gulur': 'gul',
-      'color.grænn': 'grøn',
-      'color.fjólublár': 'lilla',
-      'color.appelsínugulur': 'orange',
-      'color.bleikur': 'lyserød',
-      'color.brúnn': 'brun',
-      'color.svartur': 'sort',
-      'color.grár': 'grå',
+      'mynstur.q': 'Hvad kommer næst?',
       'shape.hringur': 'cirkel',
       'shape.ferningur': 'kvadrat',
       'shape.þríhyrningur': 'trekant',
-      'shape.rétthyrningur': 'rektangel',
       'shape.stjarna': 'stjerne',
       'shape.hjarta': 'hjerte',
+      'shape.tígull': 'rombe',
+      'shape.hálfmáni': 'halvmåne',
+      'shape.sexhyrningur': 'sekskant',
       'animal.koala': 'koala',
       'animal.froskur': 'frø',
       'animal.ungi': 'kylling',
@@ -297,8 +309,10 @@
   var PHRASES = [
     'koala.hello', 'koala.next', 'level.q', 'end.title', 'try_again', 'sticker.all',
     'tolur.count_q.fiskur', 'tolur.count_q.froskur', 'tolur.count_q.ungi', 'tolur.count_q.kottur',
-    'bokstafir.q', 'litir.q', 'form.q', 'klukkan.read_q', 'klukkan.set_b', 'klukkan.pick_b',
-    'minni.start', 'minni.end_title', 'talnatafla.start'
+    'bokstafir.q', 'bokstafir.match_q', 'bokstafir.first_q',
+    'klukkan.read_q', 'klukkan.set_b', 'klukkan.pick_b',
+    'minni.start', 'minni.end_title', 'talnatafla.start',
+    'mynstur.q'
   ];
 
   function lang() {
@@ -334,7 +348,7 @@
   var vocabCache = {};
   function audioVocab(l) {
     if (vocabCache[l]) return vocabCache[l];
-    var S = STR[l], v = {}, a, b, h;
+    var S = STR[l], v = {}, a, b, c, h;
     PHRASES.forEach(function (k) { v[k] = S[k]; });
     for (a = 1; a <= 100; a++) v['num.' + a] = S['num.' + a];
     for (a = 1; a <= 10; a++) {
@@ -343,12 +357,34 @@
         if (b < a) v['sub.' + a + '.' + b] = fill(S['tolur.sub'], { a: S['num.' + a], b: S['num.' + b] });
       }
     }
+    for (a = 6; a <= 15; a++) {
+      for (b = 1; b <= 9; b++) {
+        if (a + b > 10 && a + b <= 20) v['add.' + a + '.' + b] = fill(S['tolur.add'], { a: S['num.' + a], b: S['num.' + b] });
+      }
+    }
+    for (a = 11; a <= 19; a++) {
+      [1, 2, 3, 4, 5, 10].forEach(function (subB) {
+        v['sub.' + a + '.' + subB] = fill(S['tolur.sub'], { a: S['num.' + a], b: S['num.' + subB] });
+      });
+    }
+    for (c = 5; c <= 10; c++) {
+      for (a = 1; a < c; a++) {
+        v['miss.' + a + '.' + c] = fill(S['tolur.miss_add'], { a: S['num.' + a], c: S['num.' + c] });
+      }
+    }
+    for (a = 5; a <= 10; a++) {
+      for (c = 1; c < a; c++) {
+        v['submiss.' + a + '.' + c] = fill(S['tolur.miss_sub'], { a: S['num.' + a], c: S['num.' + c] });
+      }
+    }
     for (h = 1; h <= 12; h++) {
       v['time.' + h + '.0'] = fill(S['klukkan.time'], { t: S['hour.' + h] });
+      v['time.' + h + '.15'] = fill(S['klukkan.time'], { t: fill(S['klukkan.q_past'], { h: S['hour.' + h] }) });
       v['time.' + h + '.30'] = fill(S['klukkan.time'], { t: S['half.' + (h % 12 + 1)] });
+      v['time.' + h + '.45'] = fill(S['klukkan.time'], { t: fill(S['klukkan.q_to'], { h: S['hour.' + (h % 12 + 1)] }) });
     }
     Object.keys(S).forEach(function (k) {
-      if (/^(color|shape)\./.test(k)) v[k] = S[k];
+      if (/^(shape|animal)\./.test(k)) v[k] = S[k];
       if (k.indexOf('animal.') === 0) v['sticker.' + k.slice(7)] = fill(S['sticker.new'], { a: S[k] });
     });
     WORDS[l].forEach(function (w) { v['word.' + w] = w; });

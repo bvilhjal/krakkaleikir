@@ -1,8 +1,9 @@
 /* Klukkan / Uret: read an analog clock and set it.
-   Level 1 (whole hours): read the clock; set the hour hand by tapping a number.
-   Level 2 (half hours too): read the clock; pick the clock that shows a time.
+   Level 1 (3:00, whole): read the clock; set the hour hand by tapping a number.
+   Level 2 (3:30, half): read the clock; pick the clock that shows a time.
+   Level 3 (3:15, quarter): quarter past (:15) and quarter to (:45) too.
    Times are spoken as whole sentences: time.3.0 = "Klukkan er þrjú.", time.3.30 =
-   "Klukkan er hálf fjögur." (both languages count half hours toward the coming hour). */
+   "Klukkan er hálf fjögur.", time.3.15 = "Klukkan er korter yfir þrjú.". */
 (function () {
   'use strict';
 
@@ -16,19 +17,23 @@
   }
   function f1(n) { return n.toFixed(1); }
 
-  // times are { h: 1..12, m: 0 | 30 }
+  // times are { h: 1..12, m: 0 | 15 | 30 | 45 }
   function timeKey(t) { return 'time.' + t.h + '.' + t.m; }
   function timeText(t) { return KL_I18N.audioVocab(KL_I18N.lang())[timeKey(t)]; }
-  function digital(t) { return t.h + ':' + (t.m ? '30' : '00'); }
-  function shift(t, halves) {
-    var mins = (((t.h % 12) * 60 + t.m + halves * 30) % 720 + 720) % 720;
+  function digital(t) { return t.h + ':' + (t.m < 10 ? '0' + t.m : String(t.m)); }
+  function shift(t, steps, unitMins) {
+    var mins = (((t.h % 12) * 60 + t.m + steps * (unitMins || 30)) % 720 + 720) % 720;
     var h = Math.floor(mins / 60);
     return { h: h === 0 ? 12 : h, m: mins % 60 };
   }
-  // the right time plus three it is easily confused with: the same hour and the neighbouring half hours
-  function nearTimes(t) {
+  // the right time plus three it is easily confused with: the same hour and neighbouring ticks
+  function nearTimes(t, level) {
+    var unit = level === 'quarter' ? 15 : 30;
+    var extra = level === 'quarter'
+      ? { h: t.h, m: t.m === 15 ? 45 : (t.m === 45 ? 15 : 15) }
+      : { h: t.h, m: t.m ? 0 : 30 };
     var seen = {}, pool = [];
-    [shift(t, -1), shift(t, 1), shift(t, 2), shift(t, -2), { h: t.h, m: t.m ? 0 : 30 }].forEach(function (x) {
+    [shift(t, -1, unit), shift(t, 1, unit), shift(t, 2, unit), shift(t, -2, unit), extra].forEach(function (x) {
       var k = digital(x);
       if (!seen[k] && k !== digital(t)) { seen[k] = true; pool.push(x); }
     });
@@ -109,7 +114,12 @@
 
   function makeQuestions(level) {
     var qs = [];
-    if (level === 'half') {
+    if (level === 'quarter') {
+      var qMins = [15, 45, 15, 45, 30];
+      ['read', 'pick'].forEach(function (type) {
+        KL.sample(HOURS, 5).forEach(function (h, k) { qs.push({ type: type, time: { h: h, m: qMins[k] } }); });
+      });
+    } else if (level === 'half') {
       // 5 read + 5 pick; three of each are half hours
       ['read', 'pick'].forEach(function (type) {
         KL.sample(HOURS, 5).forEach(function (h, k) { qs.push({ type: type, time: { h: h, m: k < 3 ? 30 : 0 } }); });
@@ -122,7 +132,7 @@
   }
 
   KL.register('klukkan', {
-    levels: [{ id: 'whole', label: '3:00' }, { id: 'half', label: '3:30' }],
+    levels: [{ id: 'whole', label: '3:00' }, { id: 'half', label: '3:30' }, { id: 'quarter', label: '3:15' }],
     start: function (ctx) {
       KL.runGame({
         ctx: ctx,
@@ -142,19 +152,19 @@
           var t = q.time;
           if (q.type === 'read') {
             promptEl.innerHTML = clockSVG({ time: t, numbers: true, ariaLabel: digital(t) });
-            var choices = level === 'half' ? nearTimes(t) : KL.pickDistinct(HOURS, t.h, 4).map(function (h) { return { h: h, m: 0 }; });
+            var choices = level !== 'whole' ? nearTimes(t, level) : KL.pickDistinct(HOURS, t.h, 4).map(function (h) { return { h: h, m: 0 }; });
             return choices.map(function (c) {
               var btn = document.createElement('button');
               btn.type = 'button';
               btn.className = 'answer';
-              btn.textContent = level === 'half' ? digital(c) : c.h;
+              btn.textContent = level !== 'whole' ? digital(c) : c.h;
               answersEl.appendChild(btn);
               return { el: btn, isCorrect: digital(c) === digital(t), speechParts: [timeKey(c)] };
             });
           }
           if (q.type === 'pick') {
             promptEl.innerHTML = '<div class="digital">' + digital(t) + '</div>';
-            return nearTimes(t).map(function (c) {
+            return nearTimes(t, level).map(function (c) {
               var btn = document.createElement('button');
               btn.type = 'button';
               btn.className = 'answer clock-choice';

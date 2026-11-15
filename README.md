@@ -1,20 +1,19 @@
 # Krakkaleikir
 
-Skemmtilegir lærdómsleikir fyrir lítil börn, með Kóla kóala sem leiðsögumann — einföld vefsíða sem virkar í vafranum á iPad (eða hvaða tæki sem er), líka án nettengingar. Hrein HTML/CSS/JS, engin ytri forritasöfn og ekkert byggingarskref.
+Skemmtilegir lærdómsleikir fyrir krakka 5 ára og eldri, með Kóla kóala sem leiðsögumann — einföld vefsíða sem virkar í vafranum á iPad (eða hvaða tæki sem er), líka án nettengingar. Hrein HTML/CSS/JS, engin ytri forritasöfn og ekkert byggingarskref.
 
-Educational browser games for young kids, guided by Kóli the koala; bilingual Icelandic/Danish (IS/DA toggle in the top bar; the choice is remembered in `localStorage`). Static single-page site, no build step, no dependencies; works offline once loaded.
+Educational browser games for kids aged 5+, guided by Kóli the koala; bilingual Icelandic/Danish (IS/DA toggle in the top bar; the choice is remembered in `localStorage`). Static single-page site, no build step, no dependencies; works offline once loaded.
 
 ## Leikir
 
 | Leikur | Hvað er æft | Erfiðleikastig |
 |---|---|---|
-| Tölur | Telja dýr og leysa einföld dæmi, með dýrum til að telja | 1–5: telja upp í 5, samlagning · 1–10: telja upp í 10, samlagning og frádráttur |
-| Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, eða finna tíu tölur sem Kóli les | Frjáls könnun eða talnaleit |
-| Bókstafir | Hlusta á stutt orð (t.d. „mús“) og finna það skrifað | Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
-| Litir | Litarheiti; hver litur kemur einu sinni | — |
-| Form | Hlusta á formheiti og velja réttu myndina (hringur, ferningur, þríhyrningur, ...) | — |
-| Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar, vísirinn snýst að tölunni sem bankað er á · 3:30: líka hálfir tímar („hálf fjögur“), finna réttu klukkuna |
-| Minni (DA: Vendespil) | Finna dýrin sem eru eins | 6 eða 8 pör |
+| Tölur | Telja dýr (banka á hvert dýr til að telja upphátt), leysa dæmi og finna töluna sem vantar | 1–10: telja, samlagning og frádráttur · 1–20: telja upp í 18, dæmi upp í 20 · 3 + ?: hvaða tala vantar (`4 + ? = 10`, `9 − ? = 5`) |
+| Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, merkja mynstur (tugir/fimm/sléttar), eða talnaleit með vísbendingum (↑ hærra / ↓ lægra) | Frjáls könnun, talnaleit 1–20 (5×4 án skrolls) eða talnaleit 1–100 |
+| Bókstafir | Para stóra og litla stafi, finna fyrsta staf orðs, eða hlusta á orð og finna rétta orðið | Stafir: stafir og upphafsstafir · Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
+| Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar · 3:30: líka hálfir tímar („hálf fjögur“) · 3:15: líka korter („korter yfir“, „korter í“) |
+| Minni (DA: Vendespil) | Finna dýrin sem eru eins; dýrið lætur í sér heyra þegar par finnst | 6, 8, 10 eða 12 pör |
+| Mynstur (DA: Mønstre) | Finna hvað kemur næst í mynstri eða talnaröð | Létt: AAB, ABB, AABB, ABC · Erfitt: AABB, ABB, ABC og talnaraðir (+1, +2, +5, +10, −1, −2, −5, −10) |
 
 Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Á þröngum skjám má strjúka töflunni til hliðar; dálkarnir eru alltaf tíu.
 
@@ -41,7 +40,7 @@ Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Ed
 
 ### Á iPad
 
-Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 6,9 MB) og leitar að nýrri útgáfu í hvert sinn sem appið er opnað. Ný útgáfa tekur gildi næst þegar valmyndin birtist, aldrei í miðjum leik.
+Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 13,5 MB) og leitar að nýrri útgáfu í hvert sinn sem appið er opnað. Ný útgáfa tekur gildi næst þegar valmyndin birtist, aldrei í miðjum leik.
 
 ## Uppbygging
 
@@ -75,7 +74,7 @@ tools/listen.html     hlusta á allar mp3-skrárnar og merkja þær sem hljóma 
 
 ## Nýr leikur
 
-1. Búðu til `js/nafn.js` sem kallar á `KL.register('nafn', { start: function (ctx) { ... } })`. Fyrir valspurningaleiki: `KL.runGame({ ctx, gameId, makeQuestions, promptText, promptSpeech, build })`, valfrjálst með `levels`. Sjá `js/litir.js` (einfaldast) og `js/tolur.js` (með stigum).
-2. Í `index.html`: kort með `data-nav="nafn"` og merki með `data-game="nafn"`, og `<script src="js/nafn.js">`. Afritaðu `games/litir.html` í `games/nafn.html` og breyttu leiknum sem vísað er á.
+1. Búðu til `js/nafn.js` sem kallar á `KL.register('nafn', { start: function (ctx) { ... } })`. Fyrir valspurningaleiki: `KL.runGame({ ctx, gameId, makeQuestions, promptText, promptSpeech, build })`, valfrjálst með `levels`. Sjá `js/mynstur.js` og `js/tolur.js`.
+2. Í `index.html`: kort með `data-nav="nafn"` og merki með `data-game="nafn"`, og `<script src="js/nafn.js">`. Afritaðu `games/mynstur.html` í `games/nafn.html` og breyttu leiknum sem vísað er á.
 3. Í báðar töflur í `js/i18n.js`: `game.nafn`, `title.nafn`, `desc.nafn` og spurningatextar. Textar sem eru lesnir upphátt fara líka í `PHRASES` (eða setningar í `audioVocab()`) í sama skjali.
 4. Svo skrefin í „Eftir breytingar“.

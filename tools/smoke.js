@@ -166,7 +166,7 @@ const PLAY_KLUKKAN = `(async () => {
         }
         const choices = [...stage.querySelectorAll('.clock-choice')].filter((b) => !b.disabled);
         if (choices.length) {
-          if (choices.some((b) => !/^\\d{1,2}:(00|30)$/.test(b.getAttribute('aria-label') || ''))) {
+          if (choices.some((b) => !/^\\d{1,2}:(00|15|30|45)$/.test(b.getAttribute('aria-label') || ''))) {
             throw new Error('clock picture choice has no accessible digital-time name');
           }
           const btn = choices.find((b) => {
@@ -182,7 +182,7 @@ const PLAY_KLUKKAN = `(async () => {
         if (svg && hands.length >= 2) {
           const m = (Math.round(angle(hands[0]) / 6) % 60 + 60) % 60;
           const h = Math.floor((angle(hands[1]) + 0.01) / 30) % 12 || 12;
-          const expected = h + ':' + (m ? '30' : '00');
+          const expected = h + ':' + (m < 10 ? '0' + m : String(m));
           if (svg.getAttribute('role') !== 'img' || svg.getAttribute('aria-label') !== expected) {
             throw new Error('analog clock lacks its accessible time label');
           }
@@ -255,7 +255,7 @@ async function main() {
     console.error('smoke test timed out');
     try { chrome.kill('SIGKILL'); } catch (e) { /* already gone */ }
     process.exit(1);
-  }, 420000);
+  }, 600000);
 
   try {
     let target = null;
@@ -322,17 +322,18 @@ async function main() {
     // the menu cards are static HTML: wait for the scripts too, not just the markup
     const waitForApp = async () => {
       await waitFor(`document.readyState === 'complete' && typeof KL !== 'undefined'`, 'app scripts loaded');
-      await waitFor(`document.querySelectorAll('.game-card').length === 7`, 'menu');
+      await waitFor(`document.querySelectorAll('.game-card').length === 6`, 'menu');
     };
 
     console.log('krakkaleikir smoke test — ' + base);
     await cdp.send('Page.navigate', { url: base + '/' });
     await waitForApp();
 
-    await test('menu renders: 7 cards, sticker book, Kóli greets', async () => {
+    await test('menu renders: 6 cards, sticker book, Kóli greets', async () => {
       assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .sticker').length >= 12`), 'sticker grid');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.length > 0`), 'greeting');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'first sticker is Kóli');
+      assert(await cdp.eval(`document.querySelector('#score').textContent === ''`), 'menu score hidden before stars earned');
       await shot('menu-desktop');
     });
 
@@ -407,31 +408,74 @@ async function main() {
       }
     });
 
-    await test('tolur: full round, stars saved, sticker awarded, confetti', async () => {
+    await test('tolur: level 1-10 interactive counting, stars saved, sticker awarded, confetti', async () => {
       await openGame('tolur');
       await pickLevel(0);
       await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first question');
-      assert(await cdp.eval(PLAY_ROUND), 'round finished');
+      const tolurRes = await cdp.eval(`(async () => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        let tappedHerd = false;
+        for (let guard = 0; guard < 500; guard++) {
+          if (document.querySelector('.end-card')) return { ok: true, tappedHerd };
+          if (!tappedHerd) {
+            const items = [...document.querySelectorAll('.q-stage .herd-item')];
+            if (items.length) {
+              items[0].click();
+              if (items[0].querySelector('.tap-num').textContent !== '1') return { ok: false, reason: 'tap-num 1' };
+              if (items[1]) {
+                items[1].click();
+                if (items[1].querySelector('.tap-num').textContent !== '2') return { ok: false, reason: 'tap-num 2' };
+              }
+              tappedHerd = true;
+            }
+          }
+          const btns = [...document.querySelectorAll('.q-stage .answer')];
+          const enabled = btns.filter((b) => !b.disabled);
+          if (enabled.length) enabled[0].click();
+          await sleep(120);
+        }
+        return { ok: false, reason: 'timeout' };
+      })()`);
+      assert(tolurRes.ok && tolurRes.tappedHerd, 'round finished with interactive counting: ' + JSON.stringify(tolurRes));
       assert(await cdp.eval(`document.querySelectorAll('#fx .confetti').length > 0`), 'confetti');
-      const stars = await cdp.eval(`parseInt(localStorage.getItem('kl.stars.tolur.1') || '0', 10)`);
+      const stars = await cdp.eval(`parseInt(localStorage.getItem('kl.stars.tolur.10') || '0', 10)`);
       assert(stars >= 1 && stars <= 3, 'stars saved, got ' + stars);
       assert(await cdp.eval(`KL.stickers().length === 2`), 'second sticker awarded');
       assert(await cdp.eval(`!!document.querySelector('.sticker-reveal')`), 'sticker reveal');
       await shot('tolur-end-desktop', 1500); // the sticker pops in over ~1.3s
       await toMenu();
       assert(await cdp.eval(`document.querySelector('.badge[data-game="tolur"] svg') !== null`), 'badge shows stars');
+      assert(await cdp.eval(`document.querySelector('#score span').textContent.length > 0`), 'menu shows total stars');
     });
 
-    await test('tolur: level 1–10 with subtraction finishes', async () => {
+    // Real MP3s still load, decode and fire onended, just 8x faster so the
+    // remaining ten-question rounds hit the 1s visual floor cleanly in CI.
+    await cdp.eval(`(() => {
+      const orig = Audio.prototype.play;
+      Audio.prototype.play = function () {
+        try { this.playbackRate = 8; } catch (e) {}
+        return orig.apply(this, arguments);
+      };
+    })()`);
+
+    await test('tolur: levels 1-20 and 3+? finish', async () => {
       await openGame('tolur');
       await pickLevel(1);
-      await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first hard question');
-      assert(await cdp.eval(PLAY_ROUND), 'hard round finished');
-      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.tolur.2') || '0', 10) >= 1`), 'hard-level stars saved');
+      await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first 1-20 question');
+      assert(await cdp.eval(PLAY_ROUND), '1-20 round finished');
+      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.tolur.20') || '0', 10) >= 1`), '1-20 stars saved');
+      await toMenu();
+
+      await openGame('tolur');
+      await pickLevel(2);
+      await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first missing-number question');
+      assert(await cdp.eval(`document.querySelectorAll('.q-stage .miss-box').length === 1`), 'missing-number box rendered');
+      assert(await cdp.eval(PLAY_ROUND), 'missing-number round finished');
+      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.tolur.miss') || '0', 10) >= 1`), 'missing-number stars saved');
       await toMenu();
     });
 
-    await test('minni: keyboard flip, labels, full round, fewest flips, replay', async () => {
+    await test('minni: 6-pair keyboard flip, labels, full round, fewest flips, replay', async () => {
       await openGame('minni');
       await pickLevel(0);
       await waitFor(`document.querySelectorAll('.mcard').length === 12`, 'board');
@@ -467,81 +511,95 @@ async function main() {
       await toMenu();
     });
 
-    await test('minni: eight-pair board finishes and stores its own best', async () => {
-      await openGame('minni');
-      await pickLevel(1);
-      await waitFor(`document.querySelectorAll('.mcard').length === 16`, '16-card board');
-      assert(await cdp.eval(PLAY_MINNI), 'eight-pair round finished');
-      assert(await cdp.eval(`localStorage.getItem('kl.flips.minni.8') === '8'`), 'perfect memory: 8 moves');
-      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.minni.8') || '0', 10) === 3`), '3 stars');
-      await toMenu();
+    await test('minni: 8-pair, 10-pair, and 12-pair boards finish and store bests', async () => {
+      for (const [lvIdx, nPairs] of [[1, 8], [2, 10], [3, 12]]) {
+        await openGame('minni');
+        await pickLevel(lvIdx);
+        await waitFor(`document.querySelectorAll('.mcard').length === ${nPairs * 2}`, nPairs + '-pair board');
+        assert(await cdp.eval(PLAY_MINNI), nPairs + '-pair round finished');
+        assert(await cdp.eval(`localStorage.getItem('kl.flips.minni.${nPairs}') === '${nPairs}'`), 'perfect memory: ' + nPairs + ' moves');
+        assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.minni.${nPairs}') || '0', 10) === 3`), '3 stars');
+        await toMenu();
+      }
     });
 
-    await test('talnatafla: explore speaks a number, listening round finishes', async () => {
+    await test('talnatafla: explore filters, 1-20 with hints, and 1-100 finish', async () => {
       await openGame('talnatafla');
+      await cdp.eval(`document.querySelector('.chip[data-pat="10"]').click()`);
+      assert(await cdp.eval(`document.querySelectorAll('.number-cell.pat-hi').length === 10`), '10 multiples of 10 highlighted');
       await cdp.eval(`document.querySelectorAll('.number-cell')[41].click()`);
       assert(await cdp.eval(`document.querySelector('.number-value').textContent === '42'`), 'reading shows 42');
       assert(await cdp.eval(`document.querySelector('.number-name').textContent === KL.t('num.42')`), 'reading names 42');
       assert(await cdp.eval(`document.querySelectorAll('.number-cell')[41].getAttribute('aria-pressed') === 'true'`), 'pressed state');
+      await cdp.eval(`document.querySelector('.number-play-20').click()`);
+      await waitFor(`document.querySelectorAll('.q-stage .number-cell').length === 20`, '20-cell quiz board');
+      const hintSub = await cdp.eval(`(() => {
+        const text = document.querySelector('#game .bubble-text').textContent;
+        const S = KL_I18N.STR[KL_I18N.lang()];
+        let target = 1;
+        for (let n = 1; n <= 20; n++) if (KL_I18N.fmt('talnatafla.find', { n: S['num.' + n] }) === text) { target = n; break; }
+        const wrong = target === 1 ? 2 : 1;
+        document.querySelectorAll('.q-stage .number-cell')[wrong - 1].click();
+        return document.querySelector('#game .bubble-sub').textContent;
+      })()`);
+      assert(/[↑↓]/.test(hintSub), 'higher/lower hint shown: ' + hintSub);
+      assert(await cdp.eval(PLAY_TALNATAFLA), '1-20 round finished');
+      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.talnatafla.20') || '0', 10) >= 1`), '1-20 stars saved');
+      await toMenu();
+
+      await openGame('talnatafla');
       await cdp.eval(`document.querySelector('.number-play').click()`);
-      await waitFor(`document.querySelectorAll('.q-stage .number-cell').length === 100`, 'quiz board');
-      assert(await cdp.eval(PLAY_TALNATAFLA), 'round finished');
-      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.talnatafla') || '0', 10) >= 1`), 'stars saved');
+      await waitFor(`document.querySelectorAll('.q-stage .number-cell').length === 100`, '100-cell quiz board');
+      assert(await cdp.eval(PLAY_TALNATAFLA), '1-100 round finished');
+      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.talnatafla') || '0', 10) >= 1`), '1-100 stars saved');
       await toMenu();
     });
 
-    await test('klukkan: whole-hour round finishes', async () => {
-      await openGame('klukkan');
-      await pickLevel(0);
-      await waitFor(`document.querySelector('.q-stage .answer, .q-stage .clock-num')`, 'first question');
-      const result = await cdp.eval(PLAY_KLUKKAN);
-      assert(result.ok && result.read === 5 && result.set === 5, 'whole-hour round: ' + JSON.stringify(result));
-      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.klukkan.whole') || '0', 10) >= 1`), 'stars saved');
-      await toMenu();
+    await test('klukkan: whole, half, and quarter hour rounds finish', async () => {
+      for (const [lvIdx, key, expectedPick, expectedSet] of [
+        [0, 'whole', 0, 5],
+        [1, 'half', 5, 0],
+        [2, 'quarter', 5, 0]
+      ]) {
+        await openGame('klukkan');
+        await pickLevel(lvIdx);
+        await waitFor(`document.querySelector('.q-stage .answer, .q-stage .clock-num')`, 'first ' + key + ' question');
+        const result = await cdp.eval(PLAY_KLUKKAN);
+        assert(result.ok && result.read === 5 && result.pick === expectedPick && result.set === expectedSet,
+          key + ' round: ' + JSON.stringify(result));
+        assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.klukkan.${key}') || '0', 10) >= 1`), key + ' stars saved');
+        await toMenu();
+      }
     });
 
-    await test('klukkan: half-hour read/pick round is playable and accessibly named', async () => {
-      await openGame('klukkan');
-      await pickLevel(1);
-      await waitFor(`document.querySelector('.q-stage .answer')`, 'first half-hour question');
-      const result = await cdp.eval(PLAY_KLUKKAN);
-      assert(result.ok && result.read === 5 && result.pick === 5, 'half-hour round: ' + JSON.stringify(result));
-      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.klukkan.half') || '0', 10) >= 1`), 'stars saved');
-      await toMenu();
-    });
-
-    for (const [id, level] of [['bokstafir', 0], ['litir', -1], ['form', -1]]) {
-      await test(id + ': full round finishes', async () => {
+    for (const [id, lvIdx, slot, btnSel] of [
+      ['bokstafir', 0, 'bokstafir.letters', null],
+      ['bokstafir', 1, 'bokstafir.easy', '.sound-btn'],
+      ['bokstafir', 2, 'bokstafir.hard', null],
+      ['mynstur', 0, 'mynstur.easy', null],
+      ['mynstur', 1, 'mynstur.hard', null]
+    ]) {
+      await test(`${id} (${slot.split('.')[1]}): full round finishes`, async () => {
         await openGame(id);
-        if (level >= 0) await pickLevel(level);
+        await pickLevel(lvIdx);
         await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first question');
-        if (id === 'bokstafir') {
-          await cdp.eval(`document.querySelector('.sound-btn').click()`); // hear the word again
-        }
+        if (btnSel) await cdp.eval(`document.querySelector(${JSON.stringify(btnSel)}).click()`);
         assert(await cdp.eval(PLAY_ROUND), 'round finished');
-        const slot = id === 'bokstafir' ? 'bokstafir.easy' : id;
         assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.${slot}') || '0', 10) >= 1`), 'stars saved');
         await toMenu();
       });
     }
 
-    await test('bokstafir: look-alike hard round finishes', async () => {
-      await openGame('bokstafir');
-      await pickLevel(1);
-      await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first hard word question');
-      assert(await cdp.eval(PLAY_ROUND), 'hard word round finished');
-      assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.bokstafir.hard') || '0', 10) >= 1`), 'hard-level stars saved');
-      await toMenu();
-    });
-
     await test('language switch: Danish menu and game, aria-pressed, back to IS', async () => {
       await cdp.eval(`document.querySelector('[data-lang="da"]').click()`);
       await waitFor(`document.documentElement.lang === 'da'`, 'lang attribute');
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="tolur"] h2').textContent === 'Tal'`), 'card translated');
+      assert(await cdp.eval(`document.querySelector('.game-card[data-nav="mynstur"] h2').textContent === 'Mønstre'`), 'mynstur translated');
       assert(await cdp.eval(`document.querySelector('[data-lang="da"]').getAttribute('aria-pressed') === 'true'`), 'aria-pressed');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.indexOf('Hej') === 0`), 'Kóli greets in Danish');
-      await openGame('litir');
-      assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === 'Hvilken farve er det?'`), 'Danish prompt');
+      await openGame('mynstur');
+      await pickLevel(0);
+      assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === 'Hvad kommer næst?'`), 'Danish prompt');
       assert(await cdp.eval(PLAY_ROUND), 'full Danish round finished');
       await toMenu();
       await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
@@ -557,11 +615,12 @@ async function main() {
 
     await test('reset clears stars and stickers', async () => {
       await cdp.eval(`window.confirm = () => true; document.getElementById('reset-scores').click()`);
-      assert(await cdp.eval(`localStorage.getItem('kl.stars.tolur.1') === null`), 'stars gone');
+      assert(await cdp.eval(`localStorage.getItem('kl.stars.tolur.10') === null`), 'stars gone');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'sticker book back to Kóli');
+      assert(await cdp.eval(`document.querySelector('#score').textContent === ''`), 'menu score cleared');
     });
 
-    await test('narrow screens (320/390px): controls fit and Minni title stays visible', async () => {
+    await test('narrow screens (320/390px): controls, pattern row, and Minni title fit', async () => {
       try {
         for (const width of [320, 390]) {
           await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 2, mobile: true });
@@ -575,6 +634,11 @@ async function main() {
           assert(await cdp.eval(`document.querySelector('#game-title').getBoundingClientRect().width >= 40`), 'usable title width at ' + width);
           assert(await cdp.eval(`document.querySelector('#score').getBoundingClientRect().right <= window.innerWidth + 1`), 'score stays on screen at ' + width);
           if (width === 390) await shot('minni-mobile');
+          await toMenu();
+          await openGame('mynstur');
+          await pickLevel(0);
+          await waitFor(`document.querySelectorAll('.pat-slot').length === 6`, 'pattern row');
+          assert(await cdp.eval(fits), 'mynstur fits at ' + width);
           await toMenu();
           await openGame('talnatafla');
           assert(await cdp.eval(fits), 'hundred chart fits at ' + width);
@@ -593,7 +657,7 @@ async function main() {
       await cdp.send('Page.reload');
       await waitForApp();
       await openGame('tolur');
-      await waitFor(`document.querySelectorAll('.level-btn').length === 2`, 'game opens offline');
+      await waitFor(`document.querySelectorAll('.level-btn').length === 3`, 'game opens offline');
       await toMenu();
       await cdp.send('Page.navigate', { url: base + '/nested/no-such-page' });
       await waitForApp();

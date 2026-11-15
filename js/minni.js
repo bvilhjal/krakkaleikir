@@ -1,14 +1,27 @@
-/* Minni / Vendespil: memory game with animal cards, 6 or 8 pairs. Fewer flips is
-   better; best stars and fewest flips are stored per board size. */
+/* Minni / Vendespil: memory game with animal cards (4, 6, 8, or 10 pairs).
+   Matching a pair plays that animal's voice. Fewer flips is better; best stars
+   and fewest flips are stored per board size. */
 (function () {
   'use strict';
 
-  var LEVELS = [{ id: '6', labelKey: 'minni.pairs6' }, { id: '8', labelKey: 'minni.pairs8' }];
+  var LEVELS = [
+    { id: '6', labelKey: 'minni.pairs6' },
+    { id: '8', labelKey: 'minni.pairs8' },
+    { id: '10', labelKey: 'minni.pairs10' },
+    { id: '12', labelKey: 'minni.pairs12' }
+  ];
 
   function cardsIcon() {
     return '<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">' +
       '<rect x="3" y="5" width="10" height="14" rx="2" fill="#FFD9A0" stroke="#E07A5F" stroke-width="1.6" transform="rotate(-8 8 12)"/>' +
       '<rect x="11" y="5" width="10" height="14" rx="2" fill="#fff" stroke="#E07A5F" stroke-width="1.6" transform="rotate(8 16 12)"/></svg>';
+  }
+
+  function starsFor(nPairs, flips) {
+    if (nPairs === 6) return flips <= 9 ? 3 : flips <= 14 ? 2 : 1;
+    if (nPairs === 8) return flips <= 12 ? 3 : flips <= 18 ? 2 : 1;
+    if (nPairs === 10) return flips <= 16 ? 3 : flips <= 24 ? 2 : 1;
+    return flips <= 20 ? 3 : flips <= 28 ? 2 : 1;
   }
 
   KL.register('minni', {
@@ -45,7 +58,7 @@
 
         main.innerHTML =
           '<div class="minni-wrap enter">' + KL.guideHTML(64) +
-            '<div class="board" id="kl-board"></div>' +
+            '<div class="board' + (nPairs === 10 || nPairs === 12 ? ' board-' + nPairs : '') + '" id="kl-board"></div>' +
           '</div>';
         var board = document.getElementById('kl-board');
         KL.koalaSay(KL.t('minni.start'));
@@ -90,11 +103,13 @@
                 flipped = [];
                 matched++;
                 lock = false;
-                if (matched === nPairs) { KL.later(function () { end(nPairs, flips); }, 500); return; }
+                if (window.KL_TTS) window.KL_TTS.stop();
+                KL.later(function () { if (window.KL_SOUND) KL_SOUND.animal(a.key); }, 180);
+                if (matched === nPairs) { KL.later(function () { end(nPairs, flips); }, 850); return; }
                 var p = KL.praise();
-                KL.koalaSay(p.text, p.sub);
+                var animalName = KL.t('animal.' + a.key);
+                KL.koalaSay(p.text + ' — ' + animalName, p.sub);
                 KL.koalaMood('happy');
-                KL.later(function () { KL.say([p.key]); }, 200);
               }, 350);
             } else {
               KL.later(function () {
@@ -112,13 +127,10 @@
       }
 
       function end(nPairs, flips) {
-        var stars = nPairs === 6
-          ? (flips <= 9 ? 3 : flips <= 14 ? 2 : 1)
-          : (flips <= 12 ? 3 : flips <= 18 ? 2 : 1);
         KL.saveBest('flips.minni.' + nPairs, flips, true);
         KL.finish(ctx, {
           slotKey: 'minni.' + nPairs,
-          stars: stars,
+          stars: starsFor(nPairs, flips),
           titleKey: 'minni.end_title',
           lines: [KL.fmt('minni.end_flips', { n: flips }),
                   KL.t('minni.pairs' + nPairs) + ' · ' + KL.fmt('minni.end_best', { n: KL.getBest('flips.minni.' + nPairs) })],
