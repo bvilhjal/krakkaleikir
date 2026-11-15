@@ -7,7 +7,7 @@
 
   var ALPHABET = {
     is: 'AÁBDÐEÉFGHIÍJKLMNOÓPRSTUÚVXYÝÞÆÖ'.split(''),
-    da: 'ABCDEFGHIJKLMNOPRSTUVYÆØÅ'.split('')
+    da: 'ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ'.split('')
   };
 
   var CONFUSE = {

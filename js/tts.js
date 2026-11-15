@@ -30,6 +30,7 @@
   var busy = false;
   var refused = false;
   var primed = false;
+  var fallbackActive = false;
   var stateFn = null;
   function state(s) { if (stateFn) { try { stateFn(s); } catch (e) { /* ignore */ } } }
 
@@ -74,6 +75,10 @@
 
   function stop() {
     token++;
+    if (fallbackActive) {
+      fallbackActive = false;
+      try { window.speechSynthesis.cancel(); } catch (e) { /* speech unavailable */ }
+    }
     if (busy || refused) state('quiet');
     busy = false;
     refused = false;
@@ -97,16 +102,25 @@
 
   /* parts: array of audio keys, played in order. onDone: optional callback. */
   function say(parts, onDone) {
-    if (window.KL_SOUND && !window.KL_SOUND.on()) { if (onDone) setTimeout(onDone, 0); return; }
-    if (!parts || !parts.length) { if (onDone) setTimeout(onDone, 0); return; }
     stop();
     var gen = token;
+    if ((window.KL_SOUND && !window.KL_SOUND.on()) || !parts || !parts.length) {
+      if (onDone) setTimeout(function () { if (gen === token) onDone(); }, 0);
+      return;
+    }
     var i = 0;
     busy = true;
     refused = false;
     function fallback(p, onFallbackDone) {
-      try { window.KL.speak(textFor(p), p.lang, onFallbackDone); }
-      catch (e) { if (onFallbackDone) onFallbackDone(); }
+      fallbackActive = true;
+      state('talk');
+      function done() {
+        if (gen !== token || !fallbackActive) return;
+        fallbackActive = false;
+        onFallbackDone();
+      }
+      try { window.KL.speak(textFor(p), p.lang, done); }
+      catch (e) { done(); }
     }
     function next() {
       if (gen !== token) return; // a newer say()/stop() superseded this sequence

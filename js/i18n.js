@@ -20,6 +20,7 @@
       'game.klukkan': 'Klukkan',
       'game.minni': 'Minni',
       'game.mynstur': 'Mynstur',
+      'game.maelingar': 'Mælingar',
       'desc.tolur': 'Teldu dýrin og leystu dæmi',
       'desc.talnatafla': 'Kannaðu tölurnar frá 1 upp í 100',
       'desc.bokstafir': 'Hlustaðu og finndu staf eða orð',
@@ -27,6 +28,7 @@
       'desc.klukkan': 'Lærðu á klukkuna',
       'desc.minni': 'Finndu dýrin sem eru eins',
       'desc.mynstur': 'Hvað kemur næst í röðinni?',
+      'desc.maelingar': 'Mældu, vigtaðu og berðu saman',
       'footer.note': 'Stjörnur og límmiðar geymast í þessum vafra.',
       'footer.reset': 'Byrja upp á nýtt',
       'reset.confirm': 'Eyða öllum stjörnum og límmiðum?',
@@ -41,6 +43,7 @@
       'title.klukkan': 'Klukkan — Krakkaleikir',
       'title.minni': 'Minni — Krakkaleikir',
       'title.mynstur': 'Mynstur — Krakkaleikir',
+      'title.maelingar': 'Mælingar — Krakkaleikir',
       'level.q': 'Hvað eigum við að prófa?',
       'level.easy': 'Létt',
       'level.hard': 'Erfitt',
@@ -109,6 +112,19 @@
       'minni.card': 'Spjald {n}',
       'minni.flips': 'Snúningar',
       'mynstur.q': 'Hvað kemur næst?',
+      'maelingar.compare': 'Stærðir',
+      'maelingar.size': 'Stærð {n}',
+      'maelingar.longest': 'Hvaða blýantur er lengstur?',
+      'maelingar.shortest': 'Hvaða blýantur er stystur?',
+      'maelingar.tallest': 'Hvaða blóm er hæst?',
+      'maelingar.lowest': 'Hvaða blóm er lægst?',
+      'maelingar.ruler_q': 'Hvað er blýanturinn langur?',
+      'maelingar.weight_q': 'Hvað vegur pakkinn?',
+      'maelingar.ruler_aria': 'Blýantur frá 0 til {n} cm á reglustiku.',
+      'maelingar.scale_aria': 'Vigt í jafnvægi: pakki á móti {weights}.',
+      'maelingar.cm_one': '{n} sentímetri',
+      'maelingar.cm_many': '{n} sentímetrar',
+      'maelingar.kg': '{n} kíló',
       'form.find.hringur': 'Finndu hringinn!',
       'form.find.ferningur': 'Finndu ferninginn!',
       'form.find.þríhyrningur': 'Finndu þríhyrninginn!',
@@ -164,6 +180,7 @@
       'game.klukkan': 'Klokken',
       'game.minni': 'Vendespil',
       'game.mynstur': 'Mønstre',
+      'game.maelingar': 'Måling',
       'desc.tolur': 'Tæl dyrene og løs regnestykker',
       'desc.talnatafla': 'Gå på opdagelse i tallene fra 1 til 100',
       'desc.bokstafir': 'Lyt og find bogstav eller ord',
@@ -171,6 +188,7 @@
       'desc.klukkan': 'Lær klokken',
       'desc.minni': 'Find de dyr, der er ens',
       'desc.mynstur': 'Hvad kommer næst i rækken?',
+      'desc.maelingar': 'Mål, vej og sammenlign',
       'footer.note': 'Stjerner og klistermærker gemmes i denne browser.',
       'footer.reset': 'Start forfra',
       'reset.confirm': 'Slette alle stjerner og klistermærker?',
@@ -185,6 +203,7 @@
       'title.klukkan': 'Klokken — Krakkaleikir',
       'title.minni': 'Vendespil — Krakkaleikir',
       'title.mynstur': 'Mønstre — Krakkaleikir',
+      'title.maelingar': 'Måling — Krakkaleikir',
       'level.q': 'Hvad skal vi prøve?',
       'level.easy': 'Let',
       'level.hard': 'Svær',
@@ -253,6 +272,19 @@
       'minni.card': 'Kort {n}',
       'minni.flips': 'Træk',
       'mynstur.q': 'Hvad kommer næst?',
+      'maelingar.compare': 'Størrelser',
+      'maelingar.size': 'Størrelse {n}',
+      'maelingar.longest': 'Hvilken blyant er længst?',
+      'maelingar.shortest': 'Hvilken blyant er kortest?',
+      'maelingar.tallest': 'Hvilken blomst er højest?',
+      'maelingar.lowest': 'Hvilken blomst er lavest?',
+      'maelingar.ruler_q': 'Hvor lang er blyanten?',
+      'maelingar.weight_q': 'Hvad vejer pakken?',
+      'maelingar.ruler_aria': 'Blyant fra 0 til {n} cm på en lineal.',
+      'maelingar.scale_aria': 'Vægt i balance: en pakke over for {weights}.',
+      'maelingar.cm_one': '{n} centimeter',
+      'maelingar.cm_many': '{n} centimeter',
+      'maelingar.kg': '{n} kilo',
       'form.find.hringur': 'Find cirklen!',
       'form.find.ferningur': 'Find kvadratet!',
       'form.find.þríhyrningur': 'Find trekanten!',
@@ -362,17 +394,22 @@
     'bokstafir.q', 'bokstafir.match_q', 'bokstafir.first_q',
     'klukkan.read_q', 'klukkan.set_b', 'klukkan.pick_b',
     'minni.start', 'minni.end_title', 'talnatafla.start',
-    'mynstur.q'
+    'mynstur.q', 'maelingar.longest', 'maelingar.shortest', 'maelingar.tallest',
+    'maelingar.lowest', 'maelingar.ruler_q', 'maelingar.weight_q'
   ];
 
-  function lang() {
-    try {
-      var l = window.localStorage.getItem(KEY);
-      return LANGS.indexOf(l) >= 0 ? l : 'is';
-    } catch (e) { return 'is'; }
-  }
+  // Preferences still work for this visit when storage is blocked or full.
+  var currentLang = 'is';
+  try {
+    var storedLang = window.localStorage.getItem(KEY);
+    if (LANGS.indexOf(storedLang) >= 0) currentLang = storedLang;
+  } catch (e) { /* use the default */ }
+
+  function lang() { return currentLang; }
 
   function setLang(l) {
+    if (LANGS.indexOf(l) < 0) return;
+    currentLang = l;
     try { window.localStorage.setItem(KEY, l); } catch (e) { /* ignore */ }
   }
 
@@ -401,6 +438,10 @@
     var S = STR[l], v = {}, a, b, c, h;
     PHRASES.forEach(function (k) { v[k] = S[k]; });
     for (a = 1; a <= 100; a++) v['num.' + a] = S['num.' + a];
+    for (a = 1; a <= 10; a++) {
+      v['maelingar.cm.' + a] = fill(S[a === 1 ? 'maelingar.cm_one' : 'maelingar.cm_many'], { n: S['num.' + a] });
+      v['maelingar.kg.' + a] = fill(S['maelingar.kg'], { n: S['hour.' + a] });
+    }
     for (a = 1; a <= 10; a++) {
       for (b = 1; b <= 10; b++) {
         if (a + b <= 10) v['add.' + a + '.' + b] = fill(S['tolur.add'], { a: S['num.' + a], b: S['num.' + b] });

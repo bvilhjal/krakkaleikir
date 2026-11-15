@@ -16,15 +16,19 @@
   // mute the sound effects while the spoken audio (an <audio> element) keeps playing.
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* ignore */ }
 
-  function on() {
-    try { return window.localStorage.getItem(KEY) !== 'off'; }
-    catch (e) { return true; }
-  }
+  var enabled = true;
+  try { enabled = window.localStorage.getItem(KEY) !== 'off'; } catch (e) { /* use the default */ }
+
+  function on() { return enabled; }
 
   function setOn(v) {
+    enabled = !!v;
     try { window.localStorage.setItem(KEY, v ? 'on' : 'off'); } catch (e) { /* ignore */ }
     if (master) master.gain.value = v ? 1 : 0;
-    if (!v) stopAnimal();
+    if (!v) {
+      stopAnimal();
+      if (window.KL_TTS) window.KL_TTS.stop();
+    }
   }
 
   function ac() {
@@ -280,6 +284,7 @@
     if (!btn) return;
     btn.innerHTML = on() ? speakerOnSVG(26) : speakerOffSVG(26);
     btn.classList.toggle('off', !on());
+    btn.setAttribute('aria-pressed', String(on()));
     btn.setAttribute('aria-label', on() ? 'Hljóð á / Lyd til' : 'Hljóð af / Lyd fra');
     btn.title = btn.getAttribute('aria-label');
   }
@@ -292,7 +297,6 @@
         setOn(!on());
         refreshToggle();
         if (on()) play('click');
-        else if (window.KL_TTS) window.KL_TTS.stop(); // cut off speech that is already playing
       });
     }
   });

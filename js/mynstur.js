@@ -35,7 +35,7 @@
     var picks = KL.sample(pool, 4);
     var A = picks[0], B = picks[1], C = picks[2], D = picks[3];
     var seq, ans;
-    if (rule === 'aabb') { seq = [A, A, B, B, A]; ans = B; }
+    if (rule === 'aabb') { seq = [A, A, B, B, A]; ans = A; }
     else if (rule === 'aab') { seq = [A, A, B, A, A]; ans = B; }
     else if (rule === 'abb') { seq = [A, B, B, A, B]; ans = B; }
     else { seq = [A, B, C, A, B]; ans = C; }
@@ -118,14 +118,15 @@
           if (!miss) return;
           miss.classList.remove('missing');
           miss.classList.add('filled');
+          miss.setAttribute('aria-label', tokenLabel(q.ans));
           miss.innerHTML = renderToken(q.ans, 48);
         },
         build: function (q, promptEl, answersEl) {
           var row = document.createElement('div');
           row.className = 'pattern-row';
           row.innerHTML = q.seq.map(function (tok) {
-            return '<span class="pat-slot">' + renderToken(tok, 48) + '</span>';
-          }).join('') + '<span class="pat-slot missing" aria-label="?">?</span>';
+            return '<span class="pat-slot" role="img" aria-label="' + tokenLabel(tok) + '">' + renderToken(tok, 48) + '</span>';
+          }).join('') + '<span class="pat-slot missing" role="img" aria-label="?">?</span>';
           promptEl.appendChild(row);
 
           return q.choices.map(function (c) {

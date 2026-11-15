@@ -33,7 +33,7 @@
   }
 
   function makeFindQuestion(shape, pool) {
-    var close = (CLOSE[shape] || []).filter(function (s) { return s !== shape; });
+    var close = (CLOSE[shape] || []).filter(function (s) { return s !== shape && pool.indexOf(s) >= 0; });
     var distractors = KL.sample(close, 3);
     if (distractors.length < 3) {
       var rest = KL.shuffle(pool.filter(function (s) { return s !== shape && distractors.indexOf(s) < 0; }));

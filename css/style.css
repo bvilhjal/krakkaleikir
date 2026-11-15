@@ -744,6 +744,14 @@ a { color: inherit; text-decoration: none; }
 .answer.pat-choice { min-height: 112px; padding: 10px; display: flex; align-items: center; justify-content: center; }
 .answer.pat-choice svg { width: 100%; max-width: 84px; height: auto; }
 
+/* ---- Mælingar: objects, ruler, and balance ---- */
+.measure-scene { display: block; width: 100%; max-width: 460px; height: auto; }
+.measure-result { font-size: 1.8rem; font-weight: 800; color: var(--accent-strong); }
+.measure-result.filled { color: #26783E; animation: hop-in 0.3s ease-out; }
+.measure-unit { font-size: 1rem; margin-left: 6px; font-weight: 700; }
+.answer.measure-choice { min-height: 150px; padding: 8px; display: flex; align-items: center; justify-content: center; }
+.measure-choice svg { display: block; width: 100%; max-width: 210px; height: auto; }
+
 /* ---- level choice ---- */
 .level-row { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin: 18px 0 8px; }
 .level-btn {

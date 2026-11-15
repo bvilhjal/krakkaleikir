@@ -1,4 +1,4 @@
-/* Minni / Vendespil: memory game with animal cards (4, 6, 8, or 10 pairs).
+/* Minni / Vendespil: memory game with animal cards (6, 8, 10, or 12 pairs).
    Matching a pair plays that animal's voice. Fewer flips is better; best stars
    and fewest flips are stored per board size. */
 (function () {

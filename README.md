@@ -15,8 +15,13 @@ Educational browser games for kids aged 5+, guided by Kóli the koala; bilingual
 | Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar · 3:30: líka hálfir tímar („hálf fjögur“) · 3:15: líka korter („korter yfir“, „korter í“) |
 | Minni (DA: Vendespil) | Finna dýrin sem eru eins; dýrið lætur í sér heyra þegar par finnst | 6, 8, 10 eða 12 pör |
 | Mynstur (DA: Mønstre) | Finna hvað kemur næst í mynstri eða talnaröð | Létt: AAB, ABB, AABB, ABC · Erfitt: AABB, ABB, ABC og talnaraðir (+1, +2, +5, +10, −1, −2, −5, −10) |
+| Mælingar (DA: Måling) | Bera saman stærðir, mæla blýant og vigta dularfullan pakka | Stærðir: lengstur/stystur og hæst/lægst · cm: reglustika frá núlli · kg: vigt í jafnvægi með 1, 2 og 5 kg lóðum |
 
-Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Dálkarnir eru alltaf tíu og taflan passar í breidd á síma jafnt sem iPad.
+Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Taflan 1–100 hefur tíu dálka og passar í breidd á síma jafnt sem iPad; talnaleit 1–20 notar fimm dálka og fjórar raðir.
+
+Í Tölum er hvert dýr talið einu sinni; bankaðu aftur á það til að heyra töluna aftur. Stafaleikurinn nær yfir allt íslenska og danska stafrófið. Tungumála- og hljóðval virka líka meðan síðan er opin þótt vafrinn leyfi ekki vistun í `localStorage`.
+
+Í Mælingum hafa samanburðarmyndir allar sama kvarða og grunnlínu, svo lengri blýantur er í raun lengri á skjánum. Reglustikan sýnir 1–10 cm og blýanturinn byrjar alltaf við núll. Vigtin er í jafnvægi: leggðu saman merktu lóðin til að finna þyngd pakkans (1–10 kg). Þetta eru myndrænar mælingar; sentímetri á teikningunni er ekki sentímetri á skjánum.
 
 Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á hann til að heyra hana aftur. Hann hrósar á íslensku („Frábært!“, „Geggjað!“, „Jibbí!“), líka í dönsku útgáfunni, þar sem merkingin birtist undir. Rangt svar dofnar og spurningin er lesin aftur. Stjörnurnar (1–3) sýna hve margar spurningar voru réttar í fyrstu tilraun (í Minni: hve fáa snúninga þurfti). Eftir hvern leik kemur nýr dýralímmiði í límmiðabókina á forsíðunni (12 dýr).
 
@@ -71,7 +76,7 @@ tools/listen.html     hlusta á allar mp3-skrárnar og merkja þær sem hljóma 
 1. Ef texti sem er lesinn upphátt breyttist eða bættist við: `pip install edge-tts imageio-ffmpeg` og `python tools/make_audio.py`. Skrár þar sem textinn breyttist eru endurgerðar og skrám sem ekki eru lengur notaðar er eytt.
 2. `node tools/check.js --write` uppfærir skráalistann og útgáfuna í `sw.js`, svo iPadinn sæki nýju útgáfuna.
 3. `node tools/check.js` athugar að íslenska og danska taflan hafi sömu lykla, að allir lyklar sem kóðinn notar séu til, að hljóðskrár passi við textana og að `sw.js` sé uppfært.
-4. `node tools/smoke.js` (valfrjálst, þarf Chrome/Chromium og Node ≥ 22) spilar alla leikina í gegn í headless Chrome: lyklaborð í Minni, tungumálaskipti, hljóðhnapp, núllstilling, mjóir skjáir og offline-hamur. GitHub Actions keyrir þetta við hvert push.
+4. `node tools/smoke.js` (valfrjálst, þarf Chrome/Chromium og Node ≥ 22) spilar alla leikina í gegn í headless Chrome. Prófið sannreynir líka rétt svör í dæmum og mynstrum, erfiðleikastig forma og upptekið tal á báðum tungumálum, talningu, stöðvun talgervils, lyklaborð í Minni, tungumála- og hljóðval án vistunar, núllstillingu, mjóa skjái og offline-ham. GitHub Actions keyrir þetta við hvert push.
 
 ## Nýr leikur
 

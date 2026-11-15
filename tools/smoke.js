@@ -322,19 +322,112 @@ async function main() {
     // the menu cards are static HTML: wait for the scripts too, not just the markup
     const waitForApp = async () => {
       await waitFor(`document.readyState === 'complete' && typeof KL !== 'undefined'`, 'app scripts loaded');
-      await waitFor(`document.querySelectorAll('.game-card').length === 7`, 'menu');
+      await waitFor(`document.querySelectorAll('.game-card').length === 8`, 'menu');
+    };
+    const reloadApp = async () => {
+      await cdp.eval(`window.__beforeReload = true`);
+      await cdp.send('Page.reload');
+      await waitFor(`!window.__beforeReload`, 'new document');
+      await waitForApp();
     };
 
     console.log('krakkaleikir smoke test — ' + base);
     await cdp.send('Page.navigate', { url: base + '/' });
     await waitForApp();
 
-    await test('menu renders: 7 cards, sticker book, Kóli greets', async () => {
+    await test('menu renders: 8 cards, sticker book, Kóli greets', async () => {
       assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .sticker').length >= 12`), 'sticker grid');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.length > 0`), 'greeting');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'first sticker is Kóli');
       assert(await cdp.eval(`document.querySelector('#score').textContent === ''`), 'menu score hidden before stars earned');
       await shot('menu-desktop');
+    });
+
+    await test('question generators: known answers, level boundaries, and recorded prompts in both languages', async () => {
+      const errors = await cdp.eval(`(() => {
+        const original = KL.runGame, lang = KL_I18N.lang(), errors = [];
+        const check = (ok, message) => { if (!ok && errors.length < 12) errors.push(message); };
+        const easyShapes = ['hringur', 'ferningur', 'þríhyrningur', 'rétthyrningur', 'sexhyrningur', 'stjarna', 'hjarta', 'tígull', 'hálfmáni'];
+        const sides = { hringur: 0, sporbaugur: 0, þríhyrningur: 3, ferningur: 4, rétthyrningur: 4, tígull: 4, fimmhyrningur: 5, sexhyrningur: 6, átthyrningur: 8 };
+        let cfg;
+        KL.runGame = (c) => { cfg = c; };
+        try {
+          for (const l of KL_I18N.LANGS) {
+            KL_I18N.setLang(l);
+            const vocab = KL_I18N.audioVocab(l);
+            for (const id of ['tolur', 'bokstafir', 'form', 'mynstur', 'klukkan', 'maelingar']) {
+              KL.games[id].start({});
+              for (const level of KL.games[id].levels) for (let round = 0; round < 20; round++) {
+                const qs = cfg.makeQuestions(level.id);
+                check(qs.length === 10, id + ': ten questions');
+                for (const q of qs) {
+                  const where = l + '/' + id + '/' + level.id;
+                  const prompt = document.createElement('div'), choices = document.createElement('div');
+                  const answers = cfg.build(q, prompt, choices, level.id);
+                  check(answers.filter((a) => a.isCorrect).length === 1, where + ': exactly one correct choice');
+                  const spoken = cfg.promptSpeech(q, level.id).concat(...answers.map((a) => a.speechParts || []));
+                  check(spoken.every((key) => key in vocab), where + ': every spoken key is recorded');
+                  if (id === 'mynstur') {
+                    check(q.choices.length === 4 && new Set(q.choices.map((t) => t.id)).size === 4, where + ': distinct choices');
+                    if (q.kind === 'visual') {
+                      const ids = q.seq.map((t) => t.id);
+                      const period = [1, 2, 3, 4].find((p) => ids.every((t, i) => t === ids[i % p]));
+                      check(!!period && q.ans.id === ids[ids.length % period], where + ': answer continues the repeating unit');
+                      check([...prompt.querySelectorAll('.pat-slot')].every((el) => el.getAttribute('role') === 'img' && el.getAttribute('aria-label')), where + ': sequence has accessible names');
+                      cfg.onCorrect(q, null, prompt);
+                      check(prompt.querySelector('.pat-slot.filled').getAttribute('aria-label') === KL.t(q.ans.labelKey), where + ': revealed answer has its new name');
+                    } else {
+                      const step = q.seq[1].n - q.seq[0].n;
+                      check(step !== 0 && q.seq.every((t, i) => t.n === q.seq[0].n + i * step) && q.ans.n === q.seq[0].n + q.seq.length * step, where + ': constant-step answer');
+                    }
+                  } else if (id === 'form') {
+                    check(new Set(q.choices).size === 4, where + ': distinct shapes');
+                    if (level.id === 'easy') check(q.choices.every((s) => easyShapes.includes(s)), where + ': only easy shapes');
+                    if (q.speechKey.startsWith('form.sides.')) {
+                      const n = Number(q.speechKey.split('.').pop());
+                      check(q.choices.filter((s) => sides[s] === n).length === 1 && sides[q.target] === n, where + ': exactly one shape has the requested side/corner count');
+                    }
+                  } else if (id === 'tolur') {
+                    const expected = q.type === 'count' ? q.n : q.type.startsWith('miss_') ? q.b : q.type === 'sub' ? q.a - q.b : q.a + q.b;
+                    check(answers.find((a) => a.isCorrect).el.textContent === String(expected), where + ': arithmetic/count answer');
+                  } else if (id === 'bokstafir' && level.id === 'letters') {
+                    const alphabet = l === 'da' ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ' : 'AÁBDÐEÉFGHIÍJKLMNOÓPRSTUÚVXYÝÞÆÖ';
+                    check(q.alpha.join('') === alphabet, where + ': complete alphabet');
+                    const answer = answers.find((a) => a.isCorrect).el.textContent;
+                    check(answer.toUpperCase() === q.ch && (q.type !== 'first' || q.ch === q.word[0].toUpperCase()), where + ': correct letter');
+                  } else if (id === 'maelingar') {
+                    if (level.id === 'compare') {
+                      const biggest = q.kind === 'longest' || q.kind === 'tallest';
+                      const expected = Math[biggest ? 'max' : 'min'](...q.choices);
+                      check(q.correct === expected && new Set(q.choices).size === 4, where + ': unique size comparison');
+                      check(answers.every((a, i) => a.el.getAttribute('aria-label') === KL.fmt('maelingar.size', { n: q.choices[i] }) && a.speechParts.length === 0), where + ': comparisons give relative sizes without claiming physical units');
+                      check(answers.every((a) => a.el.querySelector('svg').getAttribute('viewBox') === '0 0 180 150'), where + ': shared picture scale');
+                      if (q.kind === 'longest' || q.kind === 'shortest') {
+                        const lengths = answers.map((a) => Number(a.el.querySelector('.measure-pencil').dataset.length));
+                        const best = Math[biggest ? 'max' : 'min'](...lengths);
+                        check(Number(answers.find((a) => a.isCorrect).el.querySelector('.measure-pencil').dataset.length) === best, where + ': drawn length matches the answer');
+                      }
+                    } else {
+                      check(q.correct >= 1 && q.correct <= 10, where + ': bounded measurement');
+                      check(Number(answers.find((a) => a.isCorrect).el.firstChild.textContent) === q.correct, where + ': correct measured value');
+                      if (level.id === 'weight') {
+                        const drawn = [...prompt.querySelectorAll('.measure-weight')].map((el) => Number(el.dataset.kg));
+                        check(drawn.length > 0 && drawn.every((w) => [1, 2, 5].includes(w)) && drawn.reduce((a, b) => a + b, 0) === q.correct, where + ': visible weights balance the parcel');
+                      } else {
+                        check(Number(prompt.querySelector('.measure-pencil').dataset.length) === q.correct * 28, where + ': ruler ticks match pencil endpoints');
+                      }
+                      cfg.onCorrect(q, null, prompt);
+                      check(prompt.querySelector('.measure-result.filled').textContent === q.correct + (level.id === 'weight' ? ' kg' : ' cm'), where + ': measured result revealed');
+                    }
+                  }
+                }
+              }
+            }
+          }
+          return errors;
+        } finally { KL.runGame = original; KL_I18N.setLang(lang); }
+      })()`);
+      assert(errors.length === 0, errors.join(' | '));
     });
 
     await test('speech fallback waits for speech before the next clip and completion', async () => {
@@ -372,6 +465,49 @@ async function main() {
       assert(result.utterance, 'fallback utterance created');
       assert(!result.nextBeforeEnd && !result.doneBeforeEnd, 'advanced before fallback speech ended: ' + JSON.stringify(result));
       assert(result.nextAfterEnd && result.done, 'sequence completed after fallback speech');
+    });
+
+    await test('speech fallback cancels on mute, replacement, and navigation; stale callbacks stay cancelled', async () => {
+      const result = await cdp.eval(`(async () => {
+        const tick = () => new Promise((r) => setTimeout(r, 0));
+        const play = Audio.prototype.play, speak = speechSynthesis.speak, cancel = speechSynthesis.cancel;
+        const utterances = [];
+        let cancels = 0, completed = 0;
+        try {
+          KL_TTS.stop();
+          Audio.prototype.play = () => Promise.reject(new DOMException('injected media failure', 'NotSupportedError'));
+          speechSynthesis.speak = (u) => { utterances.push(u); };
+          speechSynthesis.cancel = () => { cancels++; const u = utterances.at(-1); if (u && u.onerror) u.onerror(); };
+          KL_TTS.say(['koala.hello', 'num.1'], () => { completed++; });
+          await tick();
+          const talking = document.querySelector('#menu .koala').classList.contains('talking');
+          document.getElementById('sound-toggle').click();
+          await tick();
+          const muted = !KL_SOUND.on() && cancels === 1 && utterances.length === 1 && completed === 0;
+          document.getElementById('sound-toggle').click();
+          KL_TTS.say(['num.2'], () => { completed++; });
+          await tick();
+          KL_TTS.say(['num.3'], () => { completed++; });
+          await tick();
+          const replaced = cancels === 2 && utterances.length === 3 && completed === 0;
+          KL.nav('tolur');
+          await tick();
+          const navigated = cancels === 3 && completed === 0;
+          KL_TTS.stop();
+          const beforeIdleStop = cancels;
+          KL_TTS.stop();
+          utterances.forEach((u) => { if (u.onend) u.onend(); });
+          await tick();
+          return { talking, muted, replaced, navigated, idleSafe: cancels === beforeIdleStop, completed };
+        } finally {
+          KL_TTS.stop();
+          Audio.prototype.play = play;
+          speechSynthesis.speak = speak;
+          speechSynthesis.cancel = cancel;
+          if (!KL_SOUND.on()) document.getElementById('sound-toggle').click();
+        }
+      })()`);
+      assert(result.talking && result.muted && result.replaced && result.navigated && result.idleSafe && result.completed === 0, JSON.stringify(result));
     });
 
     await test('animal voices: all 12 start via the live path (5 files + 7 synth)', async () => {
@@ -415,13 +551,17 @@ async function main() {
       const tolurRes = await cdp.eval(`(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         let tappedHerd = false;
-        for (let guard = 0; guard < 500; guard++) {
-          if (document.querySelector('.end-card')) return { ok: true, tappedHerd };
+        const say = KL.say, counts = [];
+        KL.say = (parts, done) => { counts.push(parts.join(',')); return say(parts, done); };
+        try { for (let guard = 0; guard < 500; guard++) {
+          if (document.querySelector('.end-card')) return { ok: true, tappedHerd, counts };
           if (!tappedHerd) {
             const items = [...document.querySelectorAll('.q-stage .herd-item')];
             if (items.length) {
               items[0].click();
               if (items[0].querySelector('.tap-num').textContent !== '1') return { ok: false, reason: 'tap-num 1' };
+              items[0].click();
+              if (items[0].getAttribute('aria-pressed') !== 'true' || !items[0].getAttribute('aria-label').endsWith(': 1')) return { ok: false, reason: 'counted animal label' };
               if (items[1]) {
                 items[1].click();
                 if (items[1].querySelector('.tap-num').textContent !== '2') return { ok: false, reason: 'tap-num 2' };
@@ -435,8 +575,10 @@ async function main() {
           await sleep(120);
         }
         return { ok: false, reason: 'timeout' };
+        } finally { KL.say = say; }
       })()`);
       assert(tolurRes.ok && tolurRes.tappedHerd, 'round finished with interactive counting: ' + JSON.stringify(tolurRes));
+      assert(tolurRes.counts.join(',') === 'num.1,num.1,num.2', 'counting speaks new counts and repeats without double counting: ' + tolurRes.counts);
       assert(await cdp.eval(`document.querySelectorAll('#fx .confetti').length > 0`), 'confetti');
       const stars = await cdp.eval(`parseInt(localStorage.getItem('kl.stars.tolur.10') || '0', 10)`);
       assert(stars >= 1 && stars <= 3, 'stars saved, got ' + stars);
@@ -543,6 +685,8 @@ async function main() {
         return document.querySelector('#game .bubble-sub').textContent;
       })()`);
       assert(/[↑↓]/.test(hintSub), 'higher/lower hint shown: ' + hintSub);
+      await waitFor(`document.querySelector('#game .bubble-text').textContent !== KL.t('try_again')`, 'retry speech finished');
+      assert(await cdp.eval(`document.querySelector('#game .bubble-sub').textContent === ${JSON.stringify(hintSub)}`), 'higher/lower hint remains after speech');
       assert(await cdp.eval(PLAY_TALNATAFLA), '1-20 round finished');
       assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.talnatafla.20') || '0', 10) >= 1`), '1-20 stars saved');
       await toMenu();
@@ -579,7 +723,10 @@ async function main() {
       ['form', 0, 'form.easy', '.sound-btn'],
       ['form', 1, 'form.hard', null],
       ['mynstur', 0, 'mynstur.easy', null],
-      ['mynstur', 1, 'mynstur.hard', null]
+      ['mynstur', 1, 'mynstur.hard', null],
+      ['maelingar', 0, 'maelingar.compare', null],
+      ['maelingar', 1, 'maelingar.ruler', null],
+      ['maelingar', 2, 'maelingar.weight', null]
     ]) {
       await test(`${id} (${slot.split('.')[1]}): full round finishes`, async () => {
         await openGame(id);
@@ -589,6 +736,7 @@ async function main() {
           assert(await cdp.eval(`!/stroke-linejoin="round"|rx="/.test(KL.shapeSVG('ferningur', '#E07A5F', 100) + KL.shapeSVG('sexhyrningur', '#E07A5F', 100))`), 'shapes use sharp corners');
         }
         if (btnSel) await cdp.eval(`document.querySelector(${JSON.stringify(btnSel)}).click()`);
+        if (id === 'maelingar') await shot('maelingar-' + slot.split('.')[1] + '-desktop');
         assert(await cdp.eval(PLAY_ROUND), 'round finished');
         assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.${slot}') || '0', 10) >= 1`), 'stars saved');
         await toMenu();
@@ -601,12 +749,18 @@ async function main() {
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="tolur"] h2').textContent === 'Tal'`), 'card translated');
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="form"] h2').textContent === 'Former'`), 'form translated');
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="mynstur"] h2').textContent === 'Mønstre'`), 'mynstur translated');
+      assert(await cdp.eval(`document.querySelector('.game-card[data-nav="maelingar"] h2').textContent === 'Måling'`), 'maelingar translated');
       assert(await cdp.eval(`document.querySelector('[data-lang="da"]').getAttribute('aria-pressed') === 'true'`), 'aria-pressed');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.indexOf('Hej') === 0`), 'Kóli greets in Danish');
       await openGame('mynstur');
       await pickLevel(0);
       assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === 'Hvad kommer næst?'`), 'Danish prompt');
       assert(await cdp.eval(PLAY_ROUND), 'full Danish round finished');
+      await toMenu();
+      await openGame('maelingar');
+      await pickLevel(2);
+      assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === 'Hvad vejer pakken?'`), 'Danish measuring prompt');
+      assert(await cdp.eval(PLAY_ROUND), 'full Danish weighing round finished');
       await toMenu();
       await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
       await waitFor(`document.documentElement.lang === 'is'`, 'back to Icelandic');
@@ -624,6 +778,26 @@ async function main() {
       assert(await cdp.eval(`localStorage.getItem('kl.stars.tolur.10') === null`), 'stars gone');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'sticker book back to Kóli');
       assert(await cdp.eval(`document.querySelector('#score').textContent === ''`), 'menu score cleared');
+    });
+
+    await test('language and mute still work with blocked or full localStorage', async () => {
+      for (const blockedRead of [true, false]) {
+        const injected = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source:
+          (blockedRead ? "Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('blocked', 'SecurityError'); } });" :
+            "Storage.prototype.setItem = function () { throw new DOMException('full', 'QuotaExceededError'); };")
+        });
+        try {
+          await reloadApp();
+          await cdp.eval(`document.querySelector('[data-lang="da"]').click(); document.getElementById('sound-toggle').click()`);
+          assert(await cdp.eval(`KL_I18N.lang() === 'da' && document.documentElement.lang === 'da' && document.querySelector('.game-card[data-nav="tolur"] h2').textContent === 'Tal'`), 'Danish works with ' + (blockedRead ? 'blocked' : 'full') + ' storage');
+          assert(await cdp.eval(`!KL_SOUND.on() && document.getElementById('sound-toggle').getAttribute('aria-pressed') === 'false'`), 'mute works without saving');
+          await cdp.eval(`document.getElementById('sound-toggle').click(); document.querySelector('[data-lang="is"]').click()`);
+          assert(await cdp.eval(`KL_SOUND.on() && KL_I18N.lang() === 'is'`), 'preferences can be changed again');
+        } finally {
+          await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: injected.identifier });
+          await reloadApp();
+        }
+      }
     });
 
     await test('narrow screens (320/390px): controls, pattern row, hundred chart, and Minni title fit', async () => {
@@ -646,6 +820,22 @@ async function main() {
           await waitFor(`document.querySelectorAll('.pat-slot').length === 6`, 'pattern row');
           assert(await cdp.eval(fits), 'mynstur fits at ' + width);
           await toMenu();
+          for (const [lv, name] of [[0, 'compare'], [1, 'ruler'], [2, 'weight']]) {
+            await openGame('maelingar');
+            await pickLevel(lv);
+            await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'measurement choices');
+            await sleep(400); // entrance animation must finish before measuring bounds
+            assert(await cdp.eval(fits), 'maelingar ' + name + ' fits at ' + width);
+            assert(await cdp.eval(`(() => {
+              const card = document.querySelector('#game .question-card').getBoundingClientRect();
+              return [...document.querySelectorAll('.q-stage svg')].every((svg) => {
+                const r = svg.getBoundingClientRect();
+                return r.left >= card.left && r.right <= card.right && r.width > 0 && r.height > 0;
+              });
+            })()`), 'measurement pictures are not clipped at ' + width);
+            if (width === 390) await shot('maelingar-' + name + '-mobile');
+            await toMenu();
+          }
           await openGame('talnatafla');
           assert(await cdp.eval(fits), 'hundred chart page fits at ' + width);
           assert(await cdp.eval(`document.querySelector('.number-grid').scrollWidth <= document.querySelector('.number-scroll').clientWidth + 1`), 'all 10 columns fit without horizontal scroll at ' + width);
@@ -662,10 +852,15 @@ async function main() {
       await waitFor(`caches.match('./').then((r) => !!r)`, 'app shell cached');
       offline = true;
       await cdp.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0, connectionType: 'none' });
-      await cdp.send('Page.reload');
-      await waitForApp();
+      await reloadApp();
       await openGame('tolur');
       await waitFor(`document.querySelectorAll('.level-btn').length === 3`, 'game opens offline');
+      await toMenu();
+      await openGame('maelingar');
+      await pickLevel(1);
+      await waitFor(`document.querySelector('.measure-scene')`, 'measuring game opens offline');
+      const clip = await cdp.eval(`fetch('audio/is/maelingar.ruler_q.mp3', { headers: { Range: 'bytes=0-63' } }).then(async (r) => ({ status: r.status, length: (await r.arrayBuffer()).byteLength, type: r.headers.get('Content-Type') }))`);
+      assert(clip.status === 206 && clip.length === 64 && clip.type.startsWith('audio/mpeg'), 'new spoken prompt cached with byte-range support: ' + JSON.stringify(clip));
       await toMenu();
       await cdp.send('Page.navigate', { url: base + '/nested/no-such-page' });
       await waitForApp();

@@ -139,6 +139,7 @@
             var tapped = 0;
             promptEl.querySelectorAll('.herd-item').forEach(function (item) {
               item.setAttribute('aria-label', KL.t('animal.' + q.animal));
+              item.setAttribute('aria-pressed', 'false');
               item.addEventListener('click', function () {
                 KL.sfx('click');
                 KL.replay(item, 'herd-pop');
@@ -146,7 +147,10 @@
                   tapped++;
                   item.classList.add('counted');
                   item.querySelector('.tap-num').textContent = tapped;
+                  item.setAttribute('aria-pressed', 'true');
+                  item.setAttribute('aria-label', KL.t('animal.' + q.animal) + ': ' + tapped);
                 }
+                KL.say(['num.' + item.querySelector('.tap-num').textContent]);
               });
             });
             return numberButtons(answersEl, near(q.n, max, level === '20' ? 8 : 1), q.n);

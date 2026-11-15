@@ -46,8 +46,8 @@
       for (var i = 0; i < vs.length; i++) {
         if (vs[i].lang && vs[i].lang.toLowerCase().indexOf(prefix) === 0) { u.voice = vs[i]; break; }
       }
-      // NOTE: never call speechSynthesis.cancel() here — on iOS it can wedge
-      // the speech queue permanently and all later speak() calls go silent.
+      // Do not cancel an idle iOS speech queue: it can wedge later speech.
+      // tts.js cancels only a fallback that is actually in flight.
       try { window.speechSynthesis.speak(u); } catch (e) { done(); }
     } catch (e) { done(); }
   }
@@ -509,6 +509,7 @@
             locked = true;
             a.el.classList.add('correct');
             answers.forEach(function (x) { x.el.disabled = true; });
+            promptEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
             state.results[state.i] = mistakes === 0;
             if (mistakes === 0) state.firstTry++;
             if (cfg.onCorrect) cfg.onCorrect(q, a, promptEl, level);
@@ -517,6 +518,9 @@
             burst(a.el);
             koalaSay(p.text, p.sub);
             koalaMood('happy');
+            var feedback = [p.key].concat(a.speechParts || []);
+            setReplay(feedback);
+            onUnlock(null);
             // Advance once the cheer has been said (plus a short beat), with a
             // 1s minimum so it can be seen and a 4.5s cap.
             var t0 = Date.now();
@@ -530,7 +534,7 @@
               if (state.i >= questions.length) endScreen(); else render();
             };
             later(function () { // let the 'correct' chime ring first
-              say([p.key].concat(a.speechParts || []), function () { later(advance, 250); });
+              say(feedback, function () { later(advance, 250); });
             }, 200);
             later(advance, 4500); // hard cap
           } else {
@@ -544,7 +548,7 @@
             var retry = cfg.retrySpeech ? cfg.retrySpeech(q, level) : prompt;
             say(['try_again'].concat(retry), function () {
               if (!locked) {
-                koalaSay(promptStr);
+                koalaSay(promptStr, cfg.wrongSub ? sub : '');
                 if (afterSpoken) afterSpoken();
               }
             });
