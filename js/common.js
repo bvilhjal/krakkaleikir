@@ -565,6 +565,8 @@
        retrySpeech: optional function (q, level, tapped) -> [audioKey, ...] said after "try again" (default: the prompt)
        wrongSpeech: optional function (q, level, tapped) -> [audioKey, ...] said instead of "try again" + retry
        build: function (q, promptEl, answersEl, level) -> [{ el, isCorrect, speechParts: [audioKey, ...], onTap? }],
+       Editable answers may use isCorrect() and retryable: true, so checking a
+       drawing counts an attempt but leaves the drawing available to correct.
      }
      The card with Kóli stays put; only the question slides in. A wrong answer
      is disabled and the question repeated; stars count first-try answers. */
@@ -650,8 +652,9 @@
       answers.forEach(function (a) {
         a.el.addEventListener('click', function () {
           if (locked || a.el.disabled) return;
-          if (a.onTap) a.onTap(a.isCorrect);
-          if (a.isCorrect) {
+          var correct = typeof a.isCorrect === 'function' ? a.isCorrect() : a.isCorrect;
+          if (a.onTap) a.onTap(correct);
+          if (correct) {
             locked = true;
             a.el.classList.add('correct');
             answers.forEach(function (x) { x.el.disabled = true; });
@@ -703,7 +706,11 @@
                 if (afterSpoken) afterSpoken();
               }
             });
-            later(function () { a.el.classList.remove('wrong'); a.el.classList.add('used'); }, 450);
+            later(function () {
+              a.el.classList.remove('wrong');
+              if (a.retryable) { if (!locked) a.el.disabled = false; }
+              else a.el.classList.add('used');
+            }, 450);
           }
         });
       });

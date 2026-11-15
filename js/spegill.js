@@ -57,6 +57,14 @@
   }
 
   function makeQuestions(level) {
+    if (level === 'paint') {
+      return KL.range(0, 9).map(function (i) {
+        var n = i >= 4 && i % 2 === 0 ? 4 : 3;
+        var lying = n === 4 || i % 3 === 1;
+        return { kind: 'paint', n: n, cells: pattern(n, i < 4 ? 3 : 5, i < 4 ? ['#5C6BC0'] : ['#5C6BC0', '#E07A5F']),
+          axis: lying ? 'lying' : 'upright', answer: lying ? 'v' : 'h' };
+      });
+    }
     if (level === 'pictures') {
       return KL.sample(PICTURES, 10).map(function (id) {
         return { kind: 'picture', item: id, axis: 'upright', answer: 'h', choices: KL.shuffle(['h', 'id', 'v']) };
@@ -125,11 +133,94 @@
     });
   }
 
+  // Painting is checked only when the child asks. A wrong check keeps every
+  // cell editable; exact equality also catches extra paint in empty squares.
+  function paintBoard(q, promptEl, answersEl) {
+    var ink = ['#5C6BC0', '#E07A5F'], names = { '#5C6BC0': 'spegill.blue', '#E07A5F': 'spegill.red' };
+    var selected = ink[0], painted = Array(q.n * q.n).fill(null), source = painted.slice();
+    q.cells.forEach(function (c) { source[c[0] * q.n + c[1]] = c[2]; });
+    var expected = painted.slice();
+    flip(q.cells, q.n, q.answer).forEach(function (c) { expected[c[0] * q.n + c[1]] = c[2]; });
+    promptEl.classList.add('mirror-prompt');
+    promptEl.innerHTML = '<div class="paint-palette" role="group" aria-label="' + KL.t('spegill.colors') + '"></div>' +
+      '<div class="paint-board ' + q.axis + '"><div class="paint-grid paint-source" role="group" aria-label="' + KL.t('spegill.model') + '"></div>' +
+      '<div class="paint-axis" aria-hidden="true"></div>' +
+      '<div class="paint-grid paint-target" role="group" aria-label="' + KL.t('spegill.yours') + '"></div></div>' +
+      '<p class="workbook-hint">' + KL.t('spegill.paint_hint') + '</p>';
+    var palette = promptEl.querySelector('.paint-palette');
+    ink.concat([null]).forEach(function (color, i) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'paint-tool' + (i < 2 ? ' ink-' + i : '');
+      btn.dataset.ink = color || '';
+      btn.textContent = i < 2 ? (i === 0 ? '●' : '✚') : KL.t('spegill.erase');
+      btn.setAttribute('aria-label', KL.t(i < 2 ? names[color] : 'spegill.erase'));
+      btn.setAttribute('aria-pressed', String(i === 0));
+      btn.addEventListener('click', function () {
+        selected = color;
+        palette.querySelectorAll('[data-ink]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+      });
+      palette.appendChild(btn);
+    });
+    function label(i, color) {
+      return KL.fmt('spegill.cell', { r: Math.floor(i / q.n) + 1, c: i % q.n + 1 }) + ': ' +
+        KL.t(color ? names[color] : 'spegill.empty');
+    }
+    function show(cell, i, color) {
+      cell.className = 'paint-cell' + (color ? ' ink-' + ink.indexOf(color) : '');
+      cell.textContent = color ? (color === ink[0] ? '●' : '✚') : '';
+      cell.setAttribute('aria-label', label(i, color));
+    }
+    var target = promptEl.querySelector('.paint-target');
+    promptEl.querySelectorAll('.paint-grid').forEach(function (grid) { grid.style.setProperty('--n', q.n); });
+    source.forEach(function (color, i) {
+      var model = document.createElement('span');
+      model.setAttribute('role', 'img');
+      show(model, i, color);
+      promptEl.querySelector('.paint-source').appendChild(model);
+      var cell = document.createElement('button');
+      cell.type = 'button';
+      cell.dataset.cell = i;
+      show(cell, i, null);
+      cell.addEventListener('click', function () {
+        painted[i] = painted[i] === selected ? null : selected;
+        show(cell, i, painted[i]);
+        KL.sfx('click');
+      });
+      cell.addEventListener('keydown', function (e) {
+        var move = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -q.n, ArrowDown: q.n }[e.key];
+        if (move === undefined) return;
+        e.preventDefault();
+        var next = i + move;
+        if (next >= 0 && next < painted.length && (Math.abs(move) !== 1 || Math.floor(next / q.n) === Math.floor(i / q.n))) target.children[next].focus();
+      });
+      target.appendChild(cell);
+    });
+    var clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'paint-tool';
+    clear.textContent = KL.t('spegill.clear');
+    clear.addEventListener('click', function () {
+      painted.fill(null);
+      Array.from(target.children).forEach(function (cell, i) { show(cell, i, null); });
+    });
+    palette.appendChild(clear);
+    answersEl.className = 'answers paint-actions';
+    var check = document.createElement('button');
+    check.type = 'button';
+    check.className = 'answer paint-check';
+    check.textContent = KL.t('spegill.check');
+    answersEl.appendChild(check);
+    return [{ el: check, retryable: true, speechParts: [],
+      isCorrect: function () { return painted.every(function (color, i) { return color === expected[i]; }); } }];
+  }
+
   KL.register('spegill', {
     levels: [
       { id: 'pictures', labelKey: 'spegill.pictures' },
       { id: 'easy', labelKey: 'level.easy' },
-      { id: 'hard', labelKey: 'level.hard' }
+      { id: 'hard', labelKey: 'level.hard' },
+      { id: 'paint', labelKey: 'spegill.paint' }
     ],
     start: function (ctx) {
       KL.runGame({
@@ -137,16 +228,18 @@
         gameId: 'spegill',
         levels: this.levels,
         makeQuestions: makeQuestions,
-        promptText: function () { return KL.t('spegill.q'); },
-        promptSpeech: function () { return ['spegill.q']; },
-        retrySpeech: function () { return ['spegill.hint']; },
+        promptText: function (q) { return KL.t(q.kind === 'paint' ? 'spegill.paint_q' : 'spegill.q'); },
+        promptSpeech: function (q) { return [q.kind === 'paint' ? 'spegill.paint_q' : 'spegill.q']; },
+        retrySpeech: function (q) { return [q.kind === 'paint' ? 'spegill.paint_hint' : 'spegill.hint']; },
         onCorrect: function (q, a, promptEl) {
+          if (q.kind === 'paint') { promptEl.querySelector('.paint-target').classList.add('filled'); return; }
           var slot = promptEl.querySelector('.mirror-slot');
           slot.innerHTML = draw(q, q.answer, 110);
           slot.classList.add('filled');
           a.el.classList.add('placed');
         },
         build: function (q, promptEl, answersEl) {
+          if (q.kind === 'paint') return paintBoard(q, promptEl, answersEl);
           promptEl.classList.add('mirror-prompt');
           promptEl.innerHTML = '<div class="mirror-stage ' + q.axis + '">' +
             '<div class="mirror-card">' + draw(q, 'id', 110) + '</div>' +

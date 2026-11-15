@@ -5,7 +5,7 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = '04fe9f16d63f';
+var VERSION = '7d30d865ba54';
 var FILES = [
   './',
   'audio/animals/api.mp3',
@@ -255,6 +255,7 @@ var FILES = [
   'audio/da/miss.8.9.mp3',
   'audio/da/miss.9.10.mp3',
   'audio/da/mynstur.q.mp3',
+  'audio/da/num.0.mp3',
   'audio/da/num.1.mp3',
   'audio/da/num.10.mp3',
   'audio/da/num.100.mp3',
@@ -373,6 +374,8 @@ var FILES = [
   'audio/da/shape.%C3%A1tthyrningur.mp3',
   'audio/da/shape.%C3%BEr%C3%ADhyrningur.mp3',
   'audio/da/spegill.hint.mp3',
+  'audio/da/spegill.paint_hint.mp3',
+  'audio/da/spegill.paint_q.mp3',
   'audio/da/spegill.q.mp3',
   'audio/da/sticker.all.mp3',
   'audio/da/sticker.api.mp3',
@@ -624,6 +627,10 @@ var FILES = [
   'audio/da/tolur.count_q.froskur.mp3',
   'audio/da/tolur.count_q.kottur.mp3',
   'audio/da/tolur.count_q.ungi.mp3',
+  'audio/da/tolur.equals.mp3',
+  'audio/da/tolur.plus.mp3',
+  'audio/da/tolur.shape_q.mp3',
+  'audio/da/tolur.unknown.mp3',
   'audio/da/try_again.mp3',
   'audio/da/word.abe.mp3',
   'audio/da/word.and.mp3',
@@ -898,6 +905,7 @@ var FILES = [
   'audio/is/miss.8.9.mp3',
   'audio/is/miss.9.10.mp3',
   'audio/is/mynstur.q.mp3',
+  'audio/is/num.0.mp3',
   'audio/is/num.1.mp3',
   'audio/is/num.10.mp3',
   'audio/is/num.100.mp3',
@@ -1026,6 +1034,8 @@ var FILES = [
   'audio/is/shape.%C3%A1tthyrningur.mp3',
   'audio/is/shape.%C3%BEr%C3%ADhyrningur.mp3',
   'audio/is/spegill.hint.mp3',
+  'audio/is/spegill.paint_hint.mp3',
+  'audio/is/spegill.paint_q.mp3',
   'audio/is/spegill.q.mp3',
   'audio/is/sticker.all.mp3',
   'audio/is/sticker.api.mp3',
@@ -1277,6 +1287,10 @@ var FILES = [
   'audio/is/tolur.count_q.froskur.mp3',
   'audio/is/tolur.count_q.kottur.mp3',
   'audio/is/tolur.count_q.ungi.mp3',
+  'audio/is/tolur.equals.mp3',
+  'audio/is/tolur.plus.mp3',
+  'audio/is/tolur.shape_q.mp3',
+  'audio/is/tolur.unknown.mp3',
   'audio/is/try_again.mp3',
   'audio/is/word.afi.mp3',
   'audio/is/word.amma.mp3',

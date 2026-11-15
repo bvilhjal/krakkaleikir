@@ -8,8 +8,8 @@ Educational browser games for kids aged 5+, guided by Kóli the koala; bilingual
 
 | Leikur | Hvað er æft | Erfiðleikastig |
 |---|---|---|
-| Tölur | Telja dýr (banka á hvert dýr til að telja upphátt), leysa dæmi og finna töluna sem vantar | 1–10: telja, samlagning og frádráttur · 1–20: telja upp í 18, dæmi upp í 20 · 3 + ?: hvaða tala vantar (`4 + ? = 10`, `9 − ? = 5`) |
-| Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, merkja mynstur (tugir/fimm/sléttar), eða talnaleit með vísbendingum (↑ hærra / ↓ lægra, líka lesnar upphátt) | Frjáls könnun, talnaleit 1–20 (5×4 án skrolls) eða talnaleit 1–100 |
+| Tölur | Telja dýr (banka á hvert dýr til að telja upphátt), leysa dæmi og finna töluna sem vantar | 1–10: telja, samlagning og frádráttur · 1–20: telja upp í 18, dæmi upp í 20 · 3 + ?: hvaða tala vantar (`4 + ? = 10`, `9 − ? = 5`) · 1–100: samlagning og óþekkt tala báðum megin við plús · Formagátur: finna gildi forma og leggja saman |
+| Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, merkja mynstur (tugir/fimm/sléttar), eða talnaleit með vísbendingum (↑ hærra / ↓ lægra, líka lesnar upphátt) | Frjáls könnun í töflu eða talnaslöngu (0–100), talnaleit 1–20 eða 1–100; slangan byrjar á núlli |
 | Bókstafir | Para stóra og litla stafi, finna fyrsta staf í heiti dýrs eða hlutar, eða hlusta á orð og finna rétta orðið | Stafir: stafir og upphafsstafir · Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
 | Form (DA: Former) | Finna formin eftir nafni („Finndu sexhyrninginn!“) eða fjölda hliða og horna | Létt: 9 grunnform (þ.m.t. sexhyrningur) · Erfitt: fimm-, sex- og átthyrningur, sporbaugur og hliðaspurningar |
 | Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar · 3:30: líka hálfir tímar („hálf fjögur“) · 3:15: líka korter („korter yfir“, „korter í“) |
@@ -17,11 +17,17 @@ Educational browser games for kids aged 5+, guided by Kóli the koala; bilingual
 | Mynstur (DA: Mønstre) | Finna hvað kemur næst í mynstri eða talnaröð | Létt: AAB, ABB, AABB, ABC · Erfitt: AABB, ABB, ABC og talnaraðir (+1, +2, +5, +10, −1, −2, −5, −10) |
 | Mælingar (DA: Måling) | Bera saman stærðir, færa blýant að reglustiku og vigta dularfullan pakka | Stærðir: lengstur/stystur og hæst/lægst · cm: dragðu blýantinn að núlli og lestu lengdina · kg: vigt í jafnvægi með 1, 2 og 5 kg lóðum |
 | Orð og myndir (DA: Ord og billeder) | Para heiti dýra og hluta við myndir | Orð → mynd: lesa orðið og velja mynd; mynd sem bankað er á segir heiti sitt · Mynd → orð: lesa og velja orð |
-| Spegill (DA: Spejl) | Finna spegilmynd og draga hana í rammann hinum megin við spegilinn (eða banka á hana) | Myndir: hlutir speglaðir til hliðar · Létt: 3×3 kubbamynstur · Erfitt: 4×4 tvílit mynstur, spegillinn stendur eða liggur |
+| Spegill (DA: Spejl) | Finna spegilmynd og draga hana í rammann hinum megin við spegilinn (eða banka á hana) | Myndir: hlutir speglaðir til hliðar · Létt: 3×3 kubbamynstur · Erfitt: 4×4 tvílit mynstur, spegillinn stendur eða liggur · Lita spegilmynd: lita sjálf/ur á rúðunet |
 
 Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Taflan 1–100 hefur tíu dálka og passar í breidd á síma jafnt sem iPad; talnaleit 1–20 notar fimm dálka og fjórar raðir.
 
 Í Tölum er hvert dýr talið einu sinni; bankaðu aftur á það til að heyra töluna aftur. Stafaleikurinn nær yfir allt íslenska og danska stafrófið. Tungumála- og hljóðval virka líka meðan síðan er opin þótt vafrinn leyfi ekki vistun í `localStorage`.
+
+Talnaslangan í Tölutöflu vindur sig frá 0 til 100. Tugirnir eru rauðir; bankaðu á tölu til að heyra hana eða hoppaðu áfram og afturábak um 1 eða 10. Fimm tölur eru í hverri röð svo takkarnir séu stórir líka á síma. Taflan heldur sínum tíu dálkum. Talnaleit notar þá mynd sem er valin og slangan hefur núll með.
+
+Nýja 1–100 stigið í Tölum æfir að fara yfir tug, t.d. `39 + 6 = ?`, og óþekktan lið á hvorum stað, t.d. `? + 6 = 45` eða `39 + ? = 45`. Í Formagátum gefa þrjú lítil dæmi vísbendingar: ef ferningur + ferningur = 10 er hver ferningur 5. Gildi formanna haldast eins út umferðina; síðan eru lögð saman tvö eða þrjú form.
+
+Í „Lita spegilmynd“ velur barnið lit og bankar í reitina handan spegilsins. Bankaðu aftur á sama lit til að stroka út, notaðu strokleðrið eða hreinsaðu allt. „Athuga“ ber saman alla reiti og liti. Eftir ranga tilraun má laga myndina; stjörnur telja fyrstu tilraun eins og í hinum leikjunum. Blái og rauði liturinn hafa líka ólík tákn. Örvatakkar færa fókus á rúðunetinu; bilslá eða Enter litar reit. Fyrst koma 3×3 eins litar myndir, síðan tveir litir og 4×4 myndir við láréttan spegil.
 
 Í Spegli eru röngu svörin algengu mistökin: sama mynd óspegluð, á hvolfi eða snúið hálfan hring. Dragðu mynd í rammann; ef hún er röng hristist hún og fer aftur á sinn stað.
 

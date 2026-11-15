@@ -422,6 +422,57 @@ a { color: inherit; text-decoration: none; }
   .chip { padding: 6px 10px; min-height: 34px; font-size: 0.85rem; }
 }
 
+/* The snake winds in reading order, five generous touch targets per row.
+   Only its meadow scrolls; the number, steps and filters stay within reach. */
+.number-views, .snake-steps { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 12px 0; }
+.number-views .chip, .snake-steps .chip { min-height: 44px; }
+.snake-steps .chip { min-width: 54px; font-size: 1.15rem; background: #EDF4DE; border-color: #CDDCA8; }
+.snake-steps .chip:disabled { opacity: 0.35; cursor: default; }
+.snake-scroll { max-height: 460px; overflow-y: auto; overscroll-behavior: contain; background: #F0F6DF; border-color: #C9D9AC; }
+.snake-board { max-width: 480px; margin: auto; padding: 22px 22px 24px; }
+.snake-row { position: relative; display: flex; height: 48px; margin-bottom: 28px; background: #DFEA8D; }
+.snake-row:nth-child(even) { flex-direction: row-reverse; }
+.snake-row:not(:last-child)::after {
+  content: ""; position: absolute; top: 16px; right: -20px; width: 40px; height: 92px;
+  border: 16px solid #D3E180; border-left: 0; border-radius: 0 46px 46px 0;
+}
+.snake-row:nth-child(even)::after { left: -20px; right: auto; border: 16px solid #D3E180; border-right: 0; border-radius: 46px 0 0 46px; }
+.snake-row:last-child { width: 20%; margin-bottom: 0; border-radius: 0 24px 24px 0; }
+.snake-row .number-cell {
+  position: relative; z-index: 1; width: 20%; min-height: 48px; padding: 2px 0; border-radius: 6px;
+  border: 1px solid #B1C15D; font-size: clamp(1rem, 4vw, 1.5rem); font-weight: 700; background: #DFEA8D;
+}
+.snake-row:last-child .number-cell { width: 100%; border-radius: 6px 24px 24px 6px; }
+.snake-row .snake-ten { background: #B04E36; color: #FFF; border-color: #9B452F; }
+.snake-row .snake-head { border-radius: 22px 6px 6px 22px; }
+.snake-head::before { content: ""; position: absolute; top: -9px; left: 5px; width: 14px; height: 14px; border: 4px solid #FFF; border-radius: 50%; background: #34483C; box-shadow: 17px 0 0 -4px #34483C, 17px 0 0 0 #FFF; }
+.snake-row .number-cell.pat-hi { box-shadow: inset 0 0 0 3px #47549F; }
+.snake-row .number-cell[aria-pressed="true"] { background: #384B36; color: #FFF; outline: 3px solid #FFF; outline-offset: -5px; }
+.snake-row .number-cell.correct { background: #DFF3E3; border: 3px solid #57A773; color: #34483C; }
+.snake-row .number-cell.wrong { background: #FBE3E5; border: 3px solid #D64550; color: #34483C; }
+.snake-row .number-cell:focus-visible { outline: 3px solid #252F71; outline-offset: 1px; }
+
+/* Workbook clues are equations, with the unknown in a paper tile. */
+.workbook { width: 100%; max-width: 620px; padding: 24px 16px; border: 2px solid #E3D6AD; border-radius: 20px; background-color: #FFFCED; background-image: linear-gradient(#E9E5CE66 1px, transparent 1px), linear-gradient(90deg, #E9E5CE66 1px, transparent 1px); background-size: 24px 24px; }
+.arithmetic-workbook { padding: 38px 12px; }
+.work-equation { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: clamp(1.6rem, 7vw, 3.6rem); font-weight: 800; white-space: pre; margin: 0; }
+.work-blank { display: inline-flex; align-items: center; justify-content: center; min-width: 1.55em; min-height: 1.6em; padding: 2px 5px; border: 2px dashed #B57B31; border-radius: 12px; color: #946021; background: #FFF; }
+.work-blank.filled { background: #DFF3E3; border: 2px solid #57A773; color: #34483C; }
+.shape-clues { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.shape-clue { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; background: #FFF; border-radius: 12px; border: 1px solid #E3D6AD; font-size: 1.2rem; }
+.riddle-shape { display: inline-flex; flex-shrink: 0; }
+.shape-equation { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 2rem; font-weight: 700; }
+.workbook-hint { font-size: 0.95rem; font-weight: 500; color: #646653; margin: 14px 0; max-width: 440px; }
+.shape-workbook .workbook-hint { margin: 18px auto; }
+@media (max-width: 440px) {
+  .workbook { padding: 18px 8px; }
+  .arithmetic-workbook { padding: 30px 8px; }
+  .work-equation { gap: 4px; }
+  .shape-clue { gap: 2px; padding: 6px 8px; }
+  .shape-equation { gap: 3px; font-size: 1.4rem; }
+  .shape-equation svg { width: 36px; height: 36px; }
+}
+
 /* ---- end screen ---- */
 .end-card h2 { font-size: clamp(1.8rem, 6vw, 2.6rem); margin: 6px 0 10px; }
 .big-stars { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
@@ -1001,6 +1052,32 @@ button.sticker:focus-visible, button.sticker-new:focus-visible { outline: 3px so
   .mirror-card svg, .mirror-slot svg { width: 96px; height: 96px; }
   .answer.mirror-choice { width: 100px; height: 100px; }
   .answer.mirror-choice svg { width: 82px; height: 82px; }
+}
+
+/* Colour a reflection on graph paper. Symbols distinguish the two inks too. */
+.paint-palette { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 12px; }
+.paint-tool { min-width: 48px; min-height: 48px; padding: 8px 12px; border: 2px solid #D0D7DF; border-radius: 12px; background: #FFF; color: var(--ink); font: inherit; cursor: pointer; }
+.paint-tool[aria-pressed="true"] { outline: 3px solid #3D405B; outline-offset: 3px; }
+.paint-board { display: flex; align-items: stretch; gap: 8px; padding: 6px; border-radius: 12px; background: #EFF5F1; }
+.paint-board.lying { flex-direction: column; }
+.paint-grid { display: grid; grid-template-columns: repeat(var(--n), 52px); border: 2px solid #B6C7C3; background: #FFF; }
+.paint-target { border-color: #5C6BC0; }
+.paint-target.filled { border-color: #57A773; box-shadow: 0 0 0 4px #DFF3E3; }
+.paint-cell { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; margin: 0; padding: 0; border: 1px solid #D0DDDA; border-radius: 0; background: #FFF; font: 700 1rem system-ui, sans-serif; color: #FFF; }
+button.paint-cell { cursor: pointer; }
+.ink-0 { background: #5C6BC0; color: #FFF; }
+.ink-1 { background: #B94D33; color: #FFF; }
+.paint-cell:focus-visible { position: relative; z-index: 1; outline-offset: -4px; outline-color: #E4AA26; }
+.paint-axis { width: 8px; background: linear-gradient(90deg, #91ADB1, #FFF, #91ADB1); border: 1px dashed #4E6F76; border-radius: 4px; }
+.paint-board.lying .paint-axis { width: auto; height: 8px; background: linear-gradient(#91ADB1, #FFF, #91ADB1); }
+.paint-actions { display: flex; justify-content: center; }
+.answer.paint-check { min-height: 56px; min-width: 160px; padding: 12px 28px; font-size: 1.4rem; }
+@media (max-width: 440px) {
+  .paint-board { gap: 4px; padding: 2px; }
+  .paint-grid { grid-template-columns: repeat(var(--n), 40px); }
+  .paint-cell { width: 40px; height: 40px; }
+  .paint-board.lying .paint-grid { grid-template-columns: repeat(var(--n), 52px); }
+  .paint-board.lying .paint-cell { width: 52px; height: 52px; }
 }
 
 /* ---- Kóli's tricks: a spin when tickled or on a streak ---- */

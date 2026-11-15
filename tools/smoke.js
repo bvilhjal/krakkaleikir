@@ -133,13 +133,38 @@ const PLAY_TALNATAFLA = `(async () => {
     if (bubble) {
       const text = bubble.textContent;
       const S = KL_I18N.STR[KL_I18N.lang()];
-      for (let n = 1; n <= 100; n++) {
+      for (let n = 0; n <= 100; n++) {
         if (KL_I18N.fmt('talnatafla.find', { n: S['num.' + n] }) === text) {
-          const btn = document.querySelectorAll('.q-stage .number-cell')[n - 1];
+          const btn = document.querySelector('.q-stage .number-cell[data-number="' + n + '"]');
           if (btn && !btn.disabled) { btn.click(); await sleep(150); }
           break;
         }
       }
+    }
+    await sleep(150);
+  }
+  return false;
+})()`;
+
+// Solve from the visible graph paper, independently of the game's answer data.
+const PLAY_PAINT = `(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  for (let guard = 0; guard < 400; guard++) {
+    if (document.querySelector('.end-card')) return true;
+    const check = document.querySelector('.paint-check:not(:disabled)');
+    if (check) {
+      const source = [...document.querySelectorAll('.paint-source .paint-cell')];
+      const target = [...document.querySelectorAll('.paint-target .paint-cell')];
+      const n = Math.sqrt(source.length), lying = !!document.querySelector('.paint-board.lying');
+      document.querySelector('.paint-palette .paint-tool:last-child').click();
+      source.forEach((cell, i) => {
+        const ink = cell.classList.contains('ink-0') ? 0 : cell.classList.contains('ink-1') ? 1 : -1;
+        if (ink < 0) return;
+        document.querySelectorAll('[data-ink]')[ink].click();
+        const r = Math.floor(i / n), c = i % n;
+        target[lying ? (n - 1 - r) * n + c : r * n + n - 1 - c].click();
+      });
+      check.click();
     }
     await sleep(150);
   }
@@ -396,8 +421,25 @@ async function main() {
                       check(q.choices.filter((s) => sides[s] === n).length === 1 && sides[q.target] === n, where + ': exactly one shape has the requested side/corner count');
                     }
                   } else if (id === 'tolur') {
-                    const expected = q.type === 'count' ? q.n : q.type.startsWith('miss_') ? q.b : q.type === 'sub' ? q.a - q.b : q.a + q.b;
+                    const expected = q.type === 'work' ? q[q.blank] : q.type === 'shapes' ? q.terms.reduce((sum, id) => sum + q.values[id], 0) :
+                      q.type === 'count' ? q.n : q.type.startsWith('miss_') ? q.b : q.type === 'sub' ? q.a - q.b : q.a + q.b;
                     check(answers.find((a) => a.isCorrect).el.textContent === String(expected), where + ': arithmetic/count answer');
+                    check(new Set(answers.map((a) => a.el.textContent)).size === 4, where + ': four distinct answers');
+                    if (q.type === 'work') {
+                      check(q.a + q.b === q.c && q.c <= 100 && q.a >= 11 && q.b >= 1 && q.b <= 9, where + ': valid bounded equation');
+                      check(qs.filter((x) => x.blank === 'a').length === 3 && qs.filter((x) => x.blank === 'b').length === 3, where + ': both missing-addend positions');
+                      check(qs.some((x) => x.a === 93 && x.b === 7 && x.blank === 'c'), where + ': reaches 100');
+                    }
+                    if (q.type === 'shapes') {
+                      check([...prompt.querySelectorAll('.shape-clue strong')].every((el, i) => Number(el.textContent) / 2 === q.values[i]), where + ': visible clues identify the values');
+                      check(prompt.querySelectorAll('.riddle-shape[aria-label="' + KL.t('shape.þríhyrningur') + '"] polygon').length >= 2, where + ': triangle is drawn as a triangle');
+                      check(qs.every((x) => x.values.join() === q.values.join()), where + ': clues stay fixed');
+                    }
+                    if (q.type === 'work' || q.type === 'shapes') {
+                      check(!cfg.promptSpeech(q).includes('num.' + expected), where + ': missing value is not read out');
+                      cfg.onCorrect(q, null, prompt);
+                      check(prompt.querySelector('.work-blank.filled').textContent === String(expected), where + ': result revealed');
+                    }
                   } else if (id === 'bokstafir' && level.id === 'letters') {
                     const alphabet = l === 'da' ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ' : 'AÁBDÐEÉFGHIÍJKLMNOÓPRSTUÚVXYÝÞÆÖ';
                     check(q.alpha.join('') === alphabet, where + ': complete alphabet');
@@ -798,6 +840,7 @@ async function main() {
         try {
           KL.games.spegill.start({});
           for (const level of KL.games.spegill.levels) for (let round = 0; round < 30; round++) {
+            if (level.id === 'paint') continue; // editable boards are checked below
             const qs = cfg.makeQuestions(level.id);
             check(qs.length === 10, level.id + ': ten questions');
             for (const q of qs) {
@@ -821,6 +864,83 @@ async function main() {
         return errors;
       })()`);
       assert(errors.length === 0, errors.join(' | '));
+    });
+
+    await test('spegill: coloured reflections reject missing, extra, and wrong-colour cells on both axes', async () => {
+      const errors = await cdp.eval(`(() => {
+        const original = KL.runGame, errors = [];
+        const check = (ok, m) => { if (!ok && errors.length < 12) errors.push(m); };
+        let cfg;
+        KL.runGame = (c) => { cfg = c; };
+        try {
+          KL.games.spegill.start({});
+          for (let round = 0; round < 20; round++) for (const q of cfg.makeQuestions('paint')) {
+            const prompt = document.createElement('div'), answers = document.createElement('div');
+            const answer = cfg.build(q, prompt, answers)[0];
+            check(!answer.isCorrect(), 'empty board is not solved');
+            const cells = [...prompt.querySelectorAll('.paint-target button')];
+            const tools = [...prompt.querySelectorAll('[data-ink]')];
+            const expected = Array(q.n * q.n).fill(null);
+            q.cells.forEach(([r, c, color]) => { expected[q.axis === 'lying' ? (q.n - 1 - r) * q.n + c : r * q.n + q.n - 1 - c] = color; });
+            expected.forEach((color, i) => { if (color) { tools.find((t) => t.dataset.ink === color).click(); cells[i].click(); } });
+            check(answer.isCorrect(), q.axis + ': correct reflection accepted');
+            const full = expected.findIndex(Boolean), empty = expected.indexOf(null);
+            tools.find((t) => t.dataset.ink && t.dataset.ink !== expected[full]).click(); cells[full].click();
+            check(!answer.isCorrect(), 'right position, wrong colour is rejected');
+            tools.find((t) => t.dataset.ink === expected[full]).click(); cells[full].click();
+            check(answer.isCorrect(), 'colour can be corrected');
+            cells[empty].click(); check(!answer.isCorrect(), 'extra coloured cell is rejected');
+            tools[2].click(); cells[empty].click(); check(answer.isCorrect(), 'eraser restores reflection');
+            cells[full].click(); check(!answer.isCorrect(), 'missing coloured cell is rejected');
+            prompt.querySelector('.paint-tool:last-child').click();
+            check(!answer.isCorrect() && !prompt.querySelector('.paint-target .ink-0, .paint-target .ink-1'), 'clear removes all paint');
+          }
+        } finally { KL.runGame = original; }
+        return errors;
+      })()`);
+      assert(errors.length === 0, errors.join(' | '));
+    });
+
+    await test('spegill: colouring stays editable after a mistake, keyboard works, full round saves stars', async () => {
+      await openGame('spegill');
+      await pickLevel(3);
+      await cdp.eval(`document.querySelector('.paint-check').click()`);
+      await waitFor(`document.querySelector('.paint-check:not(:disabled)')`, 'check available after retry');
+      assert(await cdp.eval(`!document.querySelector('.paint-target button:disabled') && !document.querySelector('.paint-check.used')`), 'work is still editable');
+      await cdp.eval(`document.querySelector('.paint-target button').focus()`);
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight' });
+      assert(await cdp.eval(`document.activeElement.dataset.cell === '1'`), 'arrow key moves to neighbouring square');
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+      assert(await cdp.eval(`document.activeElement.classList.contains('ink-0')`), 'space paints a square');
+      await shot('spegill-paint-desktop');
+      assert(await cdp.eval(PLAY_PAINT), 'ten coloured reflections finished');
+      assert(await cdp.eval(`localStorage.getItem('kl.stars.spegill.paint') === '2'`), 'mistake counts once, nine first-try answers earn two stars');
+      await toMenu();
+    });
+
+    await test('talnatafla: snake includes zero, winds in order, steps stop at bounds, quiz finishes', async () => {
+      await openGame('talnatafla');
+      await cdp.eval(`document.querySelector('[data-view="snake"]').click()`);
+      assert(await cdp.eval(`(() => {
+        const cells = [...document.querySelectorAll('.snake-board .number-cell')];
+        return cells.length === 101 && cells.every((c, i) => Number(c.dataset.number) === i) && document.querySelectorAll('.snake-ten').length === 11;
+      })()`), 'every number from 0 to 100 exactly once; tens highlighted');
+      assert(await cdp.eval(`document.querySelector('[data-step="-1"]').disabled && document.querySelector('[data-step="-10"]').disabled`), 'cannot step below zero');
+      await cdp.eval(`document.querySelector('[data-step="10"]').click(); document.querySelector('[data-step="-1"]').click()`);
+      assert(await cdp.eval(`document.querySelector('.number-value').textContent === '9' && document.querySelector('.number-name').textContent === KL.t('num.9')`), 'forward and backward steps update the reading');
+      await cdp.eval(`document.querySelector('[data-number="100"]').click()`);
+      assert(await cdp.eval(`document.querySelector('[data-step="1"]').disabled && document.querySelector('[data-step="10"]').disabled`), 'cannot step beyond 100');
+      await cdp.eval(`document.querySelector('[data-number="0"]').click(); document.querySelector('[data-pat="10"]').click()`);
+      assert(await cdp.eval(`document.querySelectorAll('.snake-board .pat-hi').length === 11`), 'zero and tens highlighted');
+      await shot('talnaslanga-desktop');
+      await cdp.eval(`(() => {
+        const run = KL.runGame;
+        KL.runGame = (cfg) => { const make = cfg.makeQuestions; cfg.makeQuestions = () => [0, 100].concat(make().filter((n) => n !== 0 && n !== 100).slice(0, 8)); run(cfg); };
+        try { document.querySelector('.number-play').click(); } finally { KL.runGame = run; }
+      })()`);
+      assert(await cdp.eval(PLAY_TALNATAFLA), 'snake quiz including zero and 100 finishes');
+      await toMenu();
     });
 
     await test('spegill: drag with mouse and touch, a drop beside the frame flies back, tap answers too', async () => {
@@ -985,6 +1105,8 @@ async function main() {
     });
 
     for (const [id, lvIdx, slot, btnSel] of [
+      ['tolur', 3, 'tolur.100', null],
+      ['tolur', 4, 'tolur.shapes', null],
       ['bokstafir', 0, 'bokstafir.letters', null],
       ['bokstafir', 1, 'bokstafir.easy', '.sound-btn'],
       ['bokstafir', 2, 'bokstafir.hard', null],
@@ -1011,6 +1133,7 @@ async function main() {
         if (btnSel) await cdp.eval(`document.querySelector(${JSON.stringify(btnSel)}).click()`);
         if (id === 'maelingar') await shot('maelingar-' + slot.split('.')[1] + '-desktop');
         if (id === 'ordmyndir') await shot('ordmyndir-' + slot.split('.')[1] + '-desktop');
+        if (id === 'tolur') await shot('tolur-' + slot.split('.')[1] + '-desktop');
         assert(await cdp.eval(PLAY_ROUND), 'round finished');
         assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.${slot}') || '0', 10) >= 1`), 'stars saved');
         await toMenu();
@@ -1207,7 +1330,49 @@ async function main() {
           assert(await cdp.eval(fits), 'hundred chart page fits at ' + width);
           assert(await cdp.eval(`document.querySelector('.number-grid').scrollWidth <= document.querySelector('.number-scroll').clientWidth + 1`), 'all 10 columns fit without horizontal scroll at ' + width);
           if (width === 390) await shot('talnatafla-mobile');
+          await cdp.eval(`document.querySelector('[data-view="snake"]').click()`);
+          await sleep(400);
+          assert(await cdp.eval(fits), 'snake page fits at ' + width);
+          assert(await cdp.eval(`(() => {
+            const scroll = document.querySelector('.snake-scroll');
+            const cells = [...document.querySelectorAll('.snake-board .number-cell')];
+            return scroll.scrollWidth <= scroll.clientWidth + 1 && cells.every((c) => c.getBoundingClientRect().width >= 44);
+          })()`), 'snake fits without horizontal scrolling and has 44px touch targets');
+          if (width === 390) await shot('talnaslanga-mobile');
           await toMenu();
+          for (const lang of ['is', 'da']) {
+            await cdp.eval(`document.querySelector('[data-lang="${lang}"]').click()`);
+            for (const [id, lv] of [['tolur', 3], ['tolur', 4], ['spegill', 3]]) {
+              await openGame(id);
+              await pickLevel(lv);
+              await sleep(400);
+              assert(await cdp.eval(fits), id + ' workbook fits at ' + width + '/' + lang);
+              assert(await cdp.eval(`(() => {
+                const card = document.querySelector('#game .question-card').getBoundingClientRect();
+                return [...document.querySelectorAll('.workbook, .paint-board, .shape-equation, .work-equation')].every((el) => {
+                  const r = el.getBoundingClientRect();
+                  return r.left >= card.left && r.right <= card.right && el.scrollWidth <= el.clientWidth + 1;
+                });
+              })()`), 'workbook is not clipped');
+              if (width === 390 && lang === 'is') await shot(id + '-workbook-' + lv + '-mobile');
+              await toMenu();
+            }
+            // Also measure the largest reflection and the three-shape equation.
+            for (const [id, lv, offset] of [['spegill', 3, 4], ['tolur', 4, 6]]) {
+              await cdp.eval(`(() => {
+                const run = KL.runGame;
+                KL.runGame = (cfg) => { const make = cfg.makeQuestions; cfg.makeQuestions = (level) => { const qs = make(level); return qs.slice(${offset}).concat(qs.slice(0, ${offset})); }; run(cfg); };
+                try { KL.nav('${id}'); } finally { KL.runGame = run; }
+              })()`);
+              await pickLevel(lv);
+              await sleep(400);
+              assert(await cdp.eval(fits), id + ' largest workbook fits at ' + width);
+              assert(await cdp.eval(`[...document.querySelectorAll('.paint-board, .shape-equation')].every((el) => el.scrollWidth <= el.clientWidth + 1 && el.getBoundingClientRect().right < window.innerWidth)`), 'largest exercise is not clipped');
+              if (width === 390 && lang === 'is') await shot(id + '-workbook-largest-mobile');
+              await toMenu();
+            }
+          }
+          await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
         }
       } finally {
         await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -1221,7 +1386,7 @@ async function main() {
       await cdp.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0, connectionType: 'none' });
       await reloadApp();
       await openGame('tolur');
-      await waitFor(`document.querySelectorAll('.level-btn').length === 3`, 'game opens offline');
+      await waitFor(`document.querySelectorAll('.level-btn').length === 5`, 'game opens offline');
       await toMenu();
       await openGame('maelingar');
       await pickLevel(1);
@@ -1240,6 +1405,23 @@ async function main() {
         assert(await cdp.eval(`document.querySelectorAll('.q-stage .answer').length === 4 && !!document.querySelector('.animal-prompt')`), 'matching game opens offline in ' + lang);
         const audio = await cdp.eval(`fetch('audio/${lang}/ordmyndir.${lv === 0 ? 'picture_q' : 'word_q'}.mp3', { headers: { Range: 'bytes=0-63' } }).then(async (r) => ({ status: r.status, length: (await r.arrayBuffer()).byteLength }))`);
         assert(audio.status === 206 && audio.length === 64, 'matching prompt cached in ' + lang);
+      }
+      for (const lang of ['is', 'da']) {
+        await toMenu();
+        await cdp.eval(`KL_I18N.setLang('${lang}'); KL.nav('talnatafla'); document.querySelector('[data-view="snake"]').click(); document.querySelector('[data-step="10"]').click()`);
+        assert(await cdp.eval(`document.querySelector('.number-value').textContent === '10' && document.querySelectorAll('.snake-board .number-cell').length === 101`), 'snake works offline in ' + lang);
+        await toMenu();
+        for (const [id, lv, selector] of [['tolur', 3, '.work-equation'], ['tolur', 4, '.shape-equation'], ['spegill', 3, '.paint-target']]) {
+          await cdp.eval(`KL.nav('${id}')`);
+          await pickLevel(lv);
+          assert(await cdp.eval(`!!document.querySelector('${selector}')`), id + ' workbook opens offline in ' + lang);
+          await toMenu();
+        }
+        const cached = await cdp.eval(`Promise.all(['num.0', 'tolur.shape_q', 'tolur.plus', 'tolur.equals', 'tolur.unknown', 'spegill.paint_q', 'spegill.paint_hint'].map(async (key) => {
+          const r = await fetch('audio/${lang}/' + key + '.mp3', { headers: { Range: 'bytes=0-63' } });
+          return r.status === 206 && (await r.arrayBuffer()).byteLength === 64;
+        }))`);
+        assert(cached.every(Boolean), 'all seven new speech clips cached with byte-range support in ' + lang);
       }
       await cdp.eval(`KL_I18N.setLang('is')`);
       await toMenu();
