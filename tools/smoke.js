@@ -322,14 +322,14 @@ async function main() {
     // the menu cards are static HTML: wait for the scripts too, not just the markup
     const waitForApp = async () => {
       await waitFor(`document.readyState === 'complete' && typeof KL !== 'undefined'`, 'app scripts loaded');
-      await waitFor(`document.querySelectorAll('.game-card').length === 6`, 'menu');
+      await waitFor(`document.querySelectorAll('.game-card').length === 7`, 'menu');
     };
 
     console.log('krakkaleikir smoke test — ' + base);
     await cdp.send('Page.navigate', { url: base + '/' });
     await waitForApp();
 
-    await test('menu renders: 6 cards, sticker book, Kóli greets', async () => {
+    await test('menu renders: 7 cards, sticker book, Kóli greets', async () => {
       assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .sticker').length >= 12`), 'sticker grid');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.length > 0`), 'greeting');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'first sticker is Kóli');
@@ -576,6 +576,8 @@ async function main() {
       ['bokstafir', 0, 'bokstafir.letters', null],
       ['bokstafir', 1, 'bokstafir.easy', '.sound-btn'],
       ['bokstafir', 2, 'bokstafir.hard', null],
+      ['form', 0, 'form.easy', '.sound-btn'],
+      ['form', 1, 'form.hard', null],
       ['mynstur', 0, 'mynstur.easy', null],
       ['mynstur', 1, 'mynstur.hard', null]
     ]) {
@@ -583,6 +585,9 @@ async function main() {
         await openGame(id);
         await pickLevel(lvIdx);
         await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first question');
+        if (id === 'form' && lvIdx === 0) {
+          assert(await cdp.eval(`!/stroke-linejoin="round"|rx="/.test(KL.shapeSVG('ferningur', '#E07A5F', 100) + KL.shapeSVG('sexhyrningur', '#E07A5F', 100))`), 'shapes use sharp corners');
+        }
         if (btnSel) await cdp.eval(`document.querySelector(${JSON.stringify(btnSel)}).click()`);
         assert(await cdp.eval(PLAY_ROUND), 'round finished');
         assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.${slot}') || '0', 10) >= 1`), 'stars saved');
@@ -594,6 +599,7 @@ async function main() {
       await cdp.eval(`document.querySelector('[data-lang="da"]').click()`);
       await waitFor(`document.documentElement.lang === 'da'`, 'lang attribute');
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="tolur"] h2').textContent === 'Tal'`), 'card translated');
+      assert(await cdp.eval(`document.querySelector('.game-card[data-nav="form"] h2').textContent === 'Former'`), 'form translated');
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="mynstur"] h2').textContent === 'Mønstre'`), 'mynstur translated');
       assert(await cdp.eval(`document.querySelector('[data-lang="da"]').getAttribute('aria-pressed') === 'true'`), 'aria-pressed');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.indexOf('Hej') === 0`), 'Kóli greets in Danish');
@@ -620,7 +626,7 @@ async function main() {
       assert(await cdp.eval(`document.querySelector('#score').textContent === ''`), 'menu score cleared');
     });
 
-    await test('narrow screens (320/390px): controls, pattern row, and Minni title fit', async () => {
+    await test('narrow screens (320/390px): controls, pattern row, hundred chart, and Minni title fit', async () => {
       try {
         for (const width of [320, 390]) {
           await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 2, mobile: true });
@@ -641,7 +647,9 @@ async function main() {
           assert(await cdp.eval(fits), 'mynstur fits at ' + width);
           await toMenu();
           await openGame('talnatafla');
-          assert(await cdp.eval(fits), 'hundred chart fits at ' + width);
+          assert(await cdp.eval(fits), 'hundred chart page fits at ' + width);
+          assert(await cdp.eval(`document.querySelector('.number-grid').scrollWidth <= document.querySelector('.number-scroll').clientWidth + 1`), 'all 10 columns fit without horizontal scroll at ' + width);
+          if (width === 390) await shot('talnatafla-mobile');
           await toMenu();
         }
       } finally {

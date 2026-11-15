@@ -11,11 +11,12 @@ Educational browser games for kids aged 5+, guided by Kóli the koala; bilingual
 | Tölur | Telja dýr (banka á hvert dýr til að telja upphátt), leysa dæmi og finna töluna sem vantar | 1–10: telja, samlagning og frádráttur · 1–20: telja upp í 18, dæmi upp í 20 · 3 + ?: hvaða tala vantar (`4 + ? = 10`, `9 − ? = 5`) |
 | Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, merkja mynstur (tugir/fimm/sléttar), eða talnaleit með vísbendingum (↑ hærra / ↓ lægra) | Frjáls könnun, talnaleit 1–20 (5×4 án skrolls) eða talnaleit 1–100 |
 | Bókstafir | Para stóra og litla stafi, finna fyrsta staf orðs, eða hlusta á orð og finna rétta orðið | Stafir: stafir og upphafsstafir · Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
+| Form (DA: Former) | Finna formin eftir nafni („Finndu sexhyrninginn!“) eða fjölda hliða og horna | Létt: 9 grunnform (þ.m.t. sexhyrningur) · Erfitt: fimm-, sex- og átthyrningur, sporbaugur og hliðaspurningar |
 | Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar · 3:30: líka hálfir tímar („hálf fjögur“) · 3:15: líka korter („korter yfir“, „korter í“) |
 | Minni (DA: Vendespil) | Finna dýrin sem eru eins; dýrið lætur í sér heyra þegar par finnst | 6, 8, 10 eða 12 pör |
 | Mynstur (DA: Mønstre) | Finna hvað kemur næst í mynstri eða talnaröð | Létt: AAB, ABB, AABB, ABC · Erfitt: AABB, ABB, ABC og talnaraðir (+1, +2, +5, +10, −1, −2, −5, −10) |
 
-Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Á þröngum skjám má strjúka töflunni til hliðar; dálkarnir eru alltaf tíu.
+Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Dálkarnir eru alltaf tíu og taflan passar í breidd á síma jafnt sem iPad.
 
 Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á hann til að heyra hana aftur. Hann hrósar á íslensku („Frábært!“, „Geggjað!“, „Jibbí!“), líka í dönsku útgáfunni, þar sem merkingin birtist undir. Rangt svar dofnar og spurningin er lesin aftur. Stjörnurnar (1–3) sýna hve margar spurningar voru réttar í fyrstu tilraun (í Minni: hve fáa snúninga þurfti). Eftir hvern leik kemur nýr dýralímmiði í límmiðabókina á forsíðunni (12 dýr).
 
@@ -40,12 +41,12 @@ Allt tal er í tilbúnum mp3-skrám (`audio/<mál>/`), gerðum með talgervli Ed
 
 ### Á iPad
 
-Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 13,5 MB) og leitar að nýrri útgáfu í hvert sinn sem appið er opnað. Ný útgáfa tekur gildi næst þegar valmyndin birtist, aldrei í miðjum leik.
+Opna síðuna í Safari → deila-hnappurinn → „Bæta við heimaskjá“ (Add to Home Screen). Þá kemur app-tákn á heimaskjáinn og síðan keyrir í fullum skjá án Safari-ramma. Eftir fyrstu heimsókn virkar hún líka án nettengingar: `sw.js` geymir allar skrár (um 14 MB) og leitar að nýrri útgáfu í hvert sinn sem appið er opnað. Ný útgáfa tekur gildi næst þegar valmyndin birtist, aldrei í miðjum leik.
 
 ## Uppbygging
 
 ```
-index.html            eina síðan: valmynd + leikjasvæði (#tolur, #litir, ... í slóðinni)
+index.html            eina síðan: valmynd + leikjasvæði (#tolur, #form, ... í slóðinni)
 games/<leikur>.html   vísa áfram á index.html#<leikur> (gömul bókamerki)
 manifest.webmanifest  stillingar fyrir „Bæta við heimaskjá“
 sw.js                 offline: geymir allar skrár; skráalistinn er búinn til af tools/check.js

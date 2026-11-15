@@ -205,41 +205,56 @@
     }
     return pts.join(' ');
   }
+  function polyPoints(cx, cy, r, sides, rotDeg) {
+    var pts = [];
+    var rot = ((rotDeg || 0) - 90) * Math.PI / 180;
+    for (var i = 0; i < sides; i++) {
+      var a = rot + (2 * Math.PI * i) / sides;
+      pts.push((cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1));
+    }
+    return pts.join(' ');
+  }
   function shapeSVG(shape, color, size) {
     size = size || 120;
-    var common = 'stroke="rgba(0,0,0,0.18)" stroke-width="4"';
+    var common = 'stroke="rgba(0,0,0,0.22)" stroke-width="3" stroke-linejoin="miter" stroke-miterlimit="6"';
     var inner = '';
     switch (shape) {
       case 'ferningur':
-        inner = '<rect x="12" y="12" width="76" height="76" rx="14" fill="' + color + '" ' + common + '/>';
+        inner = '<rect x="14" y="14" width="72" height="72" fill="' + color + '" ' + common + '/>';
         break;
       case 'þríhyrningur':
-        inner = '<polygon points="50,10 90,86 10,86" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        inner = '<polygon points="50,13 89,81 11,81" fill="' + color + '" ' + common + '/>';
         break;
       case 'rétthyrningur':
-        inner = '<rect x="8" y="24" width="84" height="52" rx="12" fill="' + color + '" ' + common + '/>';
+        inner = '<rect x="8" y="25" width="84" height="50" fill="' + color + '" ' + common + '/>';
         break;
       case 'stjarna':
-        inner = '<polygon points="' + starPoints(50, 52, 42, 17, 5) + '" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        inner = '<polygon points="' + starPoints(50, 52, 42, 17, 5) + '" fill="' + color + '" ' + common + '/>';
         break;
       case 'hjarta':
-        inner = '<path d="M50 86 C22 64 10 46 10 32 C10 18 21 10 32 10 C40 10 47 14 50 22 C53 14 60 10 68 10 C79 10 90 18 90 32 C90 46 78 64 50 86 Z" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        inner = '<path d="M50 86 C22 64 10 46 10 32 C10 18 21 10 32 10 C40 10 47 14 50 22 C53 14 60 10 68 10 C79 10 90 18 90 32 C90 46 78 64 50 86 Z" fill="' + color + '" ' + common + '/>';
         break;
       case 'sporbaugur':
-        inner = '<ellipse cx="50" cy="50" rx="42" ry="27" fill="' + color + '" ' + common + '/>';
+        inner = '<ellipse cx="50" cy="50" rx="43" ry="26" fill="' + color + '" ' + common + '/>';
         break;
       case 'tígull':
-        inner = '<polygon points="50,8 88,50 50,92 12,50" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        inner = '<polygon points="50,8 84,50 50,92 16,50" fill="' + color + '" ' + common + '/>';
         break;
       case 'hálfmáni':
-        inner = '<path d="M64 14 A38 38 0 1 0 64 86 A29 33 0 1 1 64 14 Z" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        inner = '<path d="M64 13 A38 38 0 1 0 64 87 A28 33 0 1 1 64 13 Z" fill="' + color + '" ' + common + '/>';
+        break;
+      case 'fimmhyrningur':
+        inner = '<polygon points="' + polyPoints(50, 53, 41, 5, 0) + '" fill="' + color + '" ' + common + '/>';
         break;
       case 'sexhyrningur':
-        inner = '<polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="' + color + '" ' + common + ' stroke-linejoin="round"/>';
+        inner = '<polygon points="' + polyPoints(50, 50, 41, 6, 0) + '" fill="' + color + '" ' + common + '/>';
+        break;
+      case 'átthyrningur':
+        inner = '<polygon points="' + polyPoints(50, 50, 41, 8, 22.5) + '" fill="' + color + '" ' + common + '/>';
         break;
       case 'hringur':
       default:
-        inner = '<circle cx="50" cy="50" r="40" fill="' + color + '" ' + common + '/>';
+        inner = '<circle cx="50" cy="50" r="39" fill="' + color + '" ' + common + '/>';
     }
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100" aria-hidden="true">' + inner + '</svg>';
   }
