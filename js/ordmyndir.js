@@ -20,10 +20,11 @@
           });
         },
         promptText: function (q) { return KL.t(promptKey(q)); },
-        promptSpeech: function (q) {
-          return [promptKey(q)].concat(q.mode === 'pictures' ? [KL_ART.nameKey(q.target)] : []);
-        },
-        retrySpeech: function (q) { return q.mode === 'pictures' ? [KL_ART.nameKey(q.target)] : [promptKey(q)]; },
+        // the word is never read out: reading it is the game. A tapped
+        // picture says its own name, so a wrong pick teaches a word too.
+        promptSpeech: function (q) { return [promptKey(q)]; },
+        retrySpeech: function (q) { return [promptKey(q)]; },
+        wrongSpeech: function (q, lv, tapped) { return q.mode === 'pictures' ? [KL_ART.nameKey(tapped.id), 'try_again'] : ['try_again', promptKey(q)]; },
         onCorrect: function (q, answer, promptEl) {
           var label = document.createElement('p');
           label.className = 'word-reveal';
@@ -32,21 +33,26 @@
         },
         build: function (q, promptEl, answersEl) {
           var word = KL.t(KL_ART.nameKey(q.target));
-          var prompt = document.createElement('button');
-          prompt.type = 'button';
-          prompt.className = 'animal-prompt' + (q.mode === 'pictures' ? ' match-word' : '');
-          prompt.setAttribute('aria-label', word + ': ' + KL.t('speak.aria'));
+          var prompt;
           if (q.mode === 'pictures') {
+            // a word card to read, not a button: it does not speak
+            prompt = document.createElement('div');
+            prompt.className = 'animal-prompt match-word';
             var text = document.createElement('strong');
             text.className = 'match-word-text';
             text.textContent = word;
             prompt.appendChild(text);
-            prompt.insertAdjacentHTML('beforeend', KL.speakerSVG(28));
-          } else prompt.innerHTML = KL_ART.picture(q.target, 128);
-          prompt.addEventListener('click', function () {
-            KL.replay(prompt, 'pulse-once');
-            KL.say([KL_ART.nameKey(q.target)]);
-          });
+          } else {
+            prompt = document.createElement('button');
+            prompt.type = 'button';
+            prompt.className = 'animal-prompt';
+            prompt.setAttribute('aria-label', word + ': ' + KL.t('speak.aria'));
+            prompt.innerHTML = KL_ART.picture(q.target, 128);
+            prompt.addEventListener('click', function () {
+              KL.replay(prompt, 'pulse-once');
+              KL.say([KL_ART.nameKey(q.target)]);
+            });
+          }
           promptEl.appendChild(prompt);
           return q.choices.map(function (id) {
             var btn = document.createElement('button');
@@ -57,7 +63,7 @@
               btn.innerHTML = KL_ART.picture(id, 104);
             } else btn.textContent = KL.t(KL_ART.nameKey(id));
             answersEl.appendChild(btn);
-            return { el: btn, isCorrect: id === q.target, speechParts: [KL_ART.nameKey(id)] };
+            return { el: btn, id: id, isCorrect: id === q.target, speechParts: [KL_ART.nameKey(id)] };
           });
         }
       });

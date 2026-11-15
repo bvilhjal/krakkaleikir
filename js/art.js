@@ -396,6 +396,89 @@
       '<path d="M38 44 L46 42 M44 56 L52 54 M52 68 L59 66" stroke="#E65100" stroke-width="2.4" stroke-linecap="round"/>' +
       '<path d="M36 30 Q28 12 18 10 Q26 20 30 30 Z M38 28 Q40 10 34 2 Q44 12 42 28 Z M40 30 Q52 16 62 16 Q52 26 44 32 Z" fill="#66BB6A"/>'
   };
+  var WOOD = '#A1887F', WOOD_D = '#6D4C41';
+  var MORE = {
+    stoll: '<rect x="26" y="8" width="9" height="84" rx="3" fill="' + WOOD + '" stroke="' + WOOD_D + '" stroke-width="2"/>' +
+      '<rect x="32" y="16" width="5" height="34" fill="' + WOOD_D + '" opacity=".3"/>' +
+      '<rect x="26" y="50" width="54" height="10" rx="3" fill="' + WOOD + '" stroke="' + WOOD_D + '" stroke-width="2"/>' +
+      '<rect x="70" y="58" width="9" height="34" rx="3" fill="' + WOOD + '" stroke="' + WOOD_D + '" stroke-width="2"/>',
+    bolli: '<ellipse cx="48" cy="90" rx="38" ry="6" fill="#CFD8DC"/>' +
+      '<path d="M70 40 Q90 40 88 56 Q86 72 66 70" stroke="#5C6BC0" stroke-width="7" fill="none" stroke-linecap="round"/>' +
+      '<path d="M20 32 L76 32 L70 78 Q68 88 58 88 L38 88 Q28 88 26 78 Z" fill="#5C6BC0"/>' +
+      '<path d="M30 46 L66 46" stroke="#fff" stroke-width="4" stroke-dasharray="6 6" stroke-linecap="round"/>' +
+      '<path d="M38 22 Q32 14 38 6 M50 22 Q44 14 50 6 M62 22 Q56 14 62 6" stroke="#B0BEC5" stroke-width="3" fill="none" stroke-linecap="round"/>',
+    skeid: '<path d="M46 46 L86 90" stroke="#B0BEC5" stroke-width="9" stroke-linecap="round"/>' +
+      '<ellipse cx="32" cy="30" rx="15" ry="22" fill="#CFD8DC" stroke="#78909C" stroke-width="2.5" transform="rotate(-42 32 30)"/>' +
+      '<ellipse cx="28" cy="26" rx="5" ry="9" fill="#fff" opacity=".7" transform="rotate(-42 28 26)"/>',
+    sokkur: '<path d="M28 8 L58 8 L58 56 Q58 64 66 66 L80 68 Q94 70 94 82 Q94 94 80 94 L46 94 Q28 94 28 76 Z" fill="#EF5350"/>' +
+      '<rect x="28" y="8" width="30" height="12" fill="#fff"/><rect x="28" y="30" width="30" height="6" fill="#fff"/><rect x="28" y="44" width="30" height="6" fill="#fff"/>' +
+      '<path d="M28 78 Q28 94 46 94 L50 94 Q40 86 40 76 Z" fill="#C62828"/><path d="M84 70 Q94 72 94 82 Q94 92 84 94 Q88 82 84 70 Z" fill="#C62828"/>',
+    hufa: '<path d="M14 70 Q14 26 50 24 Q86 26 86 70 Z" fill="#26A69A"/>' +
+      '<path d="M30 30 L30 66 M50 25 L50 66 M70 30 L70 66" stroke="#00796B" stroke-width="3"/>' +
+      '<rect x="10" y="64" width="80" height="18" rx="7" fill="#FFCA28"/>' +
+      '<circle cx="50" cy="18" r="11" fill="#E53935"/>',
+    vettlingur: '<path d="M40 82 L38 44 Q38 16 60 16 Q82 16 80 44 L78 82 Z" fill="#AB47BC"/>' +
+      '<path d="M41 58 Q24 58 20 44 Q18 32 28 32 Q36 32 40 46 Z" fill="#AB47BC"/>' +
+      '<rect x="34" y="78" width="50" height="16" rx="5" fill="#fff" stroke="#CE93D8" stroke-width="2"/>' +
+      '<path d="M59 34 L59 54 M50 44 L68 44 M53 38 L65 50 M65 38 L53 50" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>',
+    tannbursti: '<g transform="rotate(-32 50 50)">' +
+      '<rect x="4" y="47" width="64" height="11" rx="5.5" fill="#42A5F5"/><rect x="12" y="49" width="20" height="3" rx="1.5" fill="#fff" opacity=".6"/>' +
+      '<rect x="64" y="45" width="30" height="14" rx="4" fill="#90CAF9"/>' +
+      '<path d="M67 45 L67 31 M72 45 L72 31 M77 45 L77 31 M82 45 L82 31 M87 45 L87 31 M92 45 L92 31" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>' +
+      '<path d="M66 30 Q72 22 80 27 Q88 21 94 29" stroke="#4FC3F7" stroke-width="6" fill="none" stroke-linecap="round"/></g>',
+    blyantur: '<g transform="rotate(-35 50 50)">' +
+      '<rect x="14" y="41" width="58" height="18" fill="#FFCA28"/><rect x="14" y="47" width="58" height="6" fill="#FFB300"/>' +
+      '<path d="M72 41 L94 50 L72 59 Z" fill="#F3D2A2"/><path d="M87 47 L94 50 L87 53 Z" fill="' + INK + '"/>' +
+      '<rect x="4" y="41" width="10" height="18" rx="3" fill="#F48FB1"/><rect x="12" y="40" width="6" height="20" fill="#B0BEC5"/></g>',
+    tromma: '<path d="M18 78 L18 40 L82 40 L82 78 Q50 92 18 78 Z" fill="#E53935"/>' +
+      '<path d="M18 46 L34 74 L50 46 L66 74 L82 46" stroke="#FFCA28" stroke-width="4" fill="none" stroke-linejoin="round"/>' +
+      '<ellipse cx="50" cy="40" rx="32" ry="10" fill="#FFF8EE" stroke="#BDBDBD" stroke-width="2"/>' +
+      '<path d="M30 8 L52 36 M74 6 L56 34" stroke="#8D6E63" stroke-width="4" stroke-linecap="round"/>' +
+      '<circle cx="30" cy="8" r="5" fill="#FFF8EE"/><circle cx="74" cy="6" r="5" fill="#FFF8EE"/>',
+    lest: '<circle cx="66" cy="16" r="6" fill="#ECEFF1"/><circle cx="76" cy="9" r="8" fill="#ECEFF1"/>' +
+      '<rect x="54" y="20" width="12" height="20" fill="' + INK + '"/>' +
+      '<rect x="10" y="38" width="66" height="34" rx="4" fill="#E53935"/>' +
+      '<rect x="10" y="18" width="30" height="24" rx="3" fill="#C62828"/><rect x="16" y="23" width="18" height="13" rx="2" fill="#BBDEFB"/>' +
+      '<path d="M76 54 L92 74 L76 74 Z" fill="#FFCA28"/><circle cx="72" cy="46" r="4" fill="#FFEB3B"/>' +
+      '<circle cx="26" cy="76" r="10" fill="' + INK + '"/><circle cx="26" cy="76" r="4" fill="#B0BEC5"/>' +
+      '<circle cx="56" cy="76" r="10" fill="' + INK + '"/><circle cx="56" cy="76" r="4" fill="#B0BEC5"/>',
+    hjol: '<circle cx="24" cy="66" r="17" fill="none" stroke="' + INK + '" stroke-width="5"/><circle cx="78" cy="66" r="17" fill="none" stroke="' + INK + '" stroke-width="5"/>' +
+      '<path d="M24 66 L46 66 L66 38 L36 38 Z M46 66 L33 30 M66 38 L78 66" stroke="#E53935" stroke-width="5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<path d="M26 28 L40 28" stroke="' + INK + '" stroke-width="6" stroke-linecap="round"/>' +
+      '<path d="M66 38 L62 24 L72 22" stroke="' + INK + '" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="46" cy="66" r="5" fill="#B0BEC5"/>',
+    jardarber: '<path d="M50 94 Q16 68 18 42 Q22 26 50 30 Q78 26 82 42 Q84 68 50 94 Z" fill="#E53935"/>' +
+      [[36, 46], [50, 44], [64, 46], [42, 60], [58, 60], [50, 74], [32, 56], [68, 56]].map(function (d) { return '<ellipse cx="' + d[0] + '" cy="' + d[1] + '" rx="1.8" ry="2.6" fill="#FFEB3B"/>'; }).join('') +
+      '<path d="M50 34 L36 22 L46 26 L42 12 L50 22 L58 12 L54 26 L64 22 Z" fill="#43A047" stroke="#43A047" stroke-width="3" stroke-linejoin="round"/>',
+    pera: '<path d="M50 20 Q40 20 40 36 Q40 46 30 58 Q16 76 30 88 Q40 96 50 96 Q60 96 70 88 Q84 76 70 58 Q60 46 60 36 Q60 20 50 20 Z" fill="#C0CA33"/>' +
+      '<path d="M50 22 Q50 12 56 6" stroke="#6D4C41" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+      '<path d="M54 14 Q66 6 74 14 Q64 20 54 14 Z" fill="#66BB6A"/>' +
+      '<ellipse cx="38" cy="68" rx="5" ry="10" fill="#fff" opacity=".4" transform="rotate(20 38 68)"/>',
+    egg: '<ellipse cx="50" cy="42" rx="24" ry="30" fill="#FFF8E1" stroke="#D7CCC8" stroke-width="2"/>' +
+      '<ellipse cx="42" cy="32" rx="5" ry="9" fill="#fff" transform="rotate(20 42 32)"/>' +
+      '<path d="M24 58 Q26 80 50 80 Q74 80 76 58 Z" fill="#42A5F5"/>' +
+      '<rect x="40" y="78" width="20" height="8" fill="#42A5F5"/><rect x="30" y="84" width="40" height="8" rx="4" fill="#1E88E5"/>' +
+      '<circle cx="40" cy="66" r="3" fill="#fff"/><circle cx="50" cy="70" r="3" fill="#fff"/><circle cx="60" cy="66" r="3" fill="#fff"/>',
+    kerti: '<rect x="37" y="40" width="26" height="50" rx="3" fill="#F48FB1"/>' +
+      '<path d="M37 46 Q42 54 46 46 L46 58 Q48 62 50 58 L50 44 Z" fill="#F8BBD0"/>' +
+      '<rect x="30" y="88" width="40" height="7" rx="3.5" fill="#FFCA28"/>' +
+      '<path d="M50 40 L50 33" stroke="' + INK + '" stroke-width="2"/>' +
+      '<path d="M50 8 Q62 24 50 34 Q38 24 50 8 Z" fill="#FFB300"/><path d="M50 18 Q56 27 50 32 Q44 27 50 18 Z" fill="#FFF176"/>',
+    hamar: '<rect x="46" y="32" width="11" height="62" rx="5" fill="#A1887F" stroke="#6D4C41" stroke-width="2"/>' +
+      '<path d="M30 16 L80 16 L80 36 L30 36 Z" fill="#78909C"/>' +
+      '<path d="M30 16 Q12 16 6 30 L14 30 Q20 24 30 26 Z M30 36 Q14 36 8 30 L14 30 Q20 30 30 31 Z" fill="#78909C"/>' +
+      '<rect x="78" y="14" width="8" height="24" rx="2" fill="#607D8B"/>',
+    dreki: '<path d="M52 72 Q38 80 48 88 Q60 96 46 100" stroke="' + INK + '" stroke-width="2" fill="none"/>' +
+      '<path d="M44 80 L38 76 L38 84 Z M53 90 L60 86 L60 94 Z" fill="#FFCA28"/>' +
+      '<path d="M50 6 L78 36 L50 72 Z" fill="#EF5350"/><path d="M50 6 L22 36 L50 72 Z" fill="#42A5F5"/>' +
+      '<path d="M22 36 L78 36" stroke="#fff" stroke-width="2"/>',
+    rum: '<rect x="8" y="34" width="12" height="56" rx="3" fill="#8D6E63"/>' +
+      '<rect x="84" y="54" width="10" height="36" rx="3" fill="#8D6E63"/>' +
+      '<rect x="16" y="58" width="72" height="16" rx="3" fill="#fff" stroke="#CFD8DC" stroke-width="2"/>' +
+      '<ellipse cx="32" cy="54" rx="13" ry="8" fill="#fff" stroke="#CFD8DC" stroke-width="2"/>' +
+      '<path d="M44 50 L86 50 Q90 50 90 56 L90 76 L44 76 Z" fill="#5C6BC0"/><path d="M44 58 L90 58" stroke="#9FA8DA" stroke-width="3"/>'
+  };
+  Object.keys(MORE).forEach(function (id) { THING[id] = MORE[id]; });
   var THINGS = Object.keys(THING);
 
   function animal(id, size) {

@@ -324,7 +324,7 @@ async function main() {
     // the menu cards are static HTML: wait for the scripts too, not just the markup
     const waitForApp = async () => {
       await waitFor(`document.readyState === 'complete' && typeof KL !== 'undefined'`, 'app scripts loaded');
-      await waitFor(`document.querySelectorAll('.game-card').length === 9`, 'menu');
+      await waitFor(`document.querySelectorAll('.game-card').length === 10`, 'menu');
     };
     const reloadApp = async () => {
       await cdp.eval(`window.__beforeReload = true`);
@@ -337,7 +337,7 @@ async function main() {
     await cdp.send('Page.navigate', { url: base + '/' });
     await waitForApp();
 
-    await test('menu renders: 9 cards, sticker book, Kóli greets', async () => {
+    await test('menu renders: 10 cards, the zoo, Kóli greets', async () => {
       assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .sticker').length === 20 && document.querySelectorAll('#sticker-grid .zoo-area').length === 5`), 'zoo: 20 animals in 5 areas');
       assert(await cdp.eval(`KL_ART.ZOO.flatMap((a) => a.animals).sort().join() === KL_ART.ANIMALS.slice().sort().join()`), 'every animal lives in exactly one zoo area');
       assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .family-sticker.waiting').length === 2 && !document.querySelector('[data-family]')`), 'Mom and Dad not here yet');
@@ -416,7 +416,12 @@ async function main() {
                     check(drawn.outerHTML === picture.firstChild.outerHTML, where + ': correct artwork');
                     const written = q.mode === 'pictures' ? prompt.querySelector('.match-word-text') : correct.el;
                     check(written.textContent === KL.t(nameKey), where + ': correct translated word');
-                    check(cfg.promptSpeech(q).includes(nameKey) === (q.mode === 'pictures'), where + ': reading mode does not announce the answer');
+                    check(!cfg.promptSpeech(q).includes(nameKey) && !cfg.retrySpeech(q).includes(nameKey), where + ': the answer is never read out before it is found');
+                    if (q.mode === 'pictures') {
+                      const wrong = answers.find((a) => !a.isCorrect);
+                      check(cfg.wrongSpeech(q, q.mode, wrong)[0] === KL_ART.nameKey(wrong.id), where + ': a wrong picture says its own name');
+                      check(prompt.querySelector('.match-word').tagName === 'DIV', where + ': the word card does not speak');
+                    }
                     check(correct.speechParts[0] === nameKey, where + ': feedback pronounces the match');
                     cfg.onCorrect(q, correct, prompt);
                     check((q.mode === 'pictures' ? correct.el : prompt).querySelector('.word-reveal').textContent === KL.t(nameKey), where + ': matched word revealed');
@@ -608,8 +613,13 @@ async function main() {
       assert(await cdp.eval(`document.querySelectorAll('#fx .confetti').length > 0`), 'confetti');
       const stars = await cdp.eval(`parseInt(localStorage.getItem('kl.stars.tolur.10') || '0', 10)`);
       assert(stars >= 1 && stars <= 3, 'stars saved, got ' + stars);
-      assert(await cdp.eval(`KL.stickers().length === 2`), 'second sticker awarded');
-      assert(await cdp.eval(`!!document.querySelector('.sticker-reveal')`), 'sticker reveal');
+      // a prize only for at most three questions missed at the first try
+      const firstTry = await cdp.eval(`parseInt(document.querySelector('.end-card p strong').textContent, 10)`);
+      if (firstTry >= 7) {
+        assert(await cdp.eval(`KL.stickers().length === 2 && !!document.querySelector('.sticker-reveal')`), 'good round: second animal awarded');
+      } else {
+        assert(await cdp.eval(`KL.stickers().length === 1 && !document.querySelector('.sticker-reveal') && !!document.querySelector('.prize-note small')`), 'too many misses (' + firstTry + '/10): no prize, the rule is shown');
+      }
       await shot('tolur-end-desktop', 1500); // the sticker pops in over ~1.3s
       await toMenu();
       assert(await cdp.eval(`document.querySelector('.badge[data-game="tolur"] svg') !== null`), 'badge shows stars');
@@ -619,6 +629,7 @@ async function main() {
     await test('streak counter, second prize dresses Kóli, wardrobe toggles, tickle', async () => {
       // keep each question's answers so the round can be played without a mistake
       await cdp.eval(`localStorage.setItem('kl.rewards', '2')`); // every third prize is for Kóli
+      const stickersBefore = await cdp.eval(`KL.stickers().length`);
       await cdp.eval(`(() => {
         const orig = KL.runGame;
         window.__answers = [];
@@ -652,7 +663,7 @@ async function main() {
       } finally {
         await cdp.eval(`window.__restoreRunGame()`);
       }
-      assert(await cdp.eval(`KL.stickers().length === 2 && KL.wardrobe().length === 1`), 'second prize is for Kóli, not a sticker');
+      assert(await cdp.eval(`KL.stickers().length === ${stickersBefore} && KL.wardrobe().length === 1`), 'third prize is for Kóli, not an animal');
       const item = await cdp.eval(`KL.wardrobe()[0]`);
       assert(await cdp.eval(`Object.values(KL.outfit()).includes('${item}')`), 'Kóli puts the new item on');
       assert(await cdp.eval(`!!document.querySelector('.end-card .outfit-reveal') && document.querySelector('.end-card .guide .koala .k-outfit').children.length > 0`), 'end card shows the item and Kóli wearing it');
@@ -778,6 +789,106 @@ async function main() {
       await toMenu();
     });
 
+    await test('spegill: one true reflection per question; the wrong ones are the usual mix-ups', async () => {
+      const errors = await cdp.eval(`(() => {
+        const original = KL.runGame, errors = [];
+        const check = (ok, m) => { if (!ok && errors.length < 12) errors.push(m); };
+        let cfg;
+        KL.runGame = (c) => { cfg = c; };
+        try {
+          KL.games.spegill.start({});
+          for (const level of KL.games.spegill.levels) for (let round = 0; round < 30; round++) {
+            const qs = cfg.makeQuestions(level.id);
+            check(qs.length === 10, level.id + ': ten questions');
+            for (const q of qs) {
+              const prompt = document.createElement('div'), choices = document.createElement('div');
+              const answers = cfg.build(q, prompt, choices, level.id);
+              const right = answers.filter((a) => a.isCorrect);
+              check(right.length === 1, level.id + ': exactly one right answer');
+              check(right[0].how === (q.axis === 'lying' ? 'v' : 'h'), level.id + ': the answer is the reflection in the mirror shown');
+              const drawn = answers.map((a) => a.el.innerHTML);
+              check(new Set(drawn).size === answers.length, level.id + ': all choices look different');
+              check(answers.length === (level.id === 'hard' ? 4 : 3), level.id + ': choice count');
+              if (q.kind === 'grid') {
+                const looks = ['id', 'h', 'v', 'r'].map((how) => KL.spegill.sig(how === 'id' ? q.cells : KL.spegill.flip(q.cells, q.n, how)));
+                check(new Set(looks).size === 4, level.id + ': pattern has no symmetry');
+              }
+              if (level.id === 'pictures') check(KL.spegill.PICTURES.includes(q.item), 'pictures: a lopsided picture');
+            }
+            if (level.id === 'hard') check(qs.some((q) => q.axis === 'lying'), 'hard: some mirrors lie down');
+          }
+        } finally { KL.runGame = original; }
+        return errors;
+      })()`);
+      assert(errors.length === 0, errors.join(' | '));
+    });
+
+    await test('spegill: drag with mouse and touch, a drop beside the frame flies back, tap answers too', async () => {
+      try {
+        for (const input of ['mouse', 'touch']) {
+          if (input === 'touch') {
+            await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+            await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+          }
+          await cdp.eval(`(() => {
+            const orig = KL.runGame;
+            window.__answers = [];
+            KL.runGame = (c) => { const b = c.build; c.build = (...a) => (window.__answers = b(...a) || []); return orig(c); };
+            try { KL.nav('spegill'); } finally { KL.runGame = orig; }
+          })()`);
+          await pickLevel(input === 'mouse' ? 1 : 0);
+          await waitFor(`document.querySelectorAll('.q-stage .mirror-choice').length >= 3`, 'mirror question');
+          await sleep(500);
+          const pos = (sel) => cdp.eval(`(() => {
+            const el = ${sel};
+            el.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+            const r = el.getBoundingClientRect();
+            return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+          })()`);
+          const drag = async (from, to) => {
+            const mid = { x: Math.round((from.x + to.x) / 2), y: Math.round((from.y + to.y) / 2) };
+            if (input === 'touch') {
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...from, id: 1 }] });
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...mid, id: 1 }] });
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...to, id: 1 }] });
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            } else {
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...from, button: 'left', buttons: 1, clickCount: 1 });
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...mid, button: 'left', buttons: 1 });
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...to, button: 'left', buttons: 1 });
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...to, button: 'left', buttons: 0, clickCount: 1 });
+            }
+            await sleep(350);
+          };
+          const wrongSel = `window.__answers.find((a) => !a.isCorrect).el`, rightSel = `window.__answers.find((a) => a.isCorrect).el`;
+          // a drop well away from the frame: nothing is answered
+          const right0 = await pos(rightSel);
+          await drag(right0, { x: right0.x + 4, y: right0.y + 160 });
+          assert(await cdp.eval(`!document.querySelector('.mirror-slot.filled') && !window.__answers.some((a) => a.el.disabled) && ${rightSel}.style.transform === ''`), input + ': a stray drop flies back and answers nothing');
+          // the wrong picture onto the frame: shaken off
+          await drag(await pos(wrongSel), await pos(`document.querySelector('.mirror-slot')`));
+          assert(await cdp.eval(`${wrongSel}.disabled && !document.querySelector('.mirror-slot.filled')`), input + ': a wrong drop is refused');
+          if (input === 'touch') await shot('spegill-mobile');
+          // the reflection onto the frame: it stays there
+          await drag(await pos(rightSel), await pos(`document.querySelector('.mirror-slot')`));
+          assert(await cdp.eval(`!!document.querySelector('.mirror-slot.filled svg') && ${rightSel}.classList.contains('placed')`), input + ': the reflection fills the frame');
+          assert(await cdp.eval(`document.querySelector('.q-stage').getBoundingClientRect().right <= window.innerWidth + 1`), input + ': fits the screen');
+          if (input === 'mouse') await shot('spegill-desktop');
+          // next question: a plain tap on the reflection answers too
+          await waitFor(`!document.querySelector('.mirror-slot.filled') && window.__answers.length && !window.__answers.some((a) => a.el.disabled)`, 'next mirror question', 8000);
+          await cdp.eval(`${rightSel}.click()`);
+          assert(await cdp.eval(`!!document.querySelector('.mirror-slot.filled')`), input + ': a tap answers');
+          await toMenu();
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+          await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+        }
+      } finally {
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+        await toMenu();
+      }
+    });
+
     await test('ruler: mouse and touch dragging snap at zero; keyboard and tap alternatives work', async () => {
       try {
         for (const [input, length] of [['mouse', 10], ['touch', 1], ['keyboard', 6], ['tap', 4]]) {
@@ -884,13 +995,16 @@ async function main() {
       ['maelingar', 0, 'maelingar.compare', null],
       ['maelingar', 1, 'maelingar.ruler', null],
       ['maelingar', 2, 'maelingar.weight', null],
+      ['spegill', 0, 'spegill.pictures', null],
+      ['spegill', 1, 'spegill.easy', null],
+      ['spegill', 2, 'spegill.hard', null],
       ['ordmyndir', 0, 'ordmyndir.pictures', '.animal-prompt'],
       ['ordmyndir', 1, 'ordmyndir.words', '.animal-prompt']
     ]) {
       await test(`${id} (${slot.split('.')[1]}): full round finishes`, async () => {
         await openGame(id);
         await pickLevel(lvIdx);
-        await waitFor(`document.querySelectorAll('.q-stage .answer').length === 4`, 'first question');
+        await waitFor(`document.querySelectorAll('.q-stage .answer').length >= (${JSON.stringify(id)} === 'spegill' ? 3 : 4)`, 'first question');
         if (id === 'form' && lvIdx === 0) {
           assert(await cdp.eval(`!/stroke-linejoin="round"|rx="/.test(KL.shapeSVG('ferningur', '#E07A5F', 100) + KL.shapeSVG('sexhyrningur', '#E07A5F', 100))`), 'shapes use sharp corners');
         }
@@ -950,7 +1064,8 @@ async function main() {
           const said = [], ttsSay = KL_TTS.say;
           KL_TTS.say = (parts, done) => { said.push(...parts); return ttsSay(parts, done); };
           try {
-            KL.finish({ main: document.getElementById('game') }, { slotKey: 'smoke', stars: 1, titleKey: 'end.title', lines: [], onReplay() {} });
+            localStorage.removeItem('kl.prizes.smoke');
+            KL.finish({ main: document.getElementById('game') }, { slotKey: 'smoke', stars: 1, earned: true, titleKey: 'end.title', lines: [], onReplay() {} });
           } finally { KL_TTS.say = ttsSay; }
           return { said, visitors: [...document.querySelectorAll('.end-card [data-family]')].map((b) => b.dataset.family), n: KL.stickers().length };
         })()`);
@@ -968,7 +1083,34 @@ async function main() {
       assert(await cdp.eval(`document.querySelectorAll('#sticker-grid [data-family]').length === 2 && document.querySelectorAll('#sticker-grid button.sticker').length === 20`), 'full zoo with both parents');
       await cdp.eval(`document.querySelector('.zoo').scrollIntoView()`);
       await shot('zoo-full-desktop');
-      await cdp.eval(`localStorage.removeItem('kl.stars.smoke'); window.scrollTo(0, 0)`);
+      await cdp.eval(`localStorage.removeItem('kl.stars.smoke'); localStorage.removeItem('kl.prizes.smoke'); window.scrollTo(0, 0)`);
+    });
+
+    await test('prizes: only for a good round, at most three from one game, shown on the menu cards', async () => {
+      await openGame('form');
+      const end = (earned) => cdp.eval(`(() => {
+        const said = [], ttsSay = KL_TTS.say;
+        KL_TTS.say = (parts, done) => { said.push(...parts); return ttsSay(parts, done); };
+        const before = KL.stickers().length + KL.wardrobe().length;
+        try {
+          KL.finish({ main: document.getElementById('game') }, { slotKey: 'form.easy', gameId: 'form', stars: 1, earned: ${earned}, ruleText: 'RULE', titleKey: 'end.title', lines: [], onReplay() {} });
+        } finally { KL_TTS.say = ttsSay; }
+        const note = document.querySelector('.end-card .prize-note');
+        return { said, got: KL.stickers().length + KL.wardrobe().length - before, won: KL.prizesWon('form'), note: note ? note.textContent : '' };
+      })()`);
+      await cdp.eval(`localStorage.setItem('kl.stickers', JSON.stringify(['koala'])); localStorage.removeItem('kl.wardrobe'); localStorage.removeItem('kl.prizes.form')`);
+      let r = await end(false);
+      assert(r.got === 0 && r.won === 0 && r.said.includes('prize.retry') && r.note.includes('RULE'), 'a poor round gives no prize: ' + JSON.stringify(r));
+      await shot('prize-retry-desktop', 900);
+      for (let i = 1; i <= 3; i++) {
+        r = await end(true);
+        assert(r.got === 1 && r.won === i && !r.note, 'good round ' + i + ' gives a prize: ' + JSON.stringify(r));
+      }
+      r = await end(true);
+      assert(r.got === 0 && r.won === 3 && r.said.includes('prize.done') && r.note === (await cdp.eval(`KL.t('prize.done')`)), 'a fourth prize from the same game is refused: ' + JSON.stringify(r));
+      await toMenu();
+      assert(await cdp.eval(`document.querySelectorAll('.badge[data-game="form"] .prizes svg').length === 3 && document.querySelector('.badge[data-game="form"] .prizes').getAttribute('aria-label').includes('3') && document.querySelectorAll('.badge[data-game="klukkan"] .prizes svg').length === 3`), 'menu cards show three presents');
+      await cdp.eval(`localStorage.removeItem('kl.prizes.form'); localStorage.removeItem('kl.stars.form.easy')`);
     });
 
     await test('reset clears stars and stickers', async () => {
@@ -976,6 +1118,7 @@ async function main() {
       assert(await cdp.eval(`localStorage.getItem('kl.stars.tolur.10') === null`), 'stars gone');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'sticker book back to Kóli');
       assert(await cdp.eval(`KL.wardrobe().length === 0 && Object.keys(KL.outfit()).length === 0 && localStorage.getItem('kl.rewards') === null`), 'wardrobe emptied');
+      assert(await cdp.eval(`!Object.keys(localStorage).some((k) => k.startsWith('kl.prizes.'))`), 'prize counts cleared');
       assert(await cdp.eval(`document.querySelector('#menu .hero .koala .k-outfit').children.length === 0`), 'Kóli undressed');
       assert(await cdp.eval(`document.querySelector('#score').textContent === ''`), 'menu score cleared');
     });

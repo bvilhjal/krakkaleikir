@@ -13,7 +13,10 @@
       if (!stars) return;
       parts.push('<span class="slot">' + ((lv.id || lv.label) ? '<span>' + KL.levelLabel(lv) + '</span>' : '') + KL.starsRow(stars, 3, 16) + '</span>');
     });
-    return parts.length ? parts.join('') : KL.t('badge.not_played');
+    var won = Math.min(KL.prizesWon(id), KL.PRIZES_PER_GAME), gifts = '';
+    for (var i = 0; i < KL.PRIZES_PER_GAME; i++) gifts += KL.giftSVG(i < won, 16);
+    return (parts.length ? parts.join('') : KL.t('badge.not_played')) +
+      '<span class="prizes" role="img" aria-label="' + KL.fmt('prize.badge', { n: won, t: KL.PRIZES_PER_GAME }) + '">' + gifts + '</span>';
   }
 
   function totalStars() {

@@ -135,6 +135,15 @@
     for (var i = 0; i < total; i++) s += starSVG(i < filledCount, size || 44);
     return s;
   }
+  // a little present: the prizes a game still has to give (menu badges)
+  function giftSVG(filled, size) {
+    var c = filled ? '#E07A5F' : 'none', s = filled ? '#B5523A' : '#C9CBD6';
+    return '<svg width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" aria-hidden="true">' +
+      '<rect x="4" y="10" width="16" height="11" rx="2" fill="' + c + '" stroke="' + s + '" stroke-width="1.6"/>' +
+      '<rect x="2.5" y="6.5" width="19" height="4" rx="1.5" fill="' + c + '" stroke="' + s + '" stroke-width="1.6"/>' +
+      '<path d="M12 6.5V21" stroke="' + (filled ? '#FFC93C' : s) + '" stroke-width="2.2"/>' +
+      '<path d="M12 6.5C10 2.5 5.5 3 6.5 5.5 7.5 7 11 6.5 12 6.5ZM12 6.5C14 2.5 18.5 3 17.5 5.5 16.5 7 13 6.5 12 6.5Z" fill="none" stroke="' + s + '" stroke-width="1.6"/></svg>';
+  }
   function speakerSVG(size, color) {
     size = size || 30;
     color = color || '#5C6BC0';
@@ -147,7 +156,10 @@
      'kl.stars.<game>[.<level>]' = best stars (1-3); 'kl.flips.minni.<pairs>' =
      fewest flips; 'kl.stickers' = collected animals (JSON list); 'kl.wardrobe' =
      Kóli's clothes (JSON list); 'kl.outfit' = what he wears ({ slot: item });
-     'kl.rewards' = prizes handed out, so animals and clothes take turns. */
+     'kl.rewards' = prizes handed out, so animals and clothes take turns;
+     'kl.prizes.<game>' = prizes won in that game (at most PRIZES_PER_GAME). */
+  var PRIZES_PER_GAME = 3;
+  function prizesWon(gameId) { return getBest('prizes.' + gameId); }
   function slot(gameId, level) { return gameId + (level ? '.' + level : ''); }
   function getBest(key) {
     try { return parseInt(window.localStorage.getItem('kl.' + key) || '0', 10) || 0; }
@@ -259,7 +271,7 @@
     try {
       Object.keys(window.localStorage).forEach(function (k) {
         // 'kl.best.' holds scores from versions before stars
-        if (/^kl\.(stars|flips|best)\./.test(k) || /^kl\.(stickers|wardrobe|outfit|rewards)$/.test(k)) window.localStorage.removeItem(k);
+        if (/^kl\.(stars|flips|best|prizes)\./.test(k) || /^kl\.(stickers|wardrobe|outfit|rewards)$/.test(k)) window.localStorage.removeItem(k);
       });
     } catch (e) { /* ignore */ }
     outfitNow = null;
@@ -491,19 +503,30 @@
     onUnlock(function () { say(speech); });
   }
 
-  /* ---- end of a game: stars, a sticker, confetti ----
-     o: { slotKey, stars, titleKey, lines: [html], onReplay } */
+  /* ---- end of a game: stars, a prize, confetti ----
+     o: { slotKey, gameId, stars, earned, ruleText, titleKey, lines: [html], onReplay }
+     A prize (a zoo animal or something for Kóli) comes only for a good round
+     (o.earned) and at most PRIZES_PER_GAME times from the same game. */
   function finish(ctx, o) {
     sfx('win');
     saveBest('stars.' + o.slotKey, o.stars);
     var best = getBest('stars.' + o.slotKey);
+    var gameId = o.gameId || String(o.slotKey).split('.')[0];
     var before = stickers().length;
-    var prize = awardReward();
+    var haveO = wardrobe();
+    var prizesLeft = before < ART.ANIMALS.length || ART.OUTFIT_IDS.some(function (id) { return haveO.indexOf(id) < 0; });
+    var prize = {}, why = null;
+    if (prizesLeft && !o.earned) why = 'retry';
+    else if (prizesLeft && prizesWon(gameId) >= PRIZES_PER_GAME) why = 'done';
+    else if (prizesLeft) {
+      prize = awardReward();
+      try { window.localStorage.setItem('kl.prizes.' + gameId, String(prizesWon(gameId) + 1)); } catch (e) { /* ignore */ }
+    }
     var sticker = prize.sticker, dress = prize.outfit;
     // a parent whose number of animals was reached just now comes to visit
     var visitors = Object.keys(I.FAMILY).filter(function (id) { return before < I.FAMILY[id].need && familyHere(id); });
     var hurra = I.PRAISE[I.HURRA];
-    var speech = ['is:praise.' + I.HURRA, o.titleKey].concat(sticker ? ['sticker.' + sticker] : dress ? ['outfit.new'] : (allAnimals() ? ['sticker.all'] : []))
+    var speech = ['is:praise.' + I.HURRA, o.titleKey].concat(sticker ? ['sticker.' + sticker] : dress ? ['outfit.new'] : why ? ['prize.' + why] : (allAnimals() ? ['sticker.all'] : []))
       .concat(visitors.map(function (id) { return I.FAMILY[id].lang + ':family.' + id; }));
     ctx.main.innerHTML =
       '<div class="question-card end-card enter">' + guideHTML(96) +
@@ -514,6 +537,7 @@
           '<p>' + I.fmt('sticker.new', { a: I.t('animal.' + sticker) }) + '</p></div>' : '') +
         (dress ? '<div class="sticker-reveal outfit-reveal"><span class="sticker-new">' + ART.outfitIcon(dress, 92) + '</span>' +
           '<p>' + I.fmt('outfit.new_text', { a: I.t('outfit.' + dress) }) + '</p></div>' : '') +
+        (why ? '<p class="prize-note">' + I.t('prize.' + why) + (why === 'retry' && o.ruleText ? '<small>' + o.ruleText + '</small>' : '') + '</p>' : '') +
         familyHTML(visitors, true) +
         '<div class="end-buttons">' +
           '<button type="button" class="btn-primary" id="kl-replay">' + I.t('end.replay') + '</button>' +
@@ -539,6 +563,7 @@
        promptText: function (q) -> bubble text (HTML),
        promptSpeech: function (q) -> [audioKey, ...],
        retrySpeech: optional function (q, level, tapped) -> [audioKey, ...] said after "try again" (default: the prompt)
+       wrongSpeech: optional function (q, level, tapped) -> [audioKey, ...] said instead of "try again" + retry
        build: function (q, promptEl, answersEl, level) -> [{ el, isCorrect, speechParts: [audioKey, ...], onTap? }],
      }
      The card with Kóli stays put; only the question slides in. A wrong answer
@@ -593,7 +618,11 @@
       var c = state.firstTry;
       finish(cfg.ctx, {
         slotKey: cfg.slotKey || slot(cfg.gameId, level),
+        gameId: cfg.gameId,
         stars: c === total ? 3 : (c >= total - 2 ? 2 : 1),
+        // a prize for at most three questions missed at the first try
+        earned: total - c <= 3,
+        ruleText: I.fmt('prize.rule', { n: total - 3 }),
         titleKey: 'end.title',
         lines: [I.fmt('end.score', { c: c, t: total })],
         onReplay: function () { start(level); }
@@ -668,7 +697,7 @@
             koalaSay(I.t('try_again'), sub);
             koalaMood('oops');
             var retry = cfg.retrySpeech ? cfg.retrySpeech(q, level, a) : prompt;
-            say(['try_again'].concat(retry), function () {
+            say(cfg.wrongSpeech ? cfg.wrongSpeech(q, level, a) : ['try_again'].concat(retry), function () {
               if (!locked) {
                 koalaSay(promptStr, cfg.wrongSub ? sub : '');
                 if (afterSpoken) afterSpoken();
@@ -817,6 +846,9 @@
     starSVG: starSVG,
     starsRow: starsRow,
     speakerSVG: speakerSVG,
+    giftSVG: giftSVG,
+    prizesWon: prizesWon,
+    PRIZES_PER_GAME: PRIZES_PER_GAME,
     slot: slot,
     getBest: getBest,
     saveBest: saveBest,

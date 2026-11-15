@@ -17,6 +17,8 @@
       '<rect x="11" y="5" width="10" height="14" rx="2" fill="#fff" stroke="#E07A5F" stroke-width="1.6" transform="rotate(8 16 12)"/></svg>';
   }
 
+  // the most flips that still give two stars (and a prize)
+  var GOOD = { 6: 14, 8: 18, 10: 24, 12: 28 };
   function starsFor(nPairs, flips) {
     if (nPairs === 6) return flips <= 9 ? 3 : flips <= 14 ? 2 : 1;
     if (nPairs === 8) return flips <= 12 ? 3 : flips <= 18 ? 2 : 1;
@@ -136,6 +138,8 @@
         KL.finish(ctx, {
           slotKey: 'minni.' + nPairs,
           stars: starsFor(nPairs, flips),
+          earned: flips <= GOOD[nPairs],
+          ruleText: KL.fmt('prize.rule_minni', { n: GOOD[nPairs] }),
           titleKey: 'minni.end_title',
           lines: [KL.fmt(flips % 10 === 1 && flips % 100 !== 11 ? 'minni.end_flips_one' : 'minni.end_flips', { n: flips }),
                   KL.t('minni.pairs' + nPairs) + ' · ' + KL.fmt('minni.end_best', { n: KL.getBest('flips.minni.' + nPairs) })],

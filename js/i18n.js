@@ -22,6 +22,7 @@
       'game.mynstur': 'Mynstur',
       'game.maelingar': 'Mælingar',
       'game.ordmyndir': 'Orð og myndir',
+      'game.spegill': 'Spegill',
       'desc.tolur': 'Teldu dýrin og leystu dæmi',
       'desc.talnatafla': 'Kannaðu tölurnar frá 1 upp í 100',
       'desc.bokstafir': 'Hlustaðu og finndu staf eða orð',
@@ -31,6 +32,7 @@
       'desc.mynstur': 'Hvað kemur næst í röðinni?',
       'desc.maelingar': 'Mældu, vigtaðu og berðu saman',
       'desc.ordmyndir': 'Paraðu orðin og myndirnar',
+      'desc.spegill': 'Finndu spegilmyndina',
       'footer.note': 'Stjörnur, dýrin og föt Kóla geymast í þessum vafra.',
       'footer.reset': 'Byrja upp á nýtt',
       'reset.confirm': 'Eyða öllum stjörnum, dýrum og fötum Kóla?',
@@ -47,6 +49,7 @@
       'title.mynstur': 'Mynstur — Krakkaleikir',
       'title.maelingar': 'Mælingar — Krakkaleikir',
       'title.ordmyndir': 'Orð og myndir — Krakkaleikir',
+      'title.spegill': 'Spegill — Krakkaleikir',
       'level.q': 'Hvað eigum við að prófa?',
       'level.easy': 'Létt',
       'level.hard': 'Erfitt',
@@ -65,6 +68,11 @@
       'family.dad': 'Pabbi',
       'family.mom': 'Mamma',
       'sticker.all': 'Öll dýrin eru komin í dýragarðinn!',
+      'prize.retry': 'Vandaðu þig, þá færðu verðlaun næst!',
+      'prize.rule': 'Verðlaun fást fyrir {n} rétt eða fleiri í fyrstu tilraun.',
+      'prize.rule_minni': 'Verðlaun fást ef þú notar {n} snúninga eða færri.',
+      'prize.done': 'Þú hefur fengið öll verðlaunin úr þessum leik. Prófaðu annan leik!',
+      'prize.badge': 'Verðlaun: {n} af {t}',
       'outfit.new': 'Vá! Sjáðu hvað Kóli fékk!',
       'outfit.new_text': 'Nýtt handa Kóla: {a}!',
       'wardrobe.title': 'Fataskápur Kóla',
@@ -151,6 +159,10 @@
       'ordmyndir.words': 'Mynd → orð',
       'ordmyndir.picture_q': 'Hvaða mynd passar við orðið?',
       'ordmyndir.word_q': 'Hvaða orð passar við myndina?',
+      'spegill.q': 'Hvað sést í speglinum? Dragðu rétta mynd á sinn stað!',
+      'spegill.hint': 'Mundu að spegillinn snýr myndinni við.',
+      'spegill.pictures': 'Myndir',
+      'spegill.choice': 'Mynd {n}',
       'form.find.hringur': 'Finndu hringinn!',
       'form.find.ferningur': 'Finndu ferninginn!',
       'form.find.þríhyrningur': 'Finndu þríhyrninginn!',
@@ -204,7 +216,11 @@
       'thing.bolti': 'bolti', 'thing.bill': 'bíll', 'thing.hus': 'hús', 'thing.sol': 'sól', 'thing.epli': 'epli',
       'thing.banani': 'banani', 'thing.tre': 'tré', 'thing.blom': 'blóm', 'thing.batur': 'bátur', 'thing.kaka': 'kaka',
       'thing.lykill': 'lykill', 'thing.skor': 'skór', 'thing.regnhlif': 'regnhlíf', 'thing.bok': 'bók',
-      'thing.flugvel': 'flugvél', 'thing.bladra': 'blaðra', 'thing.iskrem': 'ís', 'thing.gulrot': 'gulrót'
+      'thing.flugvel': 'flugvél', 'thing.bladra': 'blaðra', 'thing.iskrem': 'ís', 'thing.gulrot': 'gulrót',
+      'thing.stoll': 'stóll', 'thing.bolli': 'bolli', 'thing.skeid': 'skeið', 'thing.sokkur': 'sokkur', 'thing.hufa': 'húfa',
+      'thing.vettlingur': 'vettlingur', 'thing.tannbursti': 'tannbursti', 'thing.blyantur': 'blýantur', 'thing.tromma': 'tromma',
+      'thing.lest': 'lest', 'thing.hjol': 'hjól', 'thing.jardarber': 'jarðarber', 'thing.pera': 'pera', 'thing.egg': 'egg',
+      'thing.kerti': 'kerti', 'thing.hamar': 'hamar', 'thing.dreki': 'flugdreki', 'thing.rum': 'rúm'
     },
     da: {
       'title.menu': 'Krakkaleikir',
@@ -220,6 +236,7 @@
       'game.mynstur': 'Mønstre',
       'game.maelingar': 'Måling',
       'game.ordmyndir': 'Ord og billeder',
+      'game.spegill': 'Spejl',
       'desc.tolur': 'Tæl dyrene og løs regnestykker',
       'desc.talnatafla': 'Gå på opdagelse i tallene fra 1 til 100',
       'desc.bokstafir': 'Lyt og find bogstav eller ord',
@@ -229,6 +246,7 @@
       'desc.mynstur': 'Hvad kommer næst i rækken?',
       'desc.maelingar': 'Mål, vej og sammenlign',
       'desc.ordmyndir': 'Match ord og billeder',
+      'desc.spegill': 'Find spejlbilledet',
       'footer.note': 'Stjerner, dyrene og Kólis tøj gemmes i denne browser.',
       'footer.reset': 'Start forfra',
       'reset.confirm': 'Slette alle stjerner, dyr og Kólis tøj?',
@@ -245,6 +263,7 @@
       'title.mynstur': 'Mønstre — Krakkaleikir',
       'title.maelingar': 'Måling — Krakkaleikir',
       'title.ordmyndir': 'Ord og billeder — Krakkaleikir',
+      'title.spegill': 'Spejl — Krakkaleikir',
       'level.q': 'Hvad skal vi prøve?',
       'level.easy': 'Let',
       'level.hard': 'Svær',
@@ -263,6 +282,11 @@
       'family.dad': 'Far',
       'family.mom': 'Mor',
       'sticker.all': 'Alle dyrene er kommet i din zoo!',
+      'prize.retry': 'Gør dig umage, så får du en præmie næste gang!',
+      'prize.rule': 'Du får en præmie for {n} eller flere rigtige i første forsøg.',
+      'prize.rule_minni': 'Du får en præmie, hvis du bruger {n} træk eller færre.',
+      'prize.done': 'Du har fået alle præmierne fra dette spil. Prøv et andet spil!',
+      'prize.badge': 'Præmier: {n} af {t}',
       'outfit.new': 'Wow! Se hvad Kóli har fået!',
       'outfit.new_text': 'Nyt til Kóli: {a}!',
       'wardrobe.title': 'Kólis klædeskab',
@@ -349,6 +373,10 @@
       'ordmyndir.words': 'Billede → ord',
       'ordmyndir.picture_q': 'Hvilket billede passer til ordet?',
       'ordmyndir.word_q': 'Hvilket ord passer til billedet?',
+      'spegill.q': 'Hvad ser man i spejlet? Træk det rigtige billede på plads!',
+      'spegill.hint': 'Husk, at spejlet vender billedet om.',
+      'spegill.pictures': 'Billeder',
+      'spegill.choice': 'Billede {n}',
       'form.find.hringur': 'Find cirklen!',
       'form.find.ferningur': 'Find kvadratet!',
       'form.find.þríhyrningur': 'Find trekanten!',
@@ -402,7 +430,11 @@
       'thing.bolti': 'bold', 'thing.bill': 'bil', 'thing.hus': 'hus', 'thing.sol': 'sol', 'thing.epli': 'æble',
       'thing.banani': 'banan', 'thing.tre': 'træ', 'thing.blom': 'blomst', 'thing.batur': 'båd', 'thing.kaka': 'kage',
       'thing.lykill': 'nøgle', 'thing.skor': 'sko', 'thing.regnhlif': 'paraply', 'thing.bok': 'bog',
-      'thing.flugvel': 'fly', 'thing.bladra': 'ballon', 'thing.iskrem': 'is', 'thing.gulrot': 'gulerod'
+      'thing.flugvel': 'fly', 'thing.bladra': 'ballon', 'thing.iskrem': 'is', 'thing.gulrot': 'gulerod',
+      'thing.stoll': 'stol', 'thing.bolli': 'kop', 'thing.skeid': 'ske', 'thing.sokkur': 'sok', 'thing.hufa': 'hue',
+      'thing.vettlingur': 'vante', 'thing.tannbursti': 'tandbørste', 'thing.blyantur': 'blyant', 'thing.tromma': 'tromme',
+      'thing.lest': 'tog', 'thing.hjol': 'cykel', 'thing.jardarber': 'jordbær', 'thing.pera': 'pære', 'thing.egg': 'æg',
+      'thing.kerti': 'lys', 'thing.hamar': 'hammer', 'thing.dreki': 'drage', 'thing.rum': 'seng'
     }
   };
 
@@ -466,14 +498,14 @@
 
   // phrases spoken as they are; combined sentences are built in audioVocab()
   var PHRASES = [
-    'koala.hello', 'koala.next', 'level.q', 'end.title', 'try_again', 'sticker.all', 'outfit.new',
+    'koala.hello', 'koala.next', 'level.q', 'end.title', 'try_again', 'sticker.all', 'outfit.new', 'prize.retry', 'prize.done',
     'tolur.count_q.fiskur', 'tolur.count_q.froskur', 'tolur.count_q.ungi', 'tolur.count_q.kottur',
     'bokstafir.q', 'bokstafir.match_q', 'bokstafir.first_q',
     'klukkan.read_q', 'klukkan.set_b', 'klukkan.pick_b',
     'minni.start', 'minni.end_title', 'talnatafla.start', 'talnatafla.say_higher', 'talnatafla.say_lower',
     'mynstur.q', 'maelingar.longest', 'maelingar.shortest', 'maelingar.tallest',
     'maelingar.lowest', 'maelingar.ruler_q', 'maelingar.weight_q', 'maelingar.move_q',
-    'ordmyndir.picture_q', 'ordmyndir.word_q'
+    'ordmyndir.picture_q', 'ordmyndir.word_q', 'spegill.q', 'spegill.hint'
   ];
 
   // Preferences still work for this visit when storage is blocked or full.
