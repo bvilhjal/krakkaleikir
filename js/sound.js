@@ -149,9 +149,8 @@
     return src;
   }
 
-  // Clips are shared by both languages. Five local clips: four AI-generated
-  // CC0 SFXMint effects and one real royalty-free Mixkit cat recording
-  // (audio/animals/, credits.json); the other seven are synthesized voices.
+  // Clips are shared by both languages. Thirteen local clips (audio/animals/,
+  // provenance in credits.json); the other seven are synthesized voices.
   var ANIMAL_SOUNDS = {
     koala: 'koala.mp3',
     // "ribbit": a short low grunt, then a trilled resonant croak, twice
@@ -212,6 +211,16 @@
       return nodes;
     },
     ljon: 'ljon.mp3',
+    // the eight zoo newcomers: real recordings (Mixkit; the sheep from Wikimedia
+    // Commons, public domain) and two AI-generated CC0 SFXMint effects (duck, elephant)
+    hundur: 'hundur.mp3',
+    kyr: 'kyr.mp3',
+    kind: 'kind.mp3',
+    hestur: 'hestur.mp3',
+    ond: 'ond.mp3',
+    fill: 'fill.mp3',
+    api: 'api.mp3',
+    byfluga: 'byfluga.mp3',
     // a penguin bray: harsh harmonic call through a formant, down then up
     morgaes: function (c, out) {
       var t = c.currentTime + 0.01, nodes = [];
@@ -258,7 +267,11 @@
     flip: function () { tone(880, 0, 0.05, 'square', 0.05); },
     win: function () { [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { tone(f, i * 0.12, 0.18, 'sine', 0.25); }); },
     click: function () { tone(660, 0, 0.04, 'sine', 0.07); },
-    pop: function () { tone(440, 0, 0.08, 'sine', 0.2); tone(880, 0.06, 0.1, 'sine', 0.2); tone(1318.5, 0.12, 0.18, 'triangle', 0.15); }
+    pop: function () { tone(440, 0, 0.08, 'sine', 0.2); tone(880, 0.06, 0.1, 'sine', 0.2); tone(1318.5, 0.12, 0.18, 'triangle', 0.15); },
+    // a quick sparkle run for answers in a row
+    streak: function () { [1046.5, 1318.5, 1568, 2093].forEach(function (f, i) { tone(f, i * 0.06, 0.14, 'triangle', 0.12); }); },
+    // Kóli giggles when tickled: "hi-hi-hi-hi", each a little higher
+    giggle: function () { [0, 1, 2, 3, 4].forEach(function (i) { tone(620 + i * 70, i * 0.11, 0.09, 'triangle', 0.17, 900 + i * 90); }); }
   };
 
   function play(name) {

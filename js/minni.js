@@ -1,5 +1,5 @@
-/* Minni / Vendespil: memory game with animal cards (6, 8, 10, or 12 pairs).
-   Matching a pair plays that animal's voice. Fewer flips is better; best stars
+/* Minni / Vendespil: memory game with animal and thing cards (6, 8, 10, or 12 pairs).
+   Matching a pair plays that animal's voice or says the thing's name. Fewer flips is better; best stars
    and fewest flips are stored per board size. */
 (function () {
   'use strict';
@@ -45,9 +45,11 @@
       function play(nPairs) {
         KL.onUnlock(null);
         var cards = [];
-        KL.sample(KL_ART.ANIMALS, nPairs).forEach(function (animal) {
-          cards.push({ key: animal });
-          cards.push({ key: animal });
+        // about half animals, half things
+        var nAnimals = Math.ceil(nPairs / 2);
+        KL.sample(KL_ART.ANIMALS, nAnimals).concat(KL.sample(KL_ART.THINGS, nPairs - nAnimals)).forEach(function (id) {
+          cards.push({ key: id });
+          cards.push({ key: id });
         });
         cards = KL.shuffle(cards);
 
@@ -77,13 +79,13 @@
           el.innerHTML =
             '<div class="mcard-inner">' +
               '<div class="mface back"></div>' +
-              '<div class="mface front">' + KL_ART.animal(card.key, 72) + '</div>' +
+              '<div class="mface front">' + KL_ART.picture(card.key, 72) + '</div>' +
             '</div>';
           el.addEventListener('click', function () {
             if (lock || el.disabled || el.classList.contains('flipped')) return;
             KL.sfx('flip');
             el.classList.add('flipped');
-            el.setAttribute('aria-label', KL.t('animal.' + card.key));
+            el.setAttribute('aria-label', KL.t(KL_ART.nameKey(card.key)));
             flipped.push({ el: el, key: card.key, label: cardLabel });
             if (flipped.length < 2) return;
             // two cards up: ignore taps until they are matched or turned back
@@ -104,11 +106,14 @@
                 matched++;
                 lock = false;
                 if (window.KL_TTS) window.KL_TTS.stop();
-                KL.later(function () { if (window.KL_SOUND) KL_SOUND.animal(a.key); }, 180);
+                // an animal makes its sound; a thing is named
+                KL.later(function () {
+                  if (KL_ART.isThing(a.key)) KL.say([KL_ART.nameKey(a.key)]);
+                  else if (window.KL_SOUND) KL_SOUND.animal(a.key);
+                }, 180);
                 if (matched === nPairs) { KL.later(function () { end(nPairs, flips); }, 850); return; }
                 var p = KL.praise();
-                var animalName = KL.t('animal.' + a.key);
-                KL.koalaSay(p.text + ' — ' + animalName, p.sub);
+                KL.koalaSay(p.text + ' — ' + KL.t(KL_ART.nameKey(a.key)), p.sub);
                 KL.koalaMood('happy');
               }, 350);
             } else {
@@ -132,7 +137,7 @@
           slotKey: 'minni.' + nPairs,
           stars: starsFor(nPairs, flips),
           titleKey: 'minni.end_title',
-          lines: [KL.fmt('minni.end_flips', { n: flips }),
+          lines: [KL.fmt(flips % 10 === 1 && flips % 100 !== 11 ? 'minni.end_flips_one' : 'minni.end_flips', { n: flips }),
                   KL.t('minni.pairs' + nPairs) + ' · ' + KL.fmt('minni.end_best', { n: KL.getBest('flips.minni.' + nPairs) })],
           onReplay: function () { play(nPairs); }
         });

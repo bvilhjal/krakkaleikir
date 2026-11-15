@@ -1,5 +1,5 @@
 /* Bókstafir / Bogstaver: letters, first letters of words, and listening/reading.
-   Letters: match uppercase to lowercase + find the first letter of an animal word.
+   Letters: match uppercase to lowercase + find the first letter of an animal or a thing.
    Easy: other random short words.  Hard: look-alike words that differ by one letter
    (mús / hús / lús), so every letter has to be read. */
 (function () {
@@ -19,6 +19,9 @@
     'V': 'UWÝ', 'Y': 'ÝUV', 'Ý': 'YUV', 'Þ': 'PBÐ', 'Æ': 'EÖØ',
     'Ö': 'OØÆ', 'Ø': 'OÖÆ', 'Å': 'AÆØ', 'C': 'GOE'
   };
+
+  // animals whose name does not sound like its first letter ("ungi" is said "úngi")
+  var NOT_FIRST = { is: ['ungi'], da: [] };
 
   var WORD_ART = {
     is: { 'mús': 'mus' },
@@ -62,9 +65,9 @@
       KL.sample(alpha, 5).forEach(function (ch) {
         qs.push({ type: 'case', ch: ch, alpha: alpha });
       });
-      KL.sample(KL_ART.ANIMALS, 5).forEach(function (id) {
-        var name = KL.t('animal.' + id);
-        qs.push({ type: 'first', animal: id, word: name, ch: name.charAt(0).toUpperCase(), alpha: alpha });
+      KL.sample(KL_ART.PICTURES.filter(function (id) { return (NOT_FIRST[lang] || []).indexOf(id) < 0; }), 5).forEach(function (id) {
+        var name = KL.t(KL_ART.nameKey(id));
+        qs.push({ type: 'first', item: id, word: name, ch: name.charAt(0).toUpperCase(), alpha: alpha });
       });
       return KL.shuffle(qs);
     }
@@ -92,12 +95,12 @@
         },
         promptSpeech: function (q) {
           if (q.type === 'case') return ['bokstafir.match_q'];
-          if (q.type === 'first') return ['bokstafir.first_q', 'animal.' + q.animal];
+          if (q.type === 'first') return ['bokstafir.first_q', KL_ART.nameKey(q.item)];
           return ['bokstafir.q', 'word.' + q.word];
         },
         retrySpeech: function (q) {
           if (q.type === 'case') return ['bokstafir.match_q'];
-          if (q.type === 'first') return ['animal.' + q.animal];
+          if (q.type === 'first') return [KL_ART.nameKey(q.item)];
           return ['word.' + q.word];
         },
         onCorrect: function (q, _a, promptEl) {
@@ -134,10 +137,10 @@
             pic.type = 'button';
             pic.className = 'animal-prompt';
             pic.setAttribute('aria-label', q.word);
-            pic.innerHTML = KL_ART.animal(q.animal, 128);
+            pic.innerHTML = KL_ART.picture(q.item, 128);
             pic.addEventListener('click', function () {
               KL.replay(pic, 'sticker-play');
-              KL.say(['animal.' + q.animal]);
+              KL.say([KL_ART.nameKey(q.item)]);
             });
             promptEl.appendChild(pic);
             return letterChoices(q.ch, q.alpha).map(function (c) {
@@ -146,7 +149,7 @@
               btn.className = 'answer';
               btn.textContent = c;
               answersEl.appendChild(btn);
-              return { el: btn, isCorrect: c === q.ch, speechParts: c === q.ch ? ['animal.' + q.animal] : [] };
+              return { el: btn, isCorrect: c === q.ch, speechParts: c === q.ch ? [KL_ART.nameKey(q.item)] : [] };
             });
           }
           var again = document.createElement('button');

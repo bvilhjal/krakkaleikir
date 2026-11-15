@@ -68,7 +68,7 @@
   }
   document.addEventListener('pointerdown', warmSpeech, { once: true });
   document.addEventListener('touchstart', warmSpeech, { once: true });
-  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], [data-family], .guide .koala, .guide .bubble, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .number-play-20, .sound-btn, .animal-prompt, .measure-pencil-drag, .measure-place, #kl-replay';
+  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], [data-family], .guide .koala, .guide .bubble, [data-outfit], .wardrobe-koala, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .number-play-20, .sound-btn, .animal-prompt, .measure-pencil-drag, .measure-place, #kl-replay';
   function onGesture(e) {
     var T = window.KL_TTS;
     if (!T) return;
@@ -143,9 +143,11 @@
       '<path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round"/></svg>';
   }
 
-  /* ---- persistence: best results, stickers ----
+  /* ---- persistence: best results, stickers, Kóli's wardrobe ----
      'kl.stars.<game>[.<level>]' = best stars (1-3); 'kl.flips.minni.<pairs>' =
-     fewest flips; 'kl.stickers' = collected animals (JSON list). */
+     fewest flips; 'kl.stickers' = collected animals (JSON list); 'kl.wardrobe' =
+     Kóli's clothes (JSON list); 'kl.outfit' = what he wears ({ slot: item });
+     'kl.rewards' = prizes handed out, so animals and clothes take turns. */
   function slot(gameId, level) { return gameId + (level ? '.' + level : ''); }
   function getBest(key) {
     try { return parseInt(window.localStorage.getItem('kl.' + key) || '0', 10) || 0; }
@@ -173,15 +175,82 @@
     try { window.localStorage.setItem('kl.stickers', JSON.stringify(have)); } catch (e) { /* ignore */ }
     return id;
   }
+  function readJSON(key, fallback) {
+    try {
+      var v = JSON.parse(window.localStorage.getItem(key) || 'null');
+      return v === null ? fallback : v;
+    } catch (e) { return fallback; }
+  }
+  function writeJSON(key, v) {
+    try { window.localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* storage unavailable */ }
+  }
+  function wardrobe() {
+    var w = readJSON('kl.wardrobe', []);
+    return Array.isArray(w) ? w.filter(function (id, i) { return ART.OUTFIT_IDS.indexOf(id) >= 0 && w.indexOf(id) === i; }) : [];
+  }
+  // what Kóli wears now: only clothes he owns, one per slot
+  var outfitNow = null; // kept in memory too, for browsers that block storage
+  function outfit() {
+    var o = outfitNow || readJSON('kl.outfit', {}), have = wardrobe(), out = {};
+    if (o && typeof o === 'object') {
+      Object.keys(o).forEach(function (slotName) {
+        if (have.indexOf(o[slotName]) >= 0 && ART.outfitSlot(o[slotName]) === slotName) out[slotName] = o[slotName];
+      });
+    }
+    return out;
+  }
+  // put an item on (or take it off when he already wears it)
+  function wear(id) {
+    var o = outfit(), slotName = ART.outfitSlot(id);
+    if (!slotName || wardrobe().indexOf(id) < 0) return o;
+    if (o[slotName] === id) delete o[slotName]; else o[slotName] = id;
+    outfitNow = o;
+    writeJSON('kl.outfit', o);
+    dressKoalas();
+    return o;
+  }
+  function awardOutfit() {
+    var have = wardrobe();
+    var left = ART.OUTFIT_IDS.filter(function (id) { return have.indexOf(id) < 0; });
+    if (!left.length) return null;
+    var id = left[randInt(0, left.length - 1)];
+    have.push(id);
+    writeJSON('kl.wardrobe', have);
+    var o = outfit();
+    o[ART.outfitSlot(id)] = id; // Kóli puts it on right away
+    outfitNow = o;
+    writeJSON('kl.outfit', o);
+    return id;
+  }
+  // one prize per finished game: two new zoo animals, then something for Kóli
+  function awardReward() {
+    var haveS = stickers(), haveO = wardrobe();
+    var stickerLeft = ART.ANIMALS.some(function (id) { return haveS.indexOf(id) < 0; });
+    var outfitLeft = ART.OUTFIT_IDS.some(function (id) { return haveO.indexOf(id) < 0; });
+    var n = getBest('rewards');
+    try { window.localStorage.setItem('kl.rewards', String(n + 1)); } catch (e) { /* ignore */ }
+    if (outfitLeft && (!stickerLeft || n % 3 === 2)) return { outfit: awardOutfit() };
+    return { sticker: awardSticker() };
+  }
   function allAnimals() {
     var have = stickers();
     return ART.ANIMALS.every(function (id) { return have.indexOf(id) >= 0; });
   }
-  function familyHTML() {
-    if (!allAnimals()) return '';
-    return '<section class="family-reward"><h2>' + I.t('family.title') + '</h2><p>' + I.t('family.unlocked') + '</p>' +
-      '<div class="family-row">' + Object.keys(I.FAMILY).map(function (id) {
+  // Mom and Dad visit the zoo once it holds enough animals (I.FAMILY[id].need)
+  function familyHere(id) { return !!I.FAMILY[id] && stickers().length >= I.FAMILY[id].need; }
+  // ids: which parents to show (default: both, waiting ones as a grey outline);
+  // arrived: the end-card version, announcing who just came
+  function familyHTML(ids, arrived) {
+    ids = ids || Object.keys(I.FAMILY);
+    if (!ids.length) return '';
+    return '<section class="family-reward"><h2>' + I.t('family.title') + '</h2>' +
+      (arrived ? '<p>' + I.fmt('family.arrived', { p: I.t('family.' + ids[0]) }) + '</p>' : '') +
+      '<div class="family-row">' + ids.map(function (id) {
         var p = I.FAMILY[id];
+        if (!familyHere(id)) {
+          return '<span class="family-sticker waiting"><span class="sil">' + ART.parent(id, 88) + '</span><strong>' + I.t('family.' + id) + '</strong>' +
+            '<span>' + I.fmt('family.locked', { n: p.need }) + '</span></span>';
+        }
         return '<button type="button" class="family-sticker" data-family="' + id + '" aria-label="' + I.t('family.' + id) + ': ' + p.text + '">' +
           ART.parent(id, 88) + '<strong>' + I.t('family.' + id) + '</strong><span lang="' + p.lang + '">' + p.text + '</span></button>';
       }).join('') + '</div></section>';
@@ -190,9 +259,11 @@
     try {
       Object.keys(window.localStorage).forEach(function (k) {
         // 'kl.best.' holds scores from versions before stars
-        if (/^kl\.(stars|flips|best)\./.test(k) || k === 'kl.stickers') window.localStorage.removeItem(k);
+        if (/^kl\.(stars|flips|best)\./.test(k) || /^kl\.(stickers|wardrobe|outfit|rewards)$/.test(k)) window.localStorage.removeItem(k);
       });
     } catch (e) { /* ignore */ }
+    outfitNow = null;
+    dressKoalas();
   }
 
   /* ---- SVG shapes (shape keys are always Icelandic, internal only) ---- */
@@ -266,9 +337,30 @@
   function setReplay(parts, onAfter) { replayParts = parts; replayAfter = onAfter || null; }
   function guideHTML(size) {
     return '<div class="guide">' +
-      '<button type="button" class="koala" aria-label="' + I.t('speak.aria') + '">' + ART.koala(size || 76) + '</button>' +
+      '<button type="button" class="koala" data-size="' + (size || 76) + '" aria-label="' + I.t('speak.aria') + '">' + ART.koala(size || 76, null, outfit()) + '</button>' +
       '<div class="bubble" role="status" aria-live="polite"><div class="bubble-text"></div><div class="bubble-sub"></div><span class="bubble-ear" aria-hidden="true">' + speakerSVG(18, '#7A82A6') + '</span></div>' +
     '</div>';
+  }
+  // redraw every Kóli on the page in his current outfit
+  function dressKoalas() {
+    var o = outfit();
+    document.querySelectorAll('.koala[data-size]').forEach(function (k) {
+      k.innerHTML = ART.koala(parseInt(k.getAttribute('data-size'), 10) || 76, null, o);
+    });
+  }
+  // three quick taps on Kóli tickle him: he giggles and spins
+  var tickles = [];
+  function tickle(k) {
+    var now = Date.now();
+    tickles = tickles.filter(function (t) { return now - t < 1500; });
+    tickles.push(now);
+    if (tickles.length < 3) return false;
+    tickles = [];
+    if (window.KL_TTS) window.KL_TTS.stop();
+    sfx('giggle');
+    k.classList.remove('happy', 'oops', 'hint');
+    replay(k, 'spin');
+    return true;
   }
   function screenEl() { return document.getElementById(current ? 'game' : 'menu'); }
   function guideEl() { var s = screenEl(); return s ? s.querySelector('.guide') : null; }
@@ -284,7 +376,7 @@
     var g = guideEl();
     if (!g) return;
     var k = g.querySelector('.koala');
-    k.classList.remove('happy', 'oops');
+    k.classList.remove('happy', 'oops', 'spin');
     replay(k, mood);
   }
   document.addEventListener('click', function (e) {
@@ -292,7 +384,7 @@
     var parent = e.target.closest('[data-family]');
     if (parent) {
       var reward = I.FAMILY[parent.getAttribute('data-family')];
-      if (!allAnimals() || !reward) return;
+      if (!familyHere(parent.getAttribute('data-family'))) return;
       onUnlock(null);
       say([reward.lang + ':family.' + parent.getAttribute('data-family')]);
       replay(parent, 'sticker-play');
@@ -306,6 +398,9 @@
       replay(sticker, 'sticker-play');
       return;
     }
+    var koalaBtn = e.target.closest('.koala');
+    if (koalaBtn && tickle(koalaBtn)) { onUnlock(null); return; }
+    if (koalaBtn && koalaBtn.classList.contains('wardrobe-koala')) { sfx('pop'); koalaBtn.classList.remove('spin'); replay(koalaBtn, 'happy'); return; }
     if (e.target.closest('.guide .koala, .guide .bubble') && replayParts) {
       var g = guideEl();
       if (g) g.querySelector('.koala').classList.remove('hint');
@@ -402,9 +497,14 @@
     sfx('win');
     saveBest('stars.' + o.slotKey, o.stars);
     var best = getBest('stars.' + o.slotKey);
-    var sticker = awardSticker();
+    var before = stickers().length;
+    var prize = awardReward();
+    var sticker = prize.sticker, dress = prize.outfit;
+    // a parent whose number of animals was reached just now comes to visit
+    var visitors = Object.keys(I.FAMILY).filter(function (id) { return before < I.FAMILY[id].need && familyHere(id); });
     var hurra = I.PRAISE[I.HURRA];
-    var speech = ['is:praise.' + I.HURRA, o.titleKey].concat(sticker ? ['sticker.' + sticker] : (allAnimals() ? ['sticker.all'] : []));
+    var speech = ['is:praise.' + I.HURRA, o.titleKey].concat(sticker ? ['sticker.' + sticker] : dress ? ['outfit.new'] : (allAnimals() ? ['sticker.all'] : []))
+      .concat(visitors.map(function (id) { return I.FAMILY[id].lang + ':family.' + id; }));
     ctx.main.innerHTML =
       '<div class="question-card end-card enter">' + guideHTML(96) +
         '<div class="big-stars">' + starsRow(o.stars, 3, 56) + '</div>' +
@@ -412,7 +512,9 @@
         '<p class="best">' + I.t('end.best') + ' <span class="inline-stars">' + starsRow(best, 3, 24) + '</span></p>' +
         (sticker ? '<div class="sticker-reveal"><button type="button" class="sticker-new" data-animal-sound="' + sticker + '" aria-label="' + I.fmt('sticker.sound', { a: I.t('animal.' + sticker) }) + '">' + ART.animal(sticker, 92) + '</button>' +
           '<p>' + I.fmt('sticker.new', { a: I.t('animal.' + sticker) }) + '</p></div>' : '') +
-        familyHTML() +
+        (dress ? '<div class="sticker-reveal outfit-reveal"><span class="sticker-new">' + ART.outfitIcon(dress, 92) + '</span>' +
+          '<p>' + I.fmt('outfit.new_text', { a: I.t('outfit.' + dress) }) + '</p></div>' : '') +
+        familyHTML(visitors, true) +
         '<div class="end-buttons">' +
           '<button type="button" class="btn-primary" id="kl-replay">' + I.t('end.replay') + '</button>' +
           '<a class="btn-secondary" href="#" data-nav="">' + I.t('end.menu') + '</a>' +
@@ -424,7 +526,8 @@
     say(speech);
     onUnlock(null);
     confetti(70);
-    if (sticker) later(function () { sfx('pop'); }, 700);
+    if (sticker || dress) later(function () { sfx('pop'); }, 700);
+    if (dress) later(function () { koalaMood('spin'); }, 1300); // showing off the new look
     document.getElementById('kl-replay').addEventListener('click', o.onReplay);
   }
 
@@ -435,7 +538,7 @@
        makeQuestions: function (level) -> [q, ...]   (called again on replay),
        promptText: function (q) -> bubble text (HTML),
        promptSpeech: function (q) -> [audioKey, ...],
-       retrySpeech: optional function (q) -> [audioKey, ...] said after "try again" (default: the prompt)
+       retrySpeech: optional function (q, level, tapped) -> [audioKey, ...] said after "try again" (default: the prompt)
        build: function (q, promptEl, answersEl, level) -> [{ el, isCorrect, speechParts: [audioKey, ...], onTap? }],
      }
      The card with Kóli stays put; only the question slides in. A wrong answer
@@ -445,21 +548,35 @@
     var level = null;
     var questions = [];
     var state = null;
-    var progressEl, stageEl;
+    var progressEl, stageEl, streakEl;
+
+    // first-try answers in a row: from three on, a star counter; every
+    // second one after that Kóli spins and confetti falls
+    function showStreak() {
+      var n = state.streak;
+      if (n < 3) { streakEl.hidden = true; return false; }
+      streakEl.hidden = false;
+      streakEl.setAttribute('aria-label', I.fmt('streak.aria', { n: n }));
+      streakEl.innerHTML = starSVG(true, 24) + '<span>' + n + '</span>';
+      replay(streakEl, 'streak-pop');
+      return n % 2 === 1;
+    }
 
     function start(lv) {
       level = lv;
       questions = cfg.makeQuestions(lv);
-      state = { i: 0, firstTry: 0, results: [] };
+      state = { i: 0, firstTry: 0, results: [], streak: 0 };
       var dots = '';
       for (var k = 0; k < questions.length; k++) dots += '<span></span>';
       main.innerHTML =
         '<div class="question-card enter">' +
           '<div class="progress" aria-hidden="true">' + dots + '</div>' +
+          '<div class="streak" hidden></div>' +
           guideHTML() +
           '<div class="q-stage"></div>' +
         '</div>';
       progressEl = main.querySelector('.progress');
+      streakEl = main.querySelector('.streak');
       stageEl = main.querySelector('.q-stage');
       render();
     }
@@ -512,12 +629,15 @@
             promptEl.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
             state.results[state.i] = mistakes === 0;
             if (mistakes === 0) state.firstTry++;
+            state.streak = mistakes === 0 ? state.streak + 1 : 0;
+            var big = showStreak();
             if (cfg.onCorrect) cfg.onCorrect(q, a, promptEl, level);
             var p = praise();
             sfx('correct');
             burst(a.el);
             koalaSay(p.text, p.sub);
-            koalaMood('happy');
+            koalaMood(big ? 'spin' : 'happy');
+            if (big) { confetti(28); later(function () { sfx('streak'); }, 380); }
             var feedback = [p.key].concat(a.speechParts || []);
             setReplay(feedback);
             onUnlock(null);
@@ -539,13 +659,15 @@
             later(advance, 4500); // hard cap
           } else {
             mistakes++;
+            state.streak = 0;
+            showStreak();
             sfx('wrong');
             a.el.classList.add('wrong');
             a.el.disabled = true;
             var sub = cfg.wrongSub ? cfg.wrongSub(q, a, level) : promptStr;
             koalaSay(I.t('try_again'), sub);
             koalaMood('oops');
-            var retry = cfg.retrySpeech ? cfg.retrySpeech(q, level) : prompt;
+            var retry = cfg.retrySpeech ? cfg.retrySpeech(q, level, a) : prompt;
             say(['try_again'].concat(retry), function () {
               if (!locked) {
                 koalaSay(promptStr, cfg.wrongSub ? sub : '');
@@ -700,7 +822,12 @@
     saveBest: saveBest,
     stickers: stickers,
     allAnimals: allAnimals,
+    familyHere: familyHere,
     familyHTML: familyHTML,
+    wardrobe: wardrobe,
+    outfit: outfit,
+    wear: wear,
+    dressKoalas: dressKoalas,
     resetScores: resetScores,
     shapeSVG: shapeSVG,
     guideHTML: guideHTML,

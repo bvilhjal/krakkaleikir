@@ -338,7 +338,9 @@ async function main() {
     await waitForApp();
 
     await test('menu renders: 9 cards, sticker book, Kóli greets', async () => {
-      assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .sticker').length >= 12`), 'sticker grid');
+      assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .sticker').length === 20 && document.querySelectorAll('#sticker-grid .zoo-area').length === 5`), 'zoo: 20 animals in 5 areas');
+      assert(await cdp.eval(`KL_ART.ZOO.flatMap((a) => a.animals).sort().join() === KL_ART.ANIMALS.slice().sort().join()`), 'every animal lives in exactly one zoo area');
+      assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .family-sticker.waiting').length === 2 && !document.querySelector('[data-family]')`), 'Mom and Dad not here yet');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.length > 0`), 'greeting');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'first sticker is Kóli');
       assert(await cdp.eval(`document.querySelector('#score').textContent === ''`), 'menu score hidden before stars earned');
@@ -362,7 +364,10 @@ async function main() {
               for (const level of KL.games[id].levels) for (let round = 0; round < 20; round++) {
                 const qs = cfg.makeQuestions(level.id);
                 check(qs.length === 10, id + ': ten questions');
-                if (id === 'ordmyndir') check(new Set(qs.map((q) => q.target)).size === 10, id + ': ten different targets');
+                if (id === 'ordmyndir') {
+                  check(new Set(qs.map((q) => q.target)).size === 10, id + ': ten different targets');
+                  check(qs.filter((q) => KL_ART.isThing(q.target)).length === 5, id + ': five animals and five things');
+                }
                 for (const q of qs) {
                   const where = l + '/' + id + '/' + level.id;
                   const prompt = document.createElement('div'), choices = document.createElement('div');
@@ -403,15 +408,18 @@ async function main() {
                     const correct = answers.find((a) => a.isCorrect);
                     check(q.choices[answers.indexOf(correct)] === q.target, where + ': target matches the correct choice');
                     const picture = document.createElement('div');
-                    picture.innerHTML = KL_ART.animal(q.target, q.mode === 'pictures' ? 104 : 128);
+                    picture.innerHTML = KL_ART.picture(q.target, q.mode === 'pictures' ? 104 : 128);
+                    const nameKey = KL_ART.nameKey(q.target);
+                    check(nameKey in vocab, where + ': ' + nameKey + ' is recorded');
+                    check(new Set(q.choices.map((c) => KL.t(KL_ART.nameKey(c)))).size === 4, where + ': four different words');
                     const drawn = (q.mode === 'pictures' ? correct.el : prompt).querySelector('svg');
                     check(drawn.outerHTML === picture.firstChild.outerHTML, where + ': correct artwork');
                     const written = q.mode === 'pictures' ? prompt.querySelector('.match-word-text') : correct.el;
-                    check(written.textContent === KL.t('animal.' + q.target), where + ': correct translated word');
-                    check(cfg.promptSpeech(q).includes('animal.' + q.target) === (q.mode === 'pictures'), where + ': reading mode does not announce the answer');
-                    check(correct.speechParts[0] === 'animal.' + q.target, where + ': feedback pronounces the match');
+                    check(written.textContent === KL.t(nameKey), where + ': correct translated word');
+                    check(cfg.promptSpeech(q).includes(nameKey) === (q.mode === 'pictures'), where + ': reading mode does not announce the answer');
+                    check(correct.speechParts[0] === nameKey, where + ': feedback pronounces the match');
                     cfg.onCorrect(q, correct, prompt);
-                    check((q.mode === 'pictures' ? correct.el : prompt).querySelector('.word-reveal').textContent === KL.t('animal.' + q.target), where + ': matched word revealed');
+                    check((q.mode === 'pictures' ? correct.el : prompt).querySelector('.word-reveal').textContent === KL.t(nameKey), where + ': matched word revealed');
                   } else if (id === 'maelingar') {
                     if (level.id === 'compare') {
                       const biggest = q.kind === 'longest' || q.kind === 'tallest';
@@ -528,9 +536,9 @@ async function main() {
       assert(result.talking && result.muted && result.replaced && result.navigated && result.idleSafe && result.completed === 0, JSON.stringify(result));
     });
 
-    await test('animal voices: all 12 start via the live path (5 files + 7 synth)', async () => {
-      assert(await cdp.eval(`KL_SOUND.animals.length === 12`), '12 animals');
-      assert(await cdp.eval(`KL_SOUND.animalFiles.length === 5`), '5 local clips');
+    await test('animal voices: all 20 start via the live path (13 files + 7 synth)', async () => {
+      assert(await cdp.eval(`KL_SOUND.animals.length === 20`), '20 animals');
+      assert(await cdp.eval(`KL_SOUND.animalFiles.length === 13`), '13 local clips');
       await cdp.eval(`(() => {
         KL_TTS.stop();
         window.__animalOriginalPlay = Audio.prototype.play;
@@ -608,6 +616,59 @@ async function main() {
       assert(await cdp.eval(`document.querySelector('#score span').textContent.length > 0`), 'menu shows total stars');
     });
 
+    await test('streak counter, second prize dresses Kóli, wardrobe toggles, tickle', async () => {
+      // keep each question's answers so the round can be played without a mistake
+      await cdp.eval(`localStorage.setItem('kl.rewards', '2')`); // every third prize is for Kóli
+      await cdp.eval(`(() => {
+        const orig = KL.runGame;
+        window.__answers = [];
+        KL.runGame = (c) => { const b = c.build; c.build = (...a) => (window.__answers = b(...a) || []); return orig(c); };
+        window.__restoreRunGame = () => { KL.runGame = orig; };
+      })()`);
+      try {
+        await openGame('mynstur');
+        await pickLevel(0);
+        const res = await cdp.eval(`(async () => {
+          const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+          let seen3 = false, spun = false, answered = 0;
+          for (let guard = 0; guard < 400; guard++) {
+            if (document.querySelector('.end-card')) return { ok: true, seen3, spun };
+            const right = window.__answers.find((a) => a.isCorrect);
+            if (right && !right.el.disabled && right.el.isConnected) {
+              right.el.click();
+              answered++;
+              const st = document.querySelector('.streak');
+              if (answered === 3) {
+                seen3 = !st.hidden && st.textContent === '3';
+                spun = document.querySelector('#game .guide .koala').classList.contains('spin');
+              }
+              if (answered < 3 && !st.hidden) return { ok: false, reason: 'streak shown before 3' };
+            }
+            await sleep(120);
+          }
+          return { ok: false, reason: 'timeout' };
+        })()`);
+        assert(res.ok && res.seen3 && res.spun, 'perfect round shows the streak and Kóli spins at 3: ' + JSON.stringify(res));
+      } finally {
+        await cdp.eval(`window.__restoreRunGame()`);
+      }
+      assert(await cdp.eval(`KL.stickers().length === 2 && KL.wardrobe().length === 1`), 'second prize is for Kóli, not a sticker');
+      const item = await cdp.eval(`KL.wardrobe()[0]`);
+      assert(await cdp.eval(`Object.values(KL.outfit()).includes('${item}')`), 'Kóli puts the new item on');
+      assert(await cdp.eval(`!!document.querySelector('.end-card .outfit-reveal') && document.querySelector('.end-card .guide .koala .k-outfit').children.length > 0`), 'end card shows the item and Kóli wearing it');
+      await shot('outfit-end-desktop', 1500);
+      await toMenu();
+      assert(await cdp.eval(`document.querySelectorAll('#wardrobe-grid .outfit-item').length === KL_ART.OUTFIT_IDS.length && document.querySelectorAll('#wardrobe-grid button[data-outfit]').length === 1`), 'wardrobe: one item, rest locked');
+      assert(await cdp.eval(`document.querySelector('#wardrobe-grid button[data-outfit]').getAttribute('aria-pressed') === 'true' && document.querySelector('#menu .hero .koala .k-outfit').children.length > 0`), 'menu Kóli wears it');
+      await cdp.eval(`document.querySelector('#wardrobe-grid button[data-outfit]').click()`);
+      assert(await cdp.eval(`Object.keys(KL.outfit()).length === 0 && document.querySelector('#wardrobe-grid button[data-outfit]').getAttribute('aria-pressed') === 'false' && document.querySelector('.wardrobe-koala .k-outfit').children.length === 0`), 'tap takes it off');
+      await cdp.eval(`document.querySelector('#wardrobe-grid button[data-outfit]').click()`);
+      assert(await cdp.eval(`Object.values(KL.outfit()).includes('${item}') && JSON.parse(localStorage.getItem('kl.outfit'))`), 'tap puts it back on and saves');
+      await cdp.eval(`(() => { const k = document.querySelector('#menu .hero .koala'); k.click(); k.click(); k.click(); })()`);
+      assert(await cdp.eval(`document.querySelector('#menu .hero .koala').classList.contains('spin')`), 'three quick taps tickle Kóli');
+      await shot('wardrobe-desktop');
+    });
+
     // Real MP3s still load, decode and fire onended, just 8x faster so the
     // remaining ten-question rounds hit the 1s visual floor cleanly in CI.
     await cdp.eval(`(() => {
@@ -649,9 +710,9 @@ async function main() {
       // compare DOM-serialized SVG on both sides: innerHTML expands self-closing tags
       assert(await cdp.eval(`(() => {
         const face = document.querySelector('.mcard .mface.front').innerHTML;
-        const a = KL_ART.ANIMALS.find((x) => { const d = document.createElement('div'); d.innerHTML = KL_ART.animal(x, 72); return d.innerHTML === face; });
-        return !!a && document.querySelector('.mcard').getAttribute('aria-label') === KL.t('animal.' + a);
-      })()`), 'face-up label is the animal shown');
+        const a = KL_ART.PICTURES.find((x) => { const d = document.createElement('div'); d.innerHTML = KL_ART.picture(x, 72); return d.innerHTML === face; });
+        return !!a && document.querySelector('.mcard').getAttribute('aria-label') === KL.t(KL_ART.nameKey(a));
+      })()`), 'face-up label is the animal or thing shown');
       // complete the keyboard-started pair, then check matched cards leave play
       await cdp.eval(`(() => {
         const face = (c) => c.querySelector('.mface.front').innerHTML;
@@ -880,10 +941,42 @@ async function main() {
       assert(await cdp.eval(`KL_SOUND.on() === true && localStorage.getItem('kl.sound') === 'on'`), 'unmuted');
     });
 
+    await test('zoo visitors: Mom comes at 10 animals, Dad at 20', async () => {
+      const finishWith = async (have) => {
+        await openGame('mynstur');
+        return cdp.eval(`(() => {
+          localStorage.setItem('kl.stickers', JSON.stringify(KL_ART.ANIMALS.slice(0, ${have})));
+          localStorage.setItem('kl.rewards', '0');
+          const said = [], ttsSay = KL_TTS.say;
+          KL_TTS.say = (parts, done) => { said.push(...parts); return ttsSay(parts, done); };
+          try {
+            KL.finish({ main: document.getElementById('game') }, { slotKey: 'smoke', stars: 1, titleKey: 'end.title', lines: [], onReplay() {} });
+          } finally { KL_TTS.say = ttsSay; }
+          return { said, visitors: [...document.querySelectorAll('.end-card [data-family]')].map((b) => b.dataset.family), n: KL.stickers().length };
+        })()`);
+      };
+      let r = await finishWith(8);
+      assert(r.n === 9 && r.visitors.length === 0 && !r.said.some((k) => k.includes('family')), 'nobody at 9 animals: ' + JSON.stringify(r));
+      r = await finishWith(9);
+      assert(r.n === 10 && r.visitors.join() === 'mom' && r.said.includes('da:family.mom'), 'Mom arrives at 10 and speaks: ' + JSON.stringify(r));
+      await shot('mom-arrives-desktop', 1500);
+      await toMenu();
+      assert(await cdp.eval(`!!document.querySelector('#sticker-grid [data-family="mom"]') && !document.querySelector('#sticker-grid [data-family="dad"]') && !!document.querySelector('#sticker-grid .family-sticker.waiting')`), 'menu: Mom visiting, Dad still to come');
+      r = await finishWith(19);
+      assert(r.n === 20 && r.visitors.join() === 'dad' && r.said.includes('is:family.dad'), 'Dad arrives at 20: ' + JSON.stringify(r));
+      await toMenu();
+      assert(await cdp.eval(`document.querySelectorAll('#sticker-grid [data-family]').length === 2 && document.querySelectorAll('#sticker-grid button.sticker').length === 20`), 'full zoo with both parents');
+      await cdp.eval(`document.querySelector('.zoo').scrollIntoView()`);
+      await shot('zoo-full-desktop');
+      await cdp.eval(`localStorage.removeItem('kl.stars.smoke'); window.scrollTo(0, 0)`);
+    });
+
     await test('reset clears stars and stickers', async () => {
       await cdp.eval(`window.confirm = () => true; document.getElementById('reset-scores').click()`);
       assert(await cdp.eval(`localStorage.getItem('kl.stars.tolur.10') === null`), 'stars gone');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'sticker book back to Kóli');
+      assert(await cdp.eval(`KL.wardrobe().length === 0 && Object.keys(KL.outfit()).length === 0 && localStorage.getItem('kl.rewards') === null`), 'wardrobe emptied');
+      assert(await cdp.eval(`document.querySelector('#menu .hero .koala .k-outfit').children.length === 0`), 'Kóli undressed');
       assert(await cdp.eval(`document.querySelector('#score').textContent === ''`), 'menu score cleared');
     });
 

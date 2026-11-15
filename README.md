@@ -9,14 +9,14 @@ Educational browser games for kids aged 5+, guided by Kóli the koala; bilingual
 | Leikur | Hvað er æft | Erfiðleikastig |
 |---|---|---|
 | Tölur | Telja dýr (banka á hvert dýr til að telja upphátt), leysa dæmi og finna töluna sem vantar | 1–10: telja, samlagning og frádráttur · 1–20: telja upp í 18, dæmi upp í 20 · 3 + ?: hvaða tala vantar (`4 + ? = 10`, `9 − ? = 5`) |
-| Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, merkja mynstur (tugir/fimm/sléttar), eða talnaleit með vísbendingum (↑ hærra / ↓ lægra) | Frjáls könnun, talnaleit 1–20 (5×4 án skrolls) eða talnaleit 1–100 |
-| Bókstafir | Para stóra og litla stafi, finna fyrsta staf orðs, eða hlusta á orð og finna rétta orðið | Stafir: stafir og upphafsstafir · Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
+| Tölutafla (DA: Taltavle) | Tölur 1–100 í tíu dálkum; banka á tölu og heyra heitið, merkja mynstur (tugir/fimm/sléttar), eða talnaleit með vísbendingum (↑ hærra / ↓ lægra, líka lesnar upphátt) | Frjáls könnun, talnaleit 1–20 (5×4 án skrolls) eða talnaleit 1–100 |
+| Bókstafir | Para stóra og litla stafi, finna fyrsta staf í heiti dýrs eða hlutar, eða hlusta á orð og finna rétta orðið | Stafir: stafir og upphafsstafir · Létt: ólík orð · Erfitt: orð sem líta eins út (mús / hús / lús) |
 | Form (DA: Former) | Finna formin eftir nafni („Finndu sexhyrninginn!“) eða fjölda hliða og horna | Létt: 9 grunnform (þ.m.t. sexhyrningur) · Erfitt: fimm-, sex- og átthyrningur, sporbaugur og hliðaspurningar |
 | Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar · 3:30: líka hálfir tímar („hálf fjögur“) · 3:15: líka korter („korter yfir“, „korter í“) |
-| Minni (DA: Vendespil) | Finna dýrin sem eru eins; dýrið lætur í sér heyra þegar par finnst | 6, 8, 10 eða 12 pör |
+| Minni (DA: Vendespil) | Finna myndirnar sem eru eins (dýr og hlutir); dýrið lætur í sér heyra eða Kóli nefnir hlutinn þegar par finnst | 6, 8, 10 eða 12 pör |
 | Mynstur (DA: Mønstre) | Finna hvað kemur næst í mynstri eða talnaröð | Létt: AAB, ABB, AABB, ABC · Erfitt: AABB, ABB, ABC og talnaraðir (+1, +2, +5, +10, −1, −2, −5, −10) |
 | Mælingar (DA: Måling) | Bera saman stærðir, færa blýant að reglustiku og vigta dularfullan pakka | Stærðir: lengstur/stystur og hæst/lægst · cm: dragðu blýantinn að núlli og lestu lengdina · kg: vigt í jafnvægi með 1, 2 og 5 kg lóðum |
-| Orð og myndir (DA: Ord og billeder) | Para dýraheiti við myndir; banka á orðið eða myndina til að heyra heitið | Orð → mynd: hlusta og velja mynd · Mynd → orð: lesa og velja orð |
+| Orð og myndir (DA: Ord og billeder) | Para heiti dýra og hluta við myndir; banka á orðið eða myndina til að heyra heitið | Orð → mynd: hlusta og velja mynd · Mynd → orð: lesa og velja orð |
 
 Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Taflan 1–100 hefur tíu dálka og passar í breidd á síma jafnt sem iPad; talnaleit 1–20 notar fimm dálka og fjórar raðir.
 
@@ -24,17 +24,17 @@ Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga
 
 Í Mælingum hafa samanburðarmyndir allar sama kvarða og grunnlínu, svo lengri blýantur er í raun lengri á skjánum. Dragðu blýantinn að græna núllmerkinu fyrir ofan reglustikuna; hann smellur á sinn stað og svarhnapparnir opnast. Örvatakkar færa blýantinn líka; Enter eða „Setja við núll“ stillir hann beint. Reglustikan sýnir 0–10 cm. Vigtin er í jafnvægi: leggðu saman merktu lóðin til að finna þyngd pakkans (1–10 kg). Þetta eru myndrænar mælingar; sentímetri á teikningunni er ekki sentímetri á skjánum.
 
-Orð og myndir notar tólf dýr og tíu ólík markorð í hverri umferð. Veldu rétta mynd við orðið eða rétta orðið við myndina. Rétt svar sýnir bæði mynd og orð saman og les heitið upphátt. Báðar leiðir nota stjörnur og límmiða eins og hinir leikirnir.
+Orð og myndir notar 20 dýr og 18 hluti (bolta, bíl, hús, epli, regnhlíf …); hver umferð hefur tíu ólík markorð, fimm dýr og fimm hluti. Veldu rétta mynd við orðið eða rétta orðið við myndina. Rétt svar sýnir bæði mynd og orð saman og les heitið upphátt. Báðar leiðir nota stjörnur og límmiða eins og hinir leikirnir.
 
-Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á hann til að heyra hana aftur. Hann hrósar á íslensku („Frábært!“, „Geggjað!“, „Jibbí!“), líka í dönsku útgáfunni, þar sem merkingin birtist undir. Rangt svar dofnar og spurningin er lesin aftur. Stjörnurnar (1–3) sýna hve margar spurningar voru réttar í fyrstu tilraun (í Minni: hve fáa snúninga þurfti). Eftir hvern leik kemur nýr dýralímmiði í límmiðabókina á forsíðunni (12 dýr).
+Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á hann til að heyra hana aftur. Hann hrósar á íslensku („Frábært!“, „Geggjað!“, „Jibbí!“), líka í dönsku útgáfunni, þar sem merkingin birtist undir. Rangt svar dofnar og spurningin er lesin aftur. Stjörnurnar (1–3) sýna hve margar spurningar voru réttar í fyrstu tilraun (í Minni: hve fáa snúninga þurfti). Markmiðið er að fylla dýragarðinn: eftir hvern leik fást verðlaun, tvisvar nýtt dýr í „Dýragarðinn minn“ á forsíðunni og svo eitthvað nýtt handa Kóla (10 hlutir: hattar, gleraugu, yfirvaraskegg, slaufa og fleira). Í dýragarðinum eru 20 dýr í fimm svæðum: sveitinni, skóginum, tjörninni, gresjunni og garðinum; Kóli býr þar frá byrjun. Kóli fer strax í nýja hlutinn; í „Fataskáp Kóla“ á forsíðunni má klæða hann að vild (einn hlutur á höfuð, augu, munn og háls) og hann klæðist því í öllum leikjum. Þrjú rétt svör í röð í fyrstu tilraun kveikja á stjörnuteljara; við 3, 5, 7 … í röð snýr Kóli sér í hring og konfettí fellur. Bankaðu þrisvar hratt á Kóla til að kitla hann.
 
 ## Hljóð
 
-Þegar öll tólf dýrin eru komin í bókina opnast tveir bónuslímmiðar: pabbi og mamma. Bankaðu á pabba til að heyra „frábært Agnes mín“ með karlrödd á íslensku, eða mömmu til að heyra „hvor er du dygtig skat“ með kvenrödd á dönsku. Setningarnar haldast eins þótt skipt sé um tungumál. Bónusinn birtist líka strax hjá þeim sem hafa þegar safnað öllum dýrunum og læsist aftur ef byrjað er upp á nýtt.
+Mamma kemur í heimsókn í dýragarðinn þegar tíu dýr eru komin og pabbi þegar öll tuttugu eru komin; þau segja setninguna sína um leið og þau koma. Bankaðu á pabba til að heyra „frábært Agnes mín“ með karlrödd á íslensku, eða mömmu til að heyra „hvor er du dygtig skat“ með kvenrödd á dönsku. Setningarnar haldast eins þótt skipt sé um tungumál. Þau birtast líka strax hjá þeim sem hafa þegar safnað nógu mörgum dýrum og fara aftur ef byrjað er upp á nýtt.
 
-Bankaðu á límmiða sem þú hefur safnað til að heyra hljóð dýrsins, líka þegar nýr límmiði birtist eftir leik. Ljónið öskrar, kötturinn mjálmar og grísinn rýtur. Froskurinn kurrar, ugla hóar, músin pípir, ungi kvakar og mörgæsin kallar. Fiskurinn fær fjörugar loftbólur og maríuhænan létt vængjablak. Hljóðin virka án nettengingar og hlýða hljóðhnappnum.
+Bankaðu á dýr í dýragarðinum til að heyra hljóð þess, líka þegar nýtt dýr birtist eftir leik. Ljónið öskrar, kötturinn mjálmar, grísinn rýtur, hundurinn geltir, kýrin baular, kindin jarmar, hesturinn hneggjar, öndin segir bra-bra, fíllinn blæs í ranann, apinn skrækir og býflugan suðar. Froskurinn kurrar, ugla hóar, músin pípir, ungi kvakar og mörgæsin kallar. Fiskurinn fær fjörugar loftbólur og maríuhænan létt vængjablak. Hljóðin virka án nettengingar og hlýða hljóðhnappnum.
 
-Fjögur dýrahljóðanna eru gervigreindargerðar CC0-hljóðskrár frá [SFXMint](https://sfxmint.com/license) (kóali, grís, björn, ljón) en mjálmið er raunveruleg upptaka frá [Mixkit](https://mixkit.co/license/) (royalty-free). Öll fimm eru geymd í `audio/animals/`; uppruni, vinnsla og SHA256 eru í `audio/animals/credits.json`. Hin sjö eru leikræn Web Audio-hljóð sem herma eftir dýrunum (sjá `tools/audition.js`).
+Þrettán dýrahljóðanna eru hljóðskrár: raunverulegar upptökur frá [Mixkit](https://mixkit.co/license/) (köttur, hundur, kýr, hestur, api, býfluga), kind af Wikimedia Commons (almenningseign) og gervigreindargerðar CC0-skrár frá [SFXMint](https://sfxmint.com/license) (kóali, grís, björn, ljón, önd, fíll). Allar eru geymdar í `audio/animals/`; uppruni, vinnsla og SHA256 eru í `audio/animals/credits.json`. Hin sjö eru leikræn Web Audio-hljóð sem herma eftir dýrunum (sjá `tools/audition.js`).
 
 Raddir foreldra eru stilltar sérstaklega í `FAMILY` í `js/i18n.js`: Gunnar fyrir pabba og Emma Multilingual fyrir mömmu (Christel skilar engu hljóði). `audio/manifest.json` skráir þessi frávik frá rödd Kóla; aðeins viðkomandi skrár eru endurgerðar þegar rödd breytist.
 
@@ -60,7 +60,7 @@ manifest.webmanifest  stillingar fyrir „Bæta við heimaskjá“
 sw.js                 offline: geymir allar skrár; skráalistinn er búinn til af tools/check.js
 js/i18n.js            allir textar á íslensku og dönsku, tungumálaval og audioVocab(): listi yfir allt tal
 js/common.js          Kóli (talblaðra, svipbrigði), leikjavélin, stig, límmiðar, leiðaval
-js/art.js             teikningar: Kóli og dýrin (SVG)
+js/art.js             teikningar: Kóli og fötin hans, dýrin, dýragarðurinn og hlutirnir (SVG)
 js/tts.js, sound.js   tal (mp3) og hljóðáhrif
 js/<leikur>.js        hver leikur
 css/style.css         útlit, snertiskjá-vænlegt (stórir takkar)

@@ -35,6 +35,7 @@
       makeQuestions: function () { return KL.sample(KL.range(1, maxN), 10); },
       promptText: function (n) { return KL.fmt('talnatafla.find', { n: KL.t('num.' + n) }); },
       promptSpeech: function (n) { return ['num.' + n]; },
+      retrySpeech: function (n, lv, a) { return [a.num < n ? 'talnatafla.say_higher' : 'talnatafla.say_lower', 'num.' + n]; },
       wrongSub: function (n, a) {
         return KL.t(a.num < n ? 'talnatafla.higher' : 'talnatafla.lower');
       },

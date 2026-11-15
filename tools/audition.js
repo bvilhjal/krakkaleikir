@@ -5,8 +5,8 @@
      node tools/audition.js [--out DIR] [--only id,id]
 
    Synthesized voices are rendered with OfflineAudioContext — the exact functions
-   the app plays. Local audio clips (four AI-generated CC0 effects and one real
-   Mixkit recording) are decoded with the browser's own Web Audio (the same
+   the app plays. Local audio clips (AI-generated CC0 effects and real
+   recordings, see audio/animals/credits.json) are decoded with the browser's own Web Audio (the same
    pipeline the app uses). Each is written as a 16-bit WAV preview
    (default: ../krakkaleikir-sounds-preview, outside the repo so nothing ships)
    and measured: spectral peak, band energies, phrase count, trill rate and a
@@ -211,7 +211,7 @@ const CHECKS = {
   mus: { desc: 'high squeaks', test: (s) => s.high + s.air > 0.6 && s.bursts >= 3 },
   morgaes: { desc: 'mid-range bray, two phrases', test: (s) => s.peakHz >= 250 && s.peakHz <= 1300 && s.bursts >= 2 }
 };
-const LOCAL_CLIPS = ['koala', 'kottur', 'svin', 'bjorn', 'ljon'];
+const LOCAL_CLIPS = ['koala', 'kottur', 'svin', 'bjorn', 'ljon', 'hundur', 'kyr', 'kind', 'hestur', 'ond', 'fill', 'api', 'byfluga'];
 
 async function main() {
   const exe = findChrome();

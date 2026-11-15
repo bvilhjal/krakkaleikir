@@ -1,4 +1,5 @@
-/* Menu: best-stars badges on the game cards, total stars pill, sticker book and reset button. */
+/* Menu: best-stars badges on the game cards, total stars pill, the zoo (animal stickers and
+   visiting parents), Kóli's wardrobe and reset button. */
 (function () {
   'use strict';
 
@@ -28,16 +29,44 @@
     return { earned: earned, total: total };
   }
 
+  // the zoo: one fenced area per habitat; animals not found yet are grey outlines
   function stickerBook() {
     var have = KL.stickers();
     document.getElementById('sticker-count').textContent = have.length + ' / ' + KL_ART.ANIMALS.length;
-    document.getElementById('sticker-grid').innerHTML = KL_ART.ANIMALS.map(function (id) {
-      var got = have.indexOf(id) >= 0;
-      if (!got) return '<span class="sticker missing" title="?">' + KL_ART.silhouette(id, 56) + '</span>';
-      return '<button type="button" class="sticker" data-animal-sound="' + id + '" aria-label="' + KL.fmt('sticker.sound', { a: KL.t('animal.' + id) }) + '">' +
-        KL_ART.animal(id, 56) + '</button>';
+    document.getElementById('sticker-grid').innerHTML = KL_ART.ZOO.map(function (area) {
+      var n = area.animals.length; // wider areas for more animals
+      return '<div class="zoo-area zoo-' + area.id + '" style="flex: ' + n + ' 1 ' + (n * 66 + 30) + 'px"><span class="zoo-sign">' + KL.t('zoo.' + area.id) + '</span><div class="zoo-animals">' +
+        area.animals.map(function (id) {
+          if (have.indexOf(id) < 0) return '<span class="sticker missing" title="?">' + KL_ART.silhouette(id, 56) + '</span>';
+          return '<button type="button" class="sticker" data-animal-sound="' + id + '" aria-label="' + KL.fmt('sticker.sound', { a: KL.t('animal.' + id) }) + '">' +
+            KL_ART.animal(id, 56) + '</button>';
+        }).join('') + '</div></div>';
     }).join('') + KL.familyHTML();
   }
+
+  // Kóli's wardrobe: a big Kóli to dress, and the clothes earned so far
+  function wardrobeHTML() {
+    var have = KL.wardrobe(), worn = KL.outfit();
+    var on = Object.keys(worn).map(function (k) { return worn[k]; });
+    document.getElementById('wardrobe-count').textContent = have.length + ' / ' + KL_ART.OUTFIT_IDS.length;
+    document.getElementById('wardrobe-hint').textContent = KL.t(have.length ? 'wardrobe.hint' : 'wardrobe.empty');
+    document.getElementById('wardrobe-grid').innerHTML = KL_ART.OUTFIT_IDS.map(function (id) {
+      if (have.indexOf(id) < 0) return '<span class="outfit-item locked" aria-label="' + KL.t('wardrobe.locked') + '">?</span>';
+      var pressed = on.indexOf(id) >= 0;
+      return '<button type="button" class="outfit-item" data-outfit="' + id + '" aria-pressed="' + pressed + '" aria-label="' +
+        KL.fmt('wardrobe.wear', { a: KL.t('outfit.' + id) }) + '">' + KL_ART.outfitIcon(id, 54) + '</button>';
+    }).join('');
+    KL.dressKoalas();
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-outfit]') : null;
+    if (!b) return;
+    KL.wear(b.getAttribute('data-outfit'));
+    KL.sfx('pop');
+    wardrobeHTML();
+    document.querySelectorAll('#menu .koala').forEach(function (k) { k.classList.remove('spin'); KL.replay(k, 'happy'); });
+  });
 
   KL.renderMenu = function () {
     document.querySelectorAll('.badge[data-game]').forEach(function (el) {
@@ -55,6 +84,7 @@
       }
     }
     stickerBook();
+    wardrobeHTML();
   };
 
   // animal versions of the Tölur and Minni card icons

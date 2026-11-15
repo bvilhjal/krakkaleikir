@@ -50,6 +50,89 @@
       "kind": "real recording (stock)",
       "processing": "used as-is (not trimmed/re-encoded)",
       "sha256": "c23169140be166dc88a76c33dce1e446e6b5804f0b00b728d038f69a0f807c18"
+    },
+    "hundur": {
+      "title": "Dog barking twice (Mixkit sound effect #1)",
+      "source": "https://mixkit.co/free-sound-effects/dog/",
+      "download": "https://assets.mixkit.co/active_storage/sfx/1/1-preview.mp3",
+      "license": "Mixkit Sound Effects Free License (royalty-free, no attribution required)",
+      "license_url": "https://mixkit.co/license/",
+      "kind": "real recording (stock)",
+      "source_sha256": "e1f6570db3e01cd4e627ba08a602e23f15821577eec0d56ac2eaa56ac085fa51",
+      "sha256": "506900d316a2697d87d592f4dc140b819476adc04a7cafd43c73ff4574713f6a"
+    },
+    "kyr": {
+      "title": "Cow moo in the barn (Mixkit sound effect #1751)",
+      "source": "https://mixkit.co/free-sound-effects/cow/",
+      "download": "https://assets.mixkit.co/active_storage/sfx/1751/1751-preview.mp3",
+      "license": "Mixkit Sound Effects Free License (royalty-free, no attribution required)",
+      "license_url": "https://mixkit.co/license/",
+      "kind": "real recording (stock)",
+      "source_sha256": "92c447757cf13c1fdf497c9dab3cc32c044b70578c051cca8c4ecad6c70c4d2a",
+      "sha256": "c23a692fe6a21e41d115bdc1d894741f6f87864d87ef9e7f20b88dc5780573de"
+    },
+    "kind": {
+      "title": "Sheep bleating (Wikimedia Commons; recorded by earthcalling, PDSounds.org #341)",
+      "source": "https://commons.wikimedia.org/wiki/File:Sheep_bleating.ogg",
+      "download": "https://upload.wikimedia.org/wikipedia/commons/1/13/Sheep_bleating.ogg",
+      "license": "Public domain (PD-author; released via PDSounds.org)",
+      "license_url": "https://commons.wikimedia.org/wiki/File:Sheep_bleating.ogg#Licensing",
+      "kind": "real recording",
+      "source_sha256": "4c6e7ddaba4c1ad5f6be96451900f90533de269e1b898ac4573f2766e065ba7f",
+      "sha256": "6cef2544c8d304d810bbcb5504cf66280752722b4ffb8ee47dec1605aa47f988",
+      "excerpt": "5.5–7.2 s (second bleat)",
+      "processing": "150 Hz high-pass to remove wind rumble, then the standard processing"
+    },
+    "hestur": {
+      "title": "Scared horse neighing (Mixkit sound effect #85)",
+      "source": "https://mixkit.co/free-sound-effects/horse/",
+      "download": "https://assets.mixkit.co/active_storage/sfx/85/85-preview.mp3",
+      "license": "Mixkit Sound Effects Free License (royalty-free, no attribution required)",
+      "license_url": "https://mixkit.co/license/",
+      "kind": "real recording (stock)",
+      "source_sha256": "c6ee2fa76e0d8a91c8585913a1bbcbf8418b0dc03b981b8a7245c94217efafb0",
+      "sha256": "66c52243d062eb7277a75b349580e6bde40958d0fcddd04d0ea03f921ffedc38"
+    },
+    "ond": {
+      "title": "Pond Duck Quack (2.7 s) – Free CC0 Sound Effect #01",
+      "source": "https://sfxmint.com/sounds/duck-quack-01",
+      "download": "https://sfxmint.com/dl/duck-quack-01.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://sfxmint.com/license",
+      "kind": "AI-generated sound effect",
+      "source_sha256": "caf409e475795472e41df03a1472035f42a7f2d615d44978dc9be223e7df9453",
+      "sha256": "2b0751f645a8436f6133be1100ab15a154023a50885e0ab1743ed7bfa9b84dc0",
+      "excerpt": "0.1–2.05 s (250 ms fade-out)"
+    },
+    "fill": {
+      "title": "Strong Elephant Trumpet (2.3 s) – Free CC0 Sound Effect #01",
+      "source": "https://sfxmint.com/sounds/elephant-trumpet-01",
+      "download": "https://sfxmint.com/dl/elephant-trumpet-01.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://sfxmint.com/license",
+      "kind": "AI-generated sound effect",
+      "source_sha256": "a0691ba6ee56dff86502a4ccd5b16e58d591cb9da979de89f9f8790b3fef9e6c",
+      "sha256": "f6af5ef4a5149243d4a0e5e984a9cb87eaaf1071ca915761ada33e23dd9841fb"
+    },
+    "api": {
+      "title": "Little monkey screech (Mixkit sound effect #104)",
+      "source": "https://mixkit.co/free-sound-effects/monkey/",
+      "download": "https://assets.mixkit.co/active_storage/sfx/104/104-preview.mp3",
+      "license": "Mixkit Sound Effects Free License (royalty-free, no attribution required)",
+      "license_url": "https://mixkit.co/license/",
+      "kind": "real recording (stock)",
+      "source_sha256": "977737992eb5309dc50bcc2cac06c60c5dee1d9e98dbdd2e06e6c86de1c725b8",
+      "sha256": "1b40407549fbf279ff95eae7868759a145dcccc46bd795fb7238ea3a3b89b667"
+    },
+    "byfluga": {
+      "title": "Big bee hard flying sound (Mixkit sound effect #42)",
+      "source": "https://mixkit.co/free-sound-effects/bee/",
+      "download": "https://assets.mixkit.co/active_storage/sfx/42/42-preview.mp3",
+      "license": "Mixkit Sound Effects Free License (royalty-free, no attribution required)",
+      "license_url": "https://mixkit.co/license/",
+      "kind": "real recording (stock)",
+      "source_sha256": "2b6fea387c951d7a4c1267fcfc7718d8a0bb20a31e577cde70c96725edc43b55",
+      "sha256": "166a9c54eb9bb7e9c46e6b27c9690fc195265825209e8b526d1b8b7b2529eede"
     }
   }
 }

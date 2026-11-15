@@ -191,7 +191,7 @@
             answersEl.appendChild(btn);
             return { el: btn, isCorrect: n === q.correct, speechParts: comparing ? [] : [key] };
           });
-          if (q.kind === 'ruler') movePencil(q, promptEl, answers);
+          if (q.kind === 'ruler') { answersEl.classList.add('ruler-wait'); movePencil(q, promptEl, answers); }
           return answers;
         }
       });
