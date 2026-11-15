@@ -33,6 +33,9 @@
   }
 
   function makeFindQuestion(shape, pool) {
+    // A square is also a rectangle and a rhombus: it cannot be a wrong answer
+    // to either request. Filter the whole pool, including fallback choices.
+    if (shape === 'rétthyrningur' || shape === 'tígull') pool = pool.filter(function (s) { return s !== 'ferningur'; });
     var close = (CLOSE[shape] || []).filter(function (s) { return s !== shape && pool.indexOf(s) >= 0; });
     var distractors = KL.sample(close, 3);
     if (distractors.length < 3) {

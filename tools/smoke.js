@@ -271,6 +271,7 @@ async function main() {
   let passed = 0, failed = 0;
   const fail = (name, e) => { failed++; console.error('  ✗ ' + name + ': ' + e.message); };
   const test = async (name, fn) => {
+    if (process.env.SMOKE_FILTER && !new RegExp(process.env.SMOKE_FILTER).test(name)) return;
     try { await fn(); passed++; console.log('  ✓ ' + name); } catch (e) { fail(name, e); }
   };
   const assert = (cond, msg) => { if (!cond) throw new Error(msg || 'assertion failed'); };
@@ -419,6 +420,9 @@ async function main() {
                     if (q.speechKey.startsWith('form.sides.')) {
                       const n = Number(q.speechKey.split('.').pop());
                       check(q.choices.filter((s) => sides[s] === n).length === 1 && sides[q.target] === n, where + ': exactly one shape has the requested side/corner count');
+                    } else {
+                      const valid = { rétthyrningur: ['rétthyrningur', 'ferningur'], tígull: ['tígull', 'ferningur'] }[q.target] || [q.target];
+                      check(q.choices.filter((s) => valid.includes(s)).length === 1, where + ': no mathematically valid shape is a distractor');
                     }
                   } else if (id === 'tolur') {
                     const expected = q.type === 'work' ? q[q.blank] : q.type === 'shapes' ? q.terms.reduce((sum, id) => sum + q.values[id], 0) :
@@ -1171,6 +1175,72 @@ async function main() {
       await waitFor(`document.documentElement.lang === 'is'`, 'back to Icelandic');
     });
 
+    await test('language changes preserve answers, paint, memory cards, and word replay', async () => {
+      const sound = await cdp.eval(`KL_SOUND.on()`);
+      const shortGame = async (id, level) => {
+        await cdp.eval(`(() => {
+          const run = KL.runGame;
+          KL.runGame = cfg => {
+            const make = cfg.makeQuestions, build = cfg.build;
+            cfg.makeQuestions = lv => { window.__langQuestions = make(lv); return __langQuestions.slice(0, 3); };
+            cfg.build = (...args) => (window.__langAnswers = build(...args));
+            run(cfg);
+          };
+          try { KL.nav('${id}'); } finally { KL.runGame = run; }
+          document.querySelectorAll('.level-btn')[${level}].click();
+        })()`);
+      };
+      const correct = async () => {
+        await cdp.eval(`window.__oldAnswer = __langAnswers[0].el; __langAnswers.find(a => a.isCorrect).el.click()`);
+        await waitFor(`document.querySelector('.end-card') || !__oldAnswer.isConnected`, 'next question or result');
+      };
+      try {
+        await toMenu();
+        await cdp.eval(`KL_SOUND.setOn(false); document.querySelector('[data-lang="is"]').click()`);
+        await shortGame('tolur', 3);
+        await correct();
+        await cdp.eval(`window.__wrong = __langAnswers.find(a => !a.isCorrect).el; __wrong.click(); document.querySelector('[data-lang="da"]').click()`);
+        assert(await cdp.eval(`KL_I18N.lang() === 'is' && document.querySelectorAll('.progress .done').length === 1 && __wrong.isConnected && __wrong.disabled && !document.getElementById('language-note').hidden && document.querySelector('[data-lang="da"]').classList.contains('pending')`), 'question, completed answer and mistake survive the language request');
+        await correct(); await correct();
+        assert(await cdp.eval(`KL_I18N.lang() === 'da' && document.getElementById('language-note').hidden && document.querySelector('.end-card').innerHTML.includes(KL.fmt('end.score', { c: 2, t: 3 }))`), 'result is translated and still counts the mistake');
+        await toMenu();
+
+        await shortGame('spegill', 3);
+        await cdp.eval(`window.__paint = document.querySelector('.paint-target button'); __paint.click(); document.querySelector('[data-lang="is"]').click()`);
+        assert(await cdp.eval(`__paint.isConnected && __paint.classList.contains('ink-0') && KL_I18N.lang() === 'da'`), 'partial drawing stays in place');
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 844, deviceScaleFactor: 2, mobile: true });
+        assert(await cdp.eval(`document.documentElement.scrollWidth <= 321 && document.getElementById('language-note').textContent.includes('Íslenska')`), 'pending notice fits and names the requested language');
+        await shot('language-pending-mobile');
+        await cdp.eval(`document.querySelector('[data-lang="da"]').click()`);
+        assert(await cdp.eval(`document.getElementById('language-note').hidden && __paint.isConnected && __paint.classList.contains('ink-0')`), 'current language cancels the request without clearing paint');
+        await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
+        assert(await cdp.eval(PLAY_PAINT), 'drawing round still finishes');
+        assert(await cdp.eval(`KL_I18N.lang() === 'is' && document.querySelector('.end-card')`), 'drawing result applies pending language');
+        await toMenu();
+
+        await openGame('minni'); await pickLevel(0);
+        await cdp.eval(`window.__memory = document.querySelector('.mcard'); __memory.click(); document.querySelector('[data-lang="da"]').click()`);
+        assert(await cdp.eval(`__memory.isConnected && __memory.classList.contains('flipped') && document.querySelectorAll('.mcard').length === 12 && KL_I18N.lang() === 'is'`), 'face-up card and memory board survive');
+        assert(await cdp.eval(PLAY_MINNI), 'same memory round finishes');
+        assert(await cdp.eval(`KL_I18N.lang() === 'da' && document.querySelector('.end-card').innerHTML.includes(KL.fmt('minni.end_flips', { n: 6 }))`), 'memory result uses the new language and original flip count');
+        await toMenu();
+
+        await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
+        await shortGame('bokstafir', 1);
+        await cdp.eval(`document.querySelector('[data-lang="da"]').click()`);
+        await correct(); await correct(); await correct();
+        await cdp.eval(`document.getElementById('kl-replay').click()`);
+        assert(await cdp.eval(`KL_I18N.lang() === 'da' && __langQuestions.every(q => KL_I18N.WORDS.da.includes(q.word)) && __langAnswers.every(a => a.speechParts.every(key => key in KL_I18N.audioVocab('da')))`), 'replay generates words and recorded speech in the new language');
+        await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
+        await toMenu();
+        assert(await cdp.eval(`KL_I18N.lang() === 'is' && document.getElementById('language-note').hidden`), 'leaving a round also applies the request');
+      } finally {
+        await toMenu();
+        await cdp.eval(`document.querySelector('[data-lang="is"]').click(); KL_SOUND.setOn(${sound})`);
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+      }
+    });
+
     await test('mute toggle persists and restores', async () => {
       await cdp.eval(`document.getElementById('sound-toggle').click()`);
       assert(await cdp.eval(`KL_SOUND.on() === false && localStorage.getItem('kl.sound') === 'off'`), 'muted');
@@ -1262,6 +1332,47 @@ async function main() {
         } finally {
           await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: injected.identifier });
           await reloadApp();
+        }
+      }
+    });
+
+    await test('progress survives blocked, full, and partially writable storage for this visit', async () => {
+      for (const mode of ['blocked', 'full', 'partial']) {
+        await toMenu();
+        await cdp.eval(`KL.resetScores(); localStorage.setItem('kl.stars.form.easy', '1'); localStorage.setItem('kl.stickers', JSON.stringify(['koala', 'hundur']))`);
+        const source = mode === 'blocked' ? "Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('blocked', 'SecurityError'); } });" :
+          mode === 'full' ? "Storage.prototype.setItem = function () { throw new DOMException('full', 'QuotaExceededError'); };" :
+          "const set = Storage.prototype.setItem; Storage.prototype.setItem = function (key, value) { if (key === 'kl.stickers') throw new DOMException('full', 'QuotaExceededError'); return set.call(this, key, value); };";
+        const injected = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source });
+        try {
+          await reloadApp();
+          await openGame('form');
+          const result = await cdp.eval(`(() => {
+            const before = KL.stickers().length;
+            for (let i = 0; i < 4; i++) KL.finish({ main: document.getElementById('game') }, {
+              slotKey: 'form.easy', gameId: 'form', stars: 3, earned: true, titleKey: 'end.title', lines: [], onReplay() {}
+            });
+            KL.saveBest('stars.form.easy', 1);
+            KL.saveBest('flips.minni.6', 12, true); KL.saveBest('flips.minni.6', 18, true); KL.saveBest('flips.minni.6', 9, true);
+            const outfit = KL.wardrobe()[0];
+            KL.wear(outfit); KL.wear(outfit);
+            return { animals: KL.stickers().length - before, clothes: KL.wardrobe().length, worn: Object.values(KL.outfit()).includes(outfit),
+              stars: KL.getBest('stars.form.easy'), flips: KL.getBest('flips.minni.6'), prizes: KL.prizesWon('form'),
+              notice: document.querySelector('.end-card .storage-note')?.textContent === KL.t('footer.temporary') };
+          })()`);
+          assert(result.animals === 2 && result.clothes === 1 && result.worn && result.stars === 3 && result.flips === 9 && result.prizes === 3 && result.notice, mode + ': earned progress and prize limit survive: ' + JSON.stringify(result));
+          if (mode === 'partial') assert(await cdp.eval(`localStorage.getItem('kl.prizes.form') === null && localStorage.getItem('kl.rewards') === null && JSON.parse(localStorage.getItem('kl.stickers')).length === 2`), 'an animal that failed to save does not consume a saved prize');
+          await toMenu();
+          assert(await cdp.eval(`document.querySelectorAll('#sticker-grid button.sticker').length === KL.stickers().length && document.querySelectorAll('#wardrobe-grid [data-outfit]').length === 1 && document.getElementById('storage-note').getAttribute('data-i18n') === 'footer.temporary'`), mode + ': menu keeps earned animals, clothes and the saving notice');
+          await cdp.eval(`document.querySelector('[data-lang="da"]').click()`);
+          assert(await cdp.eval(`document.getElementById('storage-note').textContent === KL.t('footer.temporary') && KL.getBest('stars.form.easy') === 3`), mode + ': translating the menu preserves temporary progress');
+          if (mode === 'full') await shot('temporary-progress-desktop');
+          await cdp.eval(`window.confirm = () => true; document.getElementById('reset-scores').click()`);
+          assert(await cdp.eval(`KL.stickers().join() === 'koala' && KL.wardrobe().length === 0 && Object.keys(KL.outfit()).length === 0 && KL.getBest('stars.form.easy') === 0 && KL.getBest('flips.minni.6') === 0 && KL.prizesWon('form') === 0 && document.getElementById('score').textContent === ''`), mode + ': reset clears temporary progress too');
+        } finally {
+          await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: injected.identifier });
+          await reloadApp();
+          await cdp.eval(`KL.resetScores(); document.querySelector('[data-lang="is"]').click(); KL.renderMenu()`);
         }
       }
     });

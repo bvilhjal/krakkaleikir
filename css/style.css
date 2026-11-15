@@ -623,7 +623,10 @@ a { color: inherit; text-decoration: none; }
   touch-action: manipulation;
 }
 .lang-toggle button.active { background: var(--accent-strong); color: #fff; }
+.lang-toggle button.pending { outline: 2px dashed var(--accent-strong); outline-offset: 3px; }
 .lang-toggle button:active { transform: scale(0.94); }
+.preference-note { max-width: 900px; margin: 8px auto 0; padding: 0 16px; text-align: center; color: var(--ink); }
+.storage-note { color: var(--muted); font-size: 1rem; }
 
 .sound-toggle {
   display: inline-flex;

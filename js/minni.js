@@ -45,6 +45,7 @@
       }
 
       function play(nPairs) {
+        KL_I18N.beginRound();
         KL.onUnlock(null);
         var cards = [];
         // about half animals, half things
@@ -134,6 +135,8 @@
       }
 
       function end(nPairs, flips) {
+        KL_I18N.endRound();
+        showFlips(flips);
         KL.saveBest('flips.minni.' + nPairs, flips, true);
         KL.finish(ctx, {
           slotKey: 'minni.' + nPairs,

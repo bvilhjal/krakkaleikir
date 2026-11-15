@@ -159,21 +159,52 @@
      'kl.rewards' = prizes handed out, so animals and clothes take turns;
      'kl.prizes.<game>' = prizes won in that game (at most PRIZES_PER_GAME). */
   var PRIZES_PER_GAME = 3;
+  // Failed writes stay authoritative for this visit. Successful reads are
+  // remembered too, so a later storage failure does not empty an existing zoo.
+  var progressMemory = Object.create(null), unsavedProgress = Object.create(null);
+  var storageReadFailed = false, storageWriteFailed = false;
+  function temporaryProgress() { return storageReadFailed || storageWriteFailed || Object.keys(unsavedProgress).length > 0; }
+  function storageNotice() {
+    var el = document.getElementById('storage-note');
+    var key = temporaryProgress() ? 'footer.temporary' : 'footer.note';
+    if (el && el.getAttribute('data-i18n') !== key) {
+      el.setAttribute('data-i18n', key);
+      el.textContent = I.t(key);
+    }
+  }
+  function readProgress(key) {
+    if (Object.prototype.hasOwnProperty.call(unsavedProgress, key)) return progressMemory[key];
+    try {
+      progressMemory[key] = window.localStorage.getItem(key);
+      storageReadFailed = false;
+    } catch (e) { storageReadFailed = true; }
+    storageNotice();
+    return progressMemory[key] === undefined ? null : progressMemory[key];
+  }
+  function writeProgress(key, value) {
+    progressMemory[key] = value;
+    // After a failed save, keep later writes together in memory. In particular,
+    // do not persist a spent prize when its animal could not be saved.
+    if (storageWriteFailed && value !== null) { unsavedProgress[key] = true; storageNotice(); return; }
+    try {
+      if (value === null) window.localStorage.removeItem(key);
+      else window.localStorage.setItem(key, value);
+      delete unsavedProgress[key];
+    } catch (e) { unsavedProgress[key] = true; storageWriteFailed = true; }
+    storageNotice();
+  }
   function prizesWon(gameId) { return getBest('prizes.' + gameId); }
   function slot(gameId, level) { return gameId + (level ? '.' + level : ''); }
   function getBest(key) {
-    try { return parseInt(window.localStorage.getItem('kl.' + key) || '0', 10) || 0; }
-    catch (e) { return 0; }
+    return parseInt(readProgress('kl.' + key) || '0', 10) || 0;
   }
   function saveBest(key, value, lowerIsBetter) {
-    try {
-      var b = getBest(key);
-      if (!b || (lowerIsBetter ? value < b : value > b)) window.localStorage.setItem('kl.' + key, String(value));
-    } catch (e) { /* storage unavailable */ }
+    var b = getBest(key);
+    if (!b || (lowerIsBetter ? value < b : value > b)) writeProgress('kl.' + key, String(value));
   }
   function stickers() {
     try {
-      var s = JSON.parse(window.localStorage.getItem('kl.stickers') || 'null');
+      var s = JSON.parse(readProgress('kl.stickers') || 'null');
       if (Array.isArray(s)) return s.filter(function (id, i) { return ART.ANIMALS.indexOf(id) >= 0 && s.indexOf(id) === i; });
     } catch (e) { /* ignore */ }
     return ['koala']; // Kóli is the first sticker
@@ -184,17 +215,17 @@
     if (!left.length) return null;
     var id = left[randInt(0, left.length - 1)];
     have.push(id);
-    try { window.localStorage.setItem('kl.stickers', JSON.stringify(have)); } catch (e) { /* ignore */ }
+    writeJSON('kl.stickers', have);
     return id;
   }
   function readJSON(key, fallback) {
     try {
-      var v = JSON.parse(window.localStorage.getItem(key) || 'null');
+      var v = JSON.parse(readProgress(key) || 'null');
       return v === null ? fallback : v;
     } catch (e) { return fallback; }
   }
   function writeJSON(key, v) {
-    try { window.localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* storage unavailable */ }
+    writeProgress(key, JSON.stringify(v));
   }
   function wardrobe() {
     var w = readJSON('kl.wardrobe', []);
@@ -240,9 +271,9 @@
     var stickerLeft = ART.ANIMALS.some(function (id) { return haveS.indexOf(id) < 0; });
     var outfitLeft = ART.OUTFIT_IDS.some(function (id) { return haveO.indexOf(id) < 0; });
     var n = getBest('rewards');
-    try { window.localStorage.setItem('kl.rewards', String(n + 1)); } catch (e) { /* ignore */ }
-    if (outfitLeft && (!stickerLeft || n % 3 === 2)) return { outfit: awardOutfit() };
-    return { sticker: awardSticker() };
+    var prize = outfitLeft && (!stickerLeft || n % 3 === 2) ? { outfit: awardOutfit() } : { sticker: awardSticker() };
+    writeProgress('kl.rewards', String(n + 1));
+    return prize;
   }
   function allAnimals() {
     var have = stickers();
@@ -268,12 +299,15 @@
       }).join('') + '</div></section>';
   }
   function resetScores() {
+    var keys = Object.keys(progressMemory);
+    storageWriteFailed = false;
     try {
-      Object.keys(window.localStorage).forEach(function (k) {
-        // 'kl.best.' holds scores from versions before stars
-        if (/^kl\.(stars|flips|best|prizes)\./.test(k) || /^kl\.(stickers|wardrobe|outfit|rewards)$/.test(k)) window.localStorage.removeItem(k);
-      });
+      keys = keys.concat(Object.keys(window.localStorage));
     } catch (e) { /* ignore */ }
+    keys.filter(function (k, i) { return keys.indexOf(k) === i; }).forEach(function (k) {
+      // Failed removals remain null in memory; old prizes must not reappear.
+      if (/^kl\.(stars|flips|best|prizes)\./.test(k) || /^kl\.(stickers|wardrobe|outfit|rewards)$/.test(k)) writeProgress(k, null);
+    });
     outfitNow = null;
     dressKoalas();
   }
@@ -508,6 +542,7 @@
      A prize (a zoo animal or something for Kóli) comes only for a good round
      (o.earned) and at most PRIZES_PER_GAME times from the same game. */
   function finish(ctx, o) {
+    I.endRound();
     sfx('win');
     saveBest('stars.' + o.slotKey, o.stars);
     var best = getBest('stars.' + o.slotKey);
@@ -520,7 +555,7 @@
     else if (prizesLeft && prizesWon(gameId) >= PRIZES_PER_GAME) why = 'done';
     else if (prizesLeft) {
       prize = awardReward();
-      try { window.localStorage.setItem('kl.prizes.' + gameId, String(prizesWon(gameId) + 1)); } catch (e) { /* ignore */ }
+      writeProgress('kl.prizes.' + gameId, String(prizesWon(gameId) + 1));
     }
     var sticker = prize.sticker, dress = prize.outfit;
     // a parent whose number of animals was reached just now comes to visit
@@ -533,6 +568,7 @@
         '<div class="big-stars">' + starsRow(o.stars, 3, 56) + '</div>' +
         o.lines.map(function (l) { return '<p>' + l + '</p>'; }).join('') +
         '<p class="best">' + I.t('end.best') + ' <span class="inline-stars">' + starsRow(best, 3, 24) + '</span></p>' +
+        (temporaryProgress() ? '<p class="storage-note" role="status">' + I.t('footer.temporary') + '</p>' : '') +
         (sticker ? '<div class="sticker-reveal"><button type="button" class="sticker-new" data-animal-sound="' + sticker + '" aria-label="' + I.fmt('sticker.sound', { a: I.t('animal.' + sticker) }) + '">' + ART.animal(sticker, 92) + '</button>' +
           '<p>' + I.fmt('sticker.new', { a: I.t('animal.' + sticker) }) + '</p></div>' : '') +
         (dress ? '<div class="sticker-reveal outfit-reveal"><span class="sticker-new">' + ART.outfitIcon(dress, 92) + '</span>' +
@@ -590,6 +626,7 @@
     }
 
     function start(lv) {
+      I.beginRound();
       level = lv;
       questions = cfg.makeQuestions(lv);
       state = { i: 0, firstTry: 0, results: [], streak: 0 };
@@ -616,6 +653,7 @@
     }
 
     function endScreen() {
+      I.endRound();
       var total = questions.length;
       var c = state.firstTry;
       finish(cfg.ctx, {
@@ -739,6 +777,7 @@
 
   function show(id) {
     current = id;
+    I.endRound();
     clearTimers();
     if (window.KL_SOUND) window.KL_SOUND.stopAnimal();
     onUnlock(null);
@@ -808,7 +847,13 @@
   window.addEventListener('popstate', onHistory);
   window.addEventListener('hashchange', onHistory);
   // new language: redraw the current screen (and Kóli introduces himself again)
-  I.onChange(function () { greeted = false; show(current); });
+  I.onChange(function (lang, keepScreen) {
+    greeted = false;
+    if (keepScreen) {
+      document.getElementById('game-title').textContent = current ? I.t('game.' + current) : '';
+      document.title = I.t(current ? 'title.' + current : 'title.menu');
+    } else show(current);
+  });
 
   document.addEventListener('DOMContentLoaded', function () {
     var menuGuide = document.getElementById('menu-guide');

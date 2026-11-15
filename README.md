@@ -23,6 +23,10 @@ Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga
 
 Í Tölum er hvert dýr talið einu sinni; bankaðu aftur á það til að heyra töluna aftur. Stafaleikurinn nær yfir allt íslenska og danska stafrófið. Tungumála- og hljóðval virka líka meðan síðan er opin þótt vafrinn leyfi ekki vistun í `localStorage`.
 
+Language changes requested during a round take effect at its result screen, or when returning to the menu. A notice shows the pending language; tapping the current language cancels it. Answers, drawings and memory cards stay intact, and each exercise keeps one language throughout. Outside a round, language changes are immediate.
+
+If browser storage is unavailable or full, new stars, animals, clothes and prize counts remain available for the current visit. The result screen and menu explain that the new progress has not been saved. Reset also clears this temporary progress.
+
 Talnaslangan í Tölutöflu vindur sig frá 0 til 100. Tugirnir eru rauðir; bankaðu á tölu til að heyra hana eða hoppaðu áfram og afturábak um 1 eða 10. Fimm tölur eru í hverri röð svo takkarnir séu stórir líka á síma. Taflan heldur sínum tíu dálkum. Talnaleit notar þá mynd sem er valin og slangan hefur núll með.
 
 Nýja 1–100 stigið í Tölum æfir að fara yfir tug, t.d. `39 + 6 = ?`, og óþekktan lið á hvorum stað, t.d. `? + 6 = 45` eða `39 + ? = 45`. Í Formagátum gefa þrjú lítil dæmi vísbendingar: ef ferningur + ferningur = 10 er hver ferningur 5. Gildi formanna haldast eins út umferðina; síðan eru lögð saman tvö eða þrjú form.
@@ -89,6 +93,8 @@ tools/listen.html     hlusta á allar mp3-skrárnar og merkja þær sem hljóma 
 2. `node tools/check.js --write` uppfærir skráalistann og útgáfuna í `sw.js`, svo iPadinn sæki nýju útgáfuna.
 3. `node tools/check.js` athugar að íslenska og danska taflan hafi sömu lykla, að allir lyklar sem kóðinn notar séu til, að hljóðskrár passi við textana og að `sw.js` sé uppfært.
 4. `node tools/smoke.js` (valfrjálst, þarf Chrome/Chromium og Node ≥ 22) spilar alla leikina í gegn í headless Chrome. Prófið sannreynir líka rétt svör í dæmum og mynstrum, erfiðleikastig forma og upptekið tal á báðum tungumálum, talningu, stöðvun talgervils, lyklaborð í Minni, tungumála- og hljóðval án vistunar, núllstillingu, mjóa skjái og offline-ham. GitHub Actions keyrir þetta við hvert push.
+
+For focused checks, `SMOKE_FILTER='question generators|language changes preserve|progress survives' node tools/smoke.js` runs the shape, in-round language and temporary-progress regressions.
 
 ## Nýr leikur
 

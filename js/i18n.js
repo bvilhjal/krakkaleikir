@@ -34,6 +34,9 @@
       'desc.ordmyndir': 'Paraðu orðin og myndirnar',
       'desc.spegill': 'Finndu og litaðu spegilmyndina',
       'footer.note': 'Stjörnur, dýrin og föt Kóla geymast í þessum vafra.',
+      'footer.temporary': 'Ekki tókst að vista nýjar framfarir. Þær haldast meðan síðan er opin.',
+      'language.name': 'Íslenska',
+      'language.next': 'Skipt verður yfir í {language} eftir umferðina.',
       'footer.reset': 'Byrja upp á nýtt',
       'reset.confirm': 'Eyða öllum stjörnum, dýrum og fötum Kóla?',
       'badge.not_played': 'Ekki prófað enn',
@@ -272,6 +275,9 @@
       'desc.ordmyndir': 'Match ord og billeder',
       'desc.spegill': 'Find og farvelæg spejlbilledet',
       'footer.note': 'Stjerner, dyrene og Kólis tøj gemmes i denne browser.',
+      'footer.temporary': 'Nye fremskridt kunne ikke gemmes. De beholdes, mens siden er åben.',
+      'language.name': 'Dansk',
+      'language.next': 'Skifter til {language} efter runden.',
       'footer.reset': 'Start forfra',
       'reset.confirm': 'Slette alle stjerner, dyr og Kólis tøj?',
       'badge.not_played': 'Ikke prøvet endnu',
@@ -559,6 +565,7 @@
 
   // Preferences still work for this visit when storage is blocked or full.
   var currentLang = 'is';
+  var inRound = false, pendingLang = null;
   try {
     var storedLang = window.localStorage.getItem(KEY);
     if (LANGS.indexOf(storedLang) >= 0) currentLang = storedLang;
@@ -656,28 +663,55 @@
     document.querySelectorAll('.lang-toggle button').forEach(function (btn) {
       var active = btn.getAttribute('data-lang') === lang();
       btn.classList.toggle('active', active);
+      btn.classList.toggle('pending', btn.getAttribute('data-lang') === pendingLang);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      if (pendingLang) btn.setAttribute('aria-describedby', 'language-note');
+      else btn.removeAttribute('aria-describedby');
     });
+    var note = document.getElementById('language-note');
+    if (note) {
+      note.hidden = !pendingLang;
+      note.textContent = pendingLang ? fmt('language.next', { language: STR[pendingLang]['language.name'] }) : '';
+    }
   }
 
   var listeners = [];
   function onChange(fn) { listeners.push(fn); }
+  function changeLang(l, keepScreen) {
+    setLang(l);
+    apply();
+    listeners.forEach(function (fn) { try { fn(l, keepScreen); } catch (e) { /* ignore */ } });
+  }
+  // Keep the exercise and its audio in one language. A requested change is
+  // applied at the result screen (or when leaving), never by discarding play.
+  function beginRound() { inRound = true; }
+  function endRound() {
+    inRound = false;
+    if (!pendingLang) return;
+    var next = pendingLang;
+    pendingLang = null;
+    changeLang(next, true);
+  }
 
   document.addEventListener('DOMContentLoaded', function () {
     apply();
     document.querySelectorAll('.lang-toggle button').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var l = btn.getAttribute('data-lang');
+        if (inRound) {
+          pendingLang = l === lang() ? null : l;
+          apply();
+          return;
+        }
         if (l === lang()) return;
-        setLang(l);
-        apply();
-        listeners.forEach(function (fn) { try { fn(l); } catch (e) { /* ignore */ } });
+        changeLang(l, false);
       });
     });
   });
 
   window.KL_I18N = {
     lang: lang, setLang: setLang, t: t, fmt: fmt, fill: fill, speechLang: speechLang, apply: apply, onChange: onChange,
+    beginRound: beginRound, endRound: endRound,
     audioVocab: audioVocab, LANGS: LANGS, WORDS: WORDS, STR: STR, PRAISE: PRAISE, HURRA: HURRA, FAMILY: FAMILY
   };
 })();

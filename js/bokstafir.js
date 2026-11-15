@@ -81,13 +81,16 @@
       { id: 'hard', labelKey: 'level.hard' }
     ],
     start: function (ctx) {
-      var lang = KL_I18N.lang();
-      var WORDS = KL_I18N.WORDS[lang];
+      var lang, WORDS;
       KL.runGame({
         ctx: ctx,
         gameId: 'bokstafir',
         levels: this.levels,
-        makeQuestions: function (lv) { return makeQuestions(lv, lang, WORDS); },
+        makeQuestions: function (lv) {
+          lang = KL_I18N.lang();
+          WORDS = KL_I18N.WORDS[lang];
+          return makeQuestions(lv, lang, WORDS);
+        },
         promptText: function (q) {
           if (q.type === 'case') return KL.t('bokstafir.match_q');
           if (q.type === 'first') return KL.t('bokstafir.first_q');

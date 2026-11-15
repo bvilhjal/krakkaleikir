@@ -5,7 +5,7 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = '7d30d865ba54';
+var VERSION = '80ca5c25c6cc';
 var FILES = [
   './',
   'audio/animals/api.mp3',
