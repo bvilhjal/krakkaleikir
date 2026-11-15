@@ -1,8 +1,9 @@
 /* Mælingar / Måling: compare sizes, measure a pencil, and weigh a mystery parcel.
    Pictures share a coordinate system: a longer pencil really is longer, and
-   every ruler starts at zero. A level balance says the parcel weighs exactly
-   as much as the marked weights on the other pan. No real-world object masses
-   are assumed. All lengths and masses stay within 1–10 cm/kg. */
+   the child moves the pencil to zero before reading the ruler. A level balance
+   says the parcel weighs exactly as much as the marked weights on the other
+   pan. No real-world object masses are assumed. All lengths and masses stay
+   within 1–10 cm/kg. */
 (function () {
   'use strict';
 
@@ -31,16 +32,88 @@
 
   function ruler(q) {
     var start = 32, step = 28, end = start + q.correct * step;
-    var s = '<svg class="measure-scene" viewBox="0 0 344 166" role="img" aria-label="' + KL.fmt('maelingar.ruler_aria', { n: q.correct }) + '">';
-    s += pencil(start, 42, q.correct * step, q.color);
-    s += '<path d="M' + start + ' 66v46M' + end + ' 66v46" stroke="#5C6BC0" stroke-width="2" stroke-dasharray="4 4"/>';
-    s += '<rect x="18" y="106" width="308" height="48" rx="7" fill="#FFE29A" stroke="#B07D18" stroke-width="2"/>';
+    var length = q.correct * step, x0 = 326 - length;
+    if (Math.abs(x0 - start) < 20) x0 = 10;
+    var s = '<svg class="measure-scene measure-ruler" viewBox="0 0 344 230" role="group" aria-label="' + KL.t('maelingar.ruler_q') + '">';
+    s += '<rect x="8" y="6" width="328" height="54" rx="14" fill="#F5F6FF"/>';
+    s += '<path d="M32 76v23m-7-7 7 7 7-7" fill="none" stroke="#57A773" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+    s += '<circle class="measure-zero" cx="32" cy="122" r="12" fill="#DFF3E3" stroke="#57A773" stroke-width="2" stroke-dasharray="3 3"/>';
+    s += '<path class="measure-guides" d="M' + start + ' 136v32M' + end + ' 136v32" stroke="#5C6BC0" stroke-width="2" stroke-dasharray="4 4"/>';
+    s += '<rect x="18" y="168" width="308" height="48" rx="7" fill="#FFE29A" stroke="#B07D18" stroke-width="2"/>';
     for (var n = 0; n <= 10; n++) {
       var x = start + n * step;
-      s += '<path d="M' + x + ' 106v' + (n % 5 === 0 ? 18 : 12) + '" stroke="#7A5500" stroke-width="2"/>';
-      s += '<text x="' + x + '" y="143" text-anchor="middle" font-size="15" fill="#3D405B">' + n + '</text>';
+      s += '<path d="M' + x + ' 168v' + (n % 5 === 0 ? 18 : 12) + '" stroke="#7A5500" stroke-width="2"/>';
+      s += '<text x="' + x + '" y="205" text-anchor="middle" font-size="15" fill="#3D405B">' + n + '</text>';
     }
-    return s + '<text x="308" y="92" text-anchor="end" font-size="16" fill="#3D405B">cm</text></svg>';
+    s += '<text x="308" y="154" text-anchor="end" font-size="16" fill="#3D405B">cm</text>';
+    return s + '<g class="measure-pencil-drag" transform="translate(' + x0 + ' 22)" role="button" tabindex="0" aria-label="' + KL.t('maelingar.move_aria') + '">' +
+      '<rect x="-6" y="-20" width="' + Math.max(44, length + 12) + '" height="60" rx="12" fill="transparent"/>' + pencil(0, 0, length, q.color) + '</g></svg>';
+  }
+
+  function movePencil(q, promptEl, answers) {
+    var svg = promptEl.querySelector('.measure-ruler'), pencilEl = svg.querySelector('.measure-pencil-drag');
+    var helper = promptEl.querySelector('.measure-place'), hint = promptEl.querySelector('.measure-hint');
+    var x = pencilEl.transform.baseVal.getItem(0).matrix.e, y = 22, drag = null, placed = false;
+    function move(nx, ny) {
+      x = Math.max(8, Math.min(326 - q.correct * 28, nx));
+      y = Math.max(8, Math.min(140, ny));
+      pencilEl.setAttribute('transform', 'translate(' + x + ' ' + y + ')');
+    }
+    function place() {
+      if (placed) return;
+      placed = true;
+      move(32, 112);
+      svg.classList.add('aligned');
+      svg.setAttribute('aria-label', KL.fmt('maelingar.ruler_aria', { n: q.correct }));
+      pencilEl.setAttribute('aria-disabled', 'true');
+      pencilEl.setAttribute('tabindex', '-1');
+      helper.hidden = true;
+      hint.hidden = true;
+      answers.forEach(function (a) { a.el.disabled = false; });
+      KL.sfx('pop');
+      KL.say(['maelingar.ruler_q']);
+      KL.setReplay(['maelingar.ruler_q']);
+      KL.onUnlock(function () { KL.say(['maelingar.ruler_q']); });
+    }
+    function snap() { if (Math.abs(x - 32) <= 16 && Math.abs(y - 112) <= 20) place(); }
+    function point(e) {
+      var p = svg.createSVGPoint();
+      p.x = e.clientX; p.y = e.clientY;
+      return p.matrixTransform(svg.getScreenCTM().inverse());
+    }
+    pencilEl.addEventListener('pointerdown', function (e) {
+      if (placed || !e.isPrimary || e.button !== 0) return;
+      e.preventDefault();
+      var p = point(e);
+      drag = { id: e.pointerId, dx: p.x - x, dy: p.y - y };
+      pencilEl.setPointerCapture(e.pointerId);
+      pencilEl.classList.add('dragging');
+    });
+    pencilEl.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var p = point(e);
+      move(p.x - drag.dx, p.y - drag.dy);
+    });
+    function release(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag = null;
+      pencilEl.classList.remove('dragging');
+      if (e.type === 'pointerup') snap();
+    }
+    pencilEl.addEventListener('pointerup', release);
+    pencilEl.addEventListener('pointercancel', release);
+    pencilEl.addEventListener('lostpointercapture', release);
+    pencilEl.addEventListener('keydown', function (e) {
+      if (placed) return;
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Home') { e.preventDefault(); place(); }
+      else if (/^Arrow(Left|Right|Up|Down)$/.test(e.key)) {
+        e.preventDefault();
+        move(x + (e.key === 'ArrowRight' ? 7 : e.key === 'ArrowLeft' ? -7 : 0), y + (e.key === 'ArrowDown' ? 7 : e.key === 'ArrowUp' ? -7 : 0));
+        snap();
+      }
+    });
+    pencilEl.addEventListener('click', function (e) { if (e.detail === 0) place(); });
+    helper.addEventListener('click', place);
   }
 
   function scale(q) {
@@ -90,7 +163,8 @@
         levels: this.levels,
         makeQuestions: makeQuestions,
         promptText: function (q) { return KL.t('maelingar.' + (q.kind === 'ruler' ? 'ruler_q' : q.kind === 'weight' ? 'weight_q' : q.kind)); },
-        promptSpeech: function (q) { return ['maelingar.' + (q.kind === 'ruler' ? 'ruler_q' : q.kind === 'weight' ? 'weight_q' : q.kind)]; },
+        promptSpeech: function (q) { return q.kind === 'ruler' ? ['maelingar.move_q', 'maelingar.ruler_q'] : ['maelingar.' + (q.kind === 'weight' ? 'weight_q' : q.kind)]; },
+        retrySpeech: function (q) { return ['maelingar.' + (q.kind === 'ruler' ? 'ruler_q' : q.kind === 'weight' ? 'weight_q' : q.kind)]; },
         onCorrect: function (q, _a, promptEl) {
           var result = promptEl.querySelector('.measure-result');
           if (result) { result.textContent = q.correct + (q.kind === 'weight' ? ' kg' : ' cm'); result.classList.add('filled'); }
@@ -100,8 +174,9 @@
           var unit = q.kind === 'weight' ? 'kg' : 'cm';
           if (!comparing) promptEl.innerHTML = (q.kind === 'ruler' ? ruler(q) : scale(q)) + '<span class="measure-result" aria-live="polite">? ' + unit + '</span>';
           else promptEl.hidden = true;
+          if (q.kind === 'ruler') promptEl.insertAdjacentHTML('beforeend', '<span class="measure-hint" aria-live="polite">' + KL.t('maelingar.move_q') + '</span><button type="button" class="chip measure-place">' + KL.t('maelingar.place') + '</button>');
           var values = comparing ? q.choices : KL.pickDistinct(KL.range(1, 10), q.correct, 4);
-          return values.map(function (n, i) {
+          var answers = values.map(function (n, i) {
             var key = 'maelingar.' + unit + '.' + n;
             var btn = document.createElement('button');
             btn.type = 'button';
@@ -112,9 +187,12 @@
               var drawing = q.kind === 'longest' || q.kind === 'shortest' ? pencil(22, 64, n * 13, q.colors[i]) : flower(n, q.colors[i]);
               btn.innerHTML = '<svg viewBox="0 0 180 150" aria-hidden="true">' + drawing + '</svg>';
             } else btn.innerHTML = n + '<span class="measure-unit">' + unit + '</span>';
+            btn.disabled = q.kind === 'ruler';
             answersEl.appendChild(btn);
             return { el: btn, isCorrect: n === q.correct, speechParts: comparing ? [] : [key] };
           });
+          if (q.kind === 'ruler') movePencil(q, promptEl, answers);
+          return answers;
         }
       });
     }

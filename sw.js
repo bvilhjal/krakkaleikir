@@ -5,7 +5,7 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = 'daf6ebaff906';
+var VERSION = 'ee53fad4ffa1';
 var FILES = [
   './',
   'audio/animals/bjorn.mp3',
@@ -192,6 +192,7 @@ var FILES = [
   'audio/da/maelingar.kg.9.mp3',
   'audio/da/maelingar.longest.mp3',
   'audio/da/maelingar.lowest.mp3',
+  'audio/da/maelingar.move_q.mp3',
   'audio/da/maelingar.ruler_q.mp3',
   'audio/da/maelingar.shortest.mp3',
   'audio/da/maelingar.tallest.mp3',
@@ -338,6 +339,8 @@ var FILES = [
   'audio/da/num.97.mp3',
   'audio/da/num.98.mp3',
   'audio/da/num.99.mp3',
+  'audio/da/ordmyndir.picture_q.mp3',
+  'audio/da/ordmyndir.word_q.mp3',
   'audio/da/shape.ferningur.mp3',
   'audio/da/shape.fimmhyrningur.mp3',
   'audio/da/shape.hjarta.mp3',
@@ -773,6 +776,7 @@ var FILES = [
   'audio/is/maelingar.kg.9.mp3',
   'audio/is/maelingar.longest.mp3',
   'audio/is/maelingar.lowest.mp3',
+  'audio/is/maelingar.move_q.mp3',
   'audio/is/maelingar.ruler_q.mp3',
   'audio/is/maelingar.shortest.mp3',
   'audio/is/maelingar.tallest.mp3',
@@ -919,6 +923,8 @@ var FILES = [
   'audio/is/num.97.mp3',
   'audio/is/num.98.mp3',
   'audio/is/num.99.mp3',
+  'audio/is/ordmyndir.picture_q.mp3',
+  'audio/is/ordmyndir.word_q.mp3',
   'audio/is/praise.0.mp3',
   'audio/is/praise.1.mp3',
   'audio/is/praise.2.mp3',
@@ -1193,6 +1199,7 @@ var FILES = [
   'games/maelingar.html',
   'games/minni.html',
   'games/mynstur.html',
+  'games/ordmyndir.html',
   'games/talnatafla.html',
   'games/tolur.html',
   'icons/icon-192.png',
@@ -1208,6 +1215,7 @@ var FILES = [
   'js/menu.js',
   'js/minni.js',
   'js/mynstur.js',
+  'js/ordmyndir.js',
   'js/sound.js',
   'js/talnatafla.js',
   'js/tolur.js',

@@ -113,6 +113,8 @@ const PLAY_ROUND = `(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   for (let guard = 0; guard < 500; guard++) {
     if (document.querySelector('.end-card')) return true;
+    const place = document.querySelector('.measure-place:not(:disabled):not([hidden])');
+    if (place) place.click();
     const btns = [...document.querySelectorAll('.q-stage .answer')];
     const enabled = btns.filter((b) => !b.disabled);
     if (enabled.length) enabled[0].click();
@@ -255,7 +257,7 @@ async function main() {
     console.error('smoke test timed out');
     try { chrome.kill('SIGKILL'); } catch (e) { /* already gone */ }
     process.exit(1);
-  }, 600000);
+  }, 900000);
 
   try {
     let target = null;
@@ -322,7 +324,7 @@ async function main() {
     // the menu cards are static HTML: wait for the scripts too, not just the markup
     const waitForApp = async () => {
       await waitFor(`document.readyState === 'complete' && typeof KL !== 'undefined'`, 'app scripts loaded');
-      await waitFor(`document.querySelectorAll('.game-card').length === 8`, 'menu');
+      await waitFor(`document.querySelectorAll('.game-card').length === 9`, 'menu');
     };
     const reloadApp = async () => {
       await cdp.eval(`window.__beforeReload = true`);
@@ -335,7 +337,7 @@ async function main() {
     await cdp.send('Page.navigate', { url: base + '/' });
     await waitForApp();
 
-    await test('menu renders: 8 cards, sticker book, Kóli greets', async () => {
+    await test('menu renders: 9 cards, sticker book, Kóli greets', async () => {
       assert(await cdp.eval(`document.querySelectorAll('#sticker-grid .sticker').length >= 12`), 'sticker grid');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.length > 0`), 'greeting');
       assert(await cdp.eval(`KL.stickers().length === 1`), 'first sticker is Kóli');
@@ -355,11 +357,12 @@ async function main() {
           for (const l of KL_I18N.LANGS) {
             KL_I18N.setLang(l);
             const vocab = KL_I18N.audioVocab(l);
-            for (const id of ['tolur', 'bokstafir', 'form', 'mynstur', 'klukkan', 'maelingar']) {
+            for (const id of ['tolur', 'bokstafir', 'form', 'mynstur', 'klukkan', 'maelingar', 'ordmyndir']) {
               KL.games[id].start({});
               for (const level of KL.games[id].levels) for (let round = 0; round < 20; round++) {
                 const qs = cfg.makeQuestions(level.id);
                 check(qs.length === 10, id + ': ten questions');
+                if (id === 'ordmyndir') check(new Set(qs.map((q) => q.target)).size === 10, id + ': ten different targets');
                 for (const q of qs) {
                   const where = l + '/' + id + '/' + level.id;
                   const prompt = document.createElement('div'), choices = document.createElement('div');
@@ -395,6 +398,20 @@ async function main() {
                     check(q.alpha.join('') === alphabet, where + ': complete alphabet');
                     const answer = answers.find((a) => a.isCorrect).el.textContent;
                     check(answer.toUpperCase() === q.ch && (q.type !== 'first' || q.ch === q.word[0].toUpperCase()), where + ': correct letter');
+                  } else if (id === 'ordmyndir') {
+                    check(q.choices.length === 4 && new Set(q.choices).size === 4, where + ': four distinct choices');
+                    const correct = answers.find((a) => a.isCorrect);
+                    check(q.choices[answers.indexOf(correct)] === q.target, where + ': target matches the correct choice');
+                    const picture = document.createElement('div');
+                    picture.innerHTML = KL_ART.animal(q.target, q.mode === 'pictures' ? 104 : 128);
+                    const drawn = (q.mode === 'pictures' ? correct.el : prompt).querySelector('svg');
+                    check(drawn.outerHTML === picture.firstChild.outerHTML, where + ': correct artwork');
+                    const written = q.mode === 'pictures' ? prompt.querySelector('.match-word-text') : correct.el;
+                    check(written.textContent === KL.t('animal.' + q.target), where + ': correct translated word');
+                    check(cfg.promptSpeech(q).includes('animal.' + q.target) === (q.mode === 'pictures'), where + ': reading mode does not announce the answer');
+                    check(correct.speechParts[0] === 'animal.' + q.target, where + ': feedback pronounces the match');
+                    cfg.onCorrect(q, correct, prompt);
+                    check((q.mode === 'pictures' ? correct.el : prompt).querySelector('.word-reveal').textContent === KL.t('animal.' + q.target), where + ': matched word revealed');
                   } else if (id === 'maelingar') {
                     if (level.id === 'compare') {
                       const biggest = q.kind === 'longest' || q.kind === 'tallest';
@@ -415,6 +432,7 @@ async function main() {
                         check(drawn.length > 0 && drawn.every((w) => [1, 2, 5].includes(w)) && drawn.reduce((a, b) => a + b, 0) === q.correct, where + ': visible weights balance the parcel');
                       } else {
                         check(Number(prompt.querySelector('.measure-pencil').dataset.length) === q.correct * 28, where + ': ruler ticks match pencil endpoints');
+                        check(answers.every((a) => a.el.disabled), where + ': first align the pencil');
                       }
                       cfg.onCorrect(q, null, prompt);
                       check(prompt.querySelector('.measure-result.filled').textContent === q.correct + (level.id === 'weight' ? ' kg' : ' cm'), where + ': measured result revealed');
@@ -699,6 +717,84 @@ async function main() {
       await toMenu();
     });
 
+    await test('ruler: mouse and touch dragging snap at zero; keyboard and tap alternatives work', async () => {
+      try {
+        for (const [input, length] of [['mouse', 10], ['touch', 1], ['keyboard', 6], ['tap', 4]]) {
+          if (input === 'touch') {
+            await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+            await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+          }
+          // Fix the first length so the smallest touch target and longest pencil
+          // are both exercised; keep the real generator and game engine.
+          await cdp.eval(`(() => {
+            const run = KL.runGame;
+            KL.runGame = (cfg) => {
+              const make = cfg.makeQuestions;
+              cfg.makeQuestions = (lv) => {
+                const qs = make(lv), i = qs.findIndex((q) => q.correct === ${length});
+                [qs[0], qs[i]] = [qs[i], qs[0]];
+                return qs;
+              };
+              run(cfg);
+            };
+            try { KL.nav('maelingar'); } finally { KL.runGame = run; }
+          })()`);
+          await pickLevel(1);
+          await sleep(450);
+          assert(await cdp.eval(`document.querySelectorAll('.q-stage .answer:disabled').length === 4`), input + ': answers wait for alignment');
+          const points = async () => cdp.eval(`(() => {
+            const svg = document.querySelector('.measure-ruler'), pencil = svg.querySelector('.measure-pencil-drag');
+            svg.scrollIntoView({ block: 'center', behavior: 'instant' });
+            const p = svg.createSVGPoint();
+            p.x = ${length * 14}; p.y = 10;
+            const from = p.matrixTransform(pencil.getScreenCTM());
+            p.x += 32; p.y = 122;
+            const to = p.matrixTransform(svg.getScreenCTM());
+            p.y = 68;
+            const bad = p.matrixTransform(svg.getScreenCTM());
+            return { from: { x: from.x, y: from.y }, to: { x: to.x, y: to.y }, bad: { x: bad.x, y: bad.y } };
+          })()`);
+          const drag = async (from, to) => {
+            if (input === 'touch') {
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...from, id: 1 }] });
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...to, id: 1 }] });
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            } else {
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...from, button: 'left', buttons: 1, clickCount: 1 });
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...to, button: 'left', buttons: 1 });
+              await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...to, button: 'left', buttons: 0, clickCount: 1 });
+            }
+          };
+          if (input === 'mouse' || input === 'touch') {
+            let p = await points();
+            await drag(p.from, p.bad);
+            assert(await cdp.eval(`!document.querySelector('.measure-ruler.aligned') && document.querySelectorAll('.q-stage .answer:disabled').length === 4`), input + ': misplaced pencil keeps answers locked');
+            p = await points();
+            await drag(p.from, p.to);
+          } else if (input === 'keyboard') {
+            const y = await cdp.eval(`(() => { const p = document.querySelector('.measure-pencil-drag'); p.focus(); return p.transform.baseVal.getItem(0).matrix.f; })()`);
+            await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown' });
+            await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown' });
+            assert(await cdp.eval(`document.querySelector('.measure-pencil-drag').transform.baseVal.getItem(0).matrix.f === ${y + 7}`), 'arrow moves the pencil');
+            await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter' });
+            await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter' });
+          } else await cdp.eval(`document.querySelector('.measure-place').click()`);
+          assert(await cdp.eval(`(() => {
+            const svg = document.querySelector('.measure-ruler'), m = svg.querySelector('.measure-pencil-drag').transform.baseVal.getItem(0).matrix;
+            return svg.classList.contains('aligned') && m.e === 32 && m.f === 112 && document.querySelectorAll('.q-stage .answer:not(:disabled)').length === 4;
+          })()`), input + ': pencil snaps to zero and unlocks answers');
+          if (input === 'touch') await shot('maelingar-ruler-placed-mobile');
+          await toMenu();
+          await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+          await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+        }
+      } finally {
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+        await toMenu();
+      }
+    });
+
     await test('klukkan: whole, half, and quarter hour rounds finish', async () => {
       for (const [lvIdx, key, expectedPick, expectedSet] of [
         [0, 'whole', 0, 5],
@@ -726,7 +822,9 @@ async function main() {
       ['mynstur', 1, 'mynstur.hard', null],
       ['maelingar', 0, 'maelingar.compare', null],
       ['maelingar', 1, 'maelingar.ruler', null],
-      ['maelingar', 2, 'maelingar.weight', null]
+      ['maelingar', 2, 'maelingar.weight', null],
+      ['ordmyndir', 0, 'ordmyndir.pictures', '.animal-prompt'],
+      ['ordmyndir', 1, 'ordmyndir.words', '.animal-prompt']
     ]) {
       await test(`${id} (${slot.split('.')[1]}): full round finishes`, async () => {
         await openGame(id);
@@ -737,6 +835,7 @@ async function main() {
         }
         if (btnSel) await cdp.eval(`document.querySelector(${JSON.stringify(btnSel)}).click()`);
         if (id === 'maelingar') await shot('maelingar-' + slot.split('.')[1] + '-desktop');
+        if (id === 'ordmyndir') await shot('ordmyndir-' + slot.split('.')[1] + '-desktop');
         assert(await cdp.eval(PLAY_ROUND), 'round finished');
         assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.${slot}') || '0', 10) >= 1`), 'stars saved');
         await toMenu();
@@ -750,6 +849,7 @@ async function main() {
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="form"] h2').textContent === 'Former'`), 'form translated');
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="mynstur"] h2').textContent === 'Mønstre'`), 'mynstur translated');
       assert(await cdp.eval(`document.querySelector('.game-card[data-nav="maelingar"] h2').textContent === 'Måling'`), 'maelingar translated');
+      assert(await cdp.eval(`document.querySelector('.game-card[data-nav="ordmyndir"] h2').textContent === 'Ord og billeder'`), 'ordmyndir translated');
       assert(await cdp.eval(`document.querySelector('[data-lang="da"]').getAttribute('aria-pressed') === 'true'`), 'aria-pressed');
       assert(await cdp.eval(`document.querySelector('#menu .bubble-text').textContent.indexOf('Hej') === 0`), 'Kóli greets in Danish');
       await openGame('mynstur');
@@ -762,6 +862,13 @@ async function main() {
       assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === 'Hvad vejer pakken?'`), 'Danish measuring prompt');
       assert(await cdp.eval(PLAY_ROUND), 'full Danish weighing round finished');
       await toMenu();
+      for (const lv of [0, 1]) {
+        await openGame('ordmyndir');
+        await pickLevel(lv);
+        assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === KL.t('ordmyndir.${lv === 0 ? 'picture_q' : 'word_q'}')`), 'Danish matching prompt');
+        assert(await cdp.eval(PLAY_ROUND), 'full Danish matching round finished');
+        await toMenu();
+      }
       await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
       await waitFor(`document.documentElement.lang === 'is'`, 'back to Icelandic');
     });
@@ -800,7 +907,7 @@ async function main() {
       }
     });
 
-    await test('narrow screens (320/390px): controls, pattern row, hundred chart, and Minni title fit', async () => {
+    await test('narrow screens (320/390px): controls, pictures, long words, and game boards fit', async () => {
       try {
         for (const width of [320, 390]) {
           await cdp.send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 2, mobile: true });
@@ -836,6 +943,30 @@ async function main() {
             if (width === 390) await shot('maelingar-' + name + '-mobile');
             await toMenu();
           }
+          for (const lang of ['is', 'da']) for (const lv of [0, 1]) {
+            await cdp.eval(`(() => {
+              KL_I18N.setLang('${lang}');
+              const run = KL.runGame;
+              KL.runGame = (cfg) => {
+                const make = cfg.makeQuestions;
+                cfg.makeQuestions = (mode) => {
+                  const qs = make(mode);
+                  qs[0].target = 'mariuhaena';
+                  qs[0].choices = ['mariuhaena', 'morgaes', 'froskur', 'kottur'];
+                  return qs;
+                };
+                run(cfg);
+              };
+              try { KL.nav('ordmyndir'); } finally { KL.runGame = run; }
+            })()`);
+            await pickLevel(lv);
+            await sleep(400);
+            assert(await cdp.eval(fits), 'ordmyndir ' + lang + '/' + lv + ' fits at ' + width);
+            assert(await cdp.eval(`[...document.querySelectorAll('.match-word, .match-text')].every((el) => el.scrollWidth <= el.clientWidth + 1)`), 'long translated words are not clipped');
+            if (width === 390 && lang === 'is') await shot('ordmyndir-' + (lv === 0 ? 'pictures' : 'words') + '-mobile');
+            await toMenu();
+          }
+          await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
           await openGame('talnatafla');
           assert(await cdp.eval(fits), 'hundred chart page fits at ' + width);
           assert(await cdp.eval(`document.querySelector('.number-grid').scrollWidth <= document.querySelector('.number-scroll').clientWidth + 1`), 'all 10 columns fit without horizontal scroll at ' + width);
@@ -861,6 +992,20 @@ async function main() {
       await waitFor(`document.querySelector('.measure-scene')`, 'measuring game opens offline');
       const clip = await cdp.eval(`fetch('audio/is/maelingar.ruler_q.mp3', { headers: { Range: 'bytes=0-63' } }).then(async (r) => ({ status: r.status, length: (await r.arrayBuffer()).byteLength, type: r.headers.get('Content-Type') }))`);
       assert(clip.status === 206 && clip.length === 64 && clip.type.startsWith('audio/mpeg'), 'new spoken prompt cached with byte-range support: ' + JSON.stringify(clip));
+      await cdp.eval(`document.querySelector('.measure-place').click()`);
+      assert(await cdp.eval(`!!document.querySelector('.measure-ruler.aligned') && document.querySelectorAll('.answer:not(:disabled)').length === 4`), 'pencil placement works offline');
+      await toMenu();
+      await cdp.send('Page.navigate', { url: base + '/games/ordmyndir.html' });
+      await waitForApp();
+      await waitFor(`document.querySelectorAll('.level-btn').length === 2 && location.hash === '#ordmyndir'`, 'word-picture bookmark works offline');
+      for (const [lang, lv] of [['is', 0], ['da', 1]]) {
+        await cdp.eval(`KL_I18N.setLang('${lang}'); KL.nav('ordmyndir')`);
+        await pickLevel(lv);
+        assert(await cdp.eval(`document.querySelectorAll('.q-stage .answer').length === 4 && !!document.querySelector('.animal-prompt')`), 'matching game opens offline in ' + lang);
+        const audio = await cdp.eval(`fetch('audio/${lang}/ordmyndir.${lv === 0 ? 'picture_q' : 'word_q'}.mp3', { headers: { Range: 'bytes=0-63' } }).then(async (r) => ({ status: r.status, length: (await r.arrayBuffer()).byteLength }))`);
+        assert(audio.status === 206 && audio.length === 64, 'matching prompt cached in ' + lang);
+      }
+      await cdp.eval(`KL_I18N.setLang('is')`);
       await toMenu();
       await cdp.send('Page.navigate', { url: base + '/nested/no-such-page' });
       await waitForApp();

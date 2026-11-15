@@ -15,13 +15,16 @@ Educational browser games for kids aged 5+, guided by Kóli the koala; bilingual
 | Klukkan | Lesa klukkuna og stilla vísinn | 3:00: heilir tímar · 3:30: líka hálfir tímar („hálf fjögur“) · 3:15: líka korter („korter yfir“, „korter í“) |
 | Minni (DA: Vendespil) | Finna dýrin sem eru eins; dýrið lætur í sér heyra þegar par finnst | 6, 8, 10 eða 12 pör |
 | Mynstur (DA: Mønstre) | Finna hvað kemur næst í mynstri eða talnaröð | Létt: AAB, ABB, AABB, ABC · Erfitt: AABB, ABB, ABC og talnaraðir (+1, +2, +5, +10, −1, −2, −5, −10) |
-| Mælingar (DA: Måling) | Bera saman stærðir, mæla blýant og vigta dularfullan pakka | Stærðir: lengstur/stystur og hæst/lægst · cm: reglustika frá núlli · kg: vigt í jafnvægi með 1, 2 og 5 kg lóðum |
+| Mælingar (DA: Måling) | Bera saman stærðir, færa blýant að reglustiku og vigta dularfullan pakka | Stærðir: lengstur/stystur og hæst/lægst · cm: dragðu blýantinn að núlli og lestu lengdina · kg: vigt í jafnvægi með 1, 2 og 5 kg lóðum |
+| Orð og myndir (DA: Ord og billeder) | Para dýraheiti við myndir; banka á orðið eða myndina til að heyra heitið | Orð → mynd: hlusta og velja mynd · Mynd → orð: lesa og velja orð |
 
 Tölutaflan byrjar í frjálsri könnun. „Finndu tölu“ opnar tíu spurninga leik með stjörnum og límmiða. Taflan 1–100 hefur tíu dálka og passar í breidd á síma jafnt sem iPad; talnaleit 1–20 notar fimm dálka og fjórar raðir.
 
 Í Tölum er hvert dýr talið einu sinni; bankaðu aftur á það til að heyra töluna aftur. Stafaleikurinn nær yfir allt íslenska og danska stafrófið. Tungumála- og hljóðval virka líka meðan síðan er opin þótt vafrinn leyfi ekki vistun í `localStorage`.
 
-Í Mælingum hafa samanburðarmyndir allar sama kvarða og grunnlínu, svo lengri blýantur er í raun lengri á skjánum. Reglustikan sýnir 1–10 cm og blýanturinn byrjar alltaf við núll. Vigtin er í jafnvægi: leggðu saman merktu lóðin til að finna þyngd pakkans (1–10 kg). Þetta eru myndrænar mælingar; sentímetri á teikningunni er ekki sentímetri á skjánum.
+Í Mælingum hafa samanburðarmyndir allar sama kvarða og grunnlínu, svo lengri blýantur er í raun lengri á skjánum. Dragðu blýantinn að græna núllmerkinu fyrir ofan reglustikuna; hann smellur á sinn stað og svarhnapparnir opnast. Örvatakkar færa blýantinn líka; Enter eða „Setja við núll“ stillir hann beint. Reglustikan sýnir 0–10 cm. Vigtin er í jafnvægi: leggðu saman merktu lóðin til að finna þyngd pakkans (1–10 kg). Þetta eru myndrænar mælingar; sentímetri á teikningunni er ekki sentímetri á skjánum.
+
+Orð og myndir notar tólf dýr og tíu ólík markorð í hverri umferð. Veldu rétta mynd við orðið eða rétta orðið við myndina. Rétt svar sýnir bæði mynd og orð saman og les heitið upphátt. Báðar leiðir nota stjörnur og límmiða eins og hinir leikirnir.
 
 Kóli les spurninguna í talblöðru og hreyfir munninn á meðan; bankaðu á hann til að heyra hana aftur. Hann hrósar á íslensku („Frábært!“, „Geggjað!“, „Jibbí!“), líka í dönsku útgáfunni, þar sem merkingin birtist undir. Rangt svar dofnar og spurningin er lesin aftur. Stjörnurnar (1–3) sýna hve margar spurningar voru réttar í fyrstu tilraun (í Minni: hve fáa snúninga þurfti). Eftir hvern leik kemur nýr dýralímmiði í límmiðabókina á forsíðunni (12 dýr).
 
