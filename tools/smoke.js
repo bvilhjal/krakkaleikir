@@ -1118,7 +1118,8 @@ async function main() {
     try { chrome.kill('SIGTERM'); } catch (e) { /* already gone */ }
     setTimeout(() => { try { chrome.kill('SIGKILL'); } catch (e) { /* already gone */ } }, 3000).unref();
     srv.close();
-    fs.rmSync(profile, { recursive: true, force: true });
+    // Chrome may still be writing its profile after SIGTERM: retry, and never fail the run over it
+    try { fs.rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (e) { /* temp dir, left behind */ }
     if (cdp) { try { cdp.ws.close(); } catch (e) { /* ignore */ } }
   }
   console.log(`\n${passed} passed, ${failed} failed; screenshots: ${shots}`);

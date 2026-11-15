@@ -303,7 +303,8 @@ async function main() {
     try { chrome.kill('SIGTERM'); } catch (e) { /* gone */ }
     setTimeout(() => { try { chrome.kill('SIGKILL'); } catch (e) { /* gone */ } }, 3000).unref();
     srv.close();
-    fs.rmSync(profile, { recursive: true, force: true });
+    // Chrome may still be writing its profile after SIGTERM: retry, and never fail the run over it
+    try { fs.rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (e) { /* temp dir, left behind */ }
   }
   if (failed) { console.error(`\n${failed} check(s) failed`); process.exit(1); }
   console.log('\nall synthesized voices measured true');
