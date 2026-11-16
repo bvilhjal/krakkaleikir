@@ -736,6 +736,53 @@ async function main() {
       };
     })()`);
 
+    await test('Kóli dozes off with closed eyes; a tap wakes him and he says it again', async () => {
+      await toMenu();
+      const k = `document.querySelector('#menu .hero .koala')`;
+      await waitFor(`!${k}.classList.contains('talking') && !${k}.classList.contains('hint')`, 'Kóli quiet');
+      assert(await cdp.eval(`(() => { ${k}.classList.add('talking'); const slept = KL.doze(); ${k}.classList.remove('talking'); return !slept && !${k}.classList.contains('sleepy'); })()`), 'never dozes mid-sentence');
+      assert(await cdp.eval(`KL.doze() === true && ${k}.classList.contains('sleepy')`), 'Kóli falls asleep');
+      assert(await cdp.eval(`getComputedStyle(${k}.querySelector('.k-eyes')).display === 'none' && getComputedStyle(${k}.querySelector('.k-sleep-eyes')).display !== 'none'`), 'eyes closed');
+      assert(await cdp.eval(`getComputedStyle(${k}, '::after').content.includes('Z')`), 'Zzz float up');
+      assert(await cdp.eval(`(() => { const z = [...document.querySelectorAll('#sticker-grid .k-sleep-eyes, .wardrobe-koala .k-sleep-eyes')]; return z.length > 0 && z.every((e) => getComputedStyle(e).display === 'none'); })()`), 'other Kólis keep their eyes open');
+      await shot('koala-dozing', 1700);
+      const p = await cdp.eval(`(() => { window.scrollTo(0, 0); const r = ${k}.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()`);
+      await cdp.eval(`window.__said = []; window.__say = KL_TTS.say; KL_TTS.say = function (parts) { __said.push(parts.join()); return __say.apply(this, arguments); }`);
+      try {
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...p, button: 'left', buttons: 1, clickCount: 1 });
+        assert(await cdp.eval(`!${k}.classList.contains('sleepy') && ${k}.classList.contains('happy')`), 'a tap wakes him with a hop');
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...p, button: 'left', buttons: 0, clickCount: 1 });
+        await waitFor(`__said.length > 0`, 'he repeats what he said', 3000);
+      } finally { await cdp.eval(`KL_TTS.say = __say`); }
+      assert(await cdp.eval(`KL.doze() && (KL.koalaSay(KL.t('koala.next')), !${k}.classList.contains('sleepy'))`), 'saying something new wakes him');
+    });
+
+    await test('first-try answers in a row chime a step higher; a miss starts the scale again', async () => {
+      await cdp.eval(`(() => {
+        window.__steps = []; window.__play = KL_SOUND.play;
+        KL_SOUND.play = (n, a) => { if (n === 'correct') __steps.push(a); return __play(n, a); };
+        const orig = KL.runGame;
+        window.__answers = [];
+        KL.runGame = (c) => { const b = c.build; c.build = (...a) => (window.__answers = b(...a) || []); return orig(c); };
+        try { KL.nav('mynstur'); } finally { KL.runGame = orig; }
+      })()`);
+      try {
+        await pickLevel(0);
+        const right = `(a) => (typeof a.isCorrect === 'function' ? a.isCorrect() : a.isCorrect)`;
+        for (let q = 0; q < 6; q++) {
+          await waitFor(`__answers.length > 0 && __answers[0].el.isConnected && !__answers.some((a) => a.el.disabled)`, 'question ' + q, 8000);
+          if (q === 3) await cdp.eval(`__answers.find((a) => !(${right})(a)).el.click()`);
+          await cdp.eval(`window.__cur = __answers; __answers.find(${right}).el.click()`);
+          await waitFor(`__answers !== __cur`, 'next question', 8000);
+        }
+        const steps = await cdp.eval(`JSON.stringify(__steps)`);
+        assert(steps === '[0,1,2,-1,0,1]', 'chime steps ' + steps);
+      } finally {
+        await cdp.eval(`KL_SOUND.play = __play`);
+        await toMenu();
+      }
+    });
+
     await test('tolur: levels 1-20 and 3+? finish', async () => {
       await openGame('tolur');
       await pickLevel(1);
@@ -797,6 +844,44 @@ async function main() {
         assert(await cdp.eval(PLAY_MINNI), nPairs + '-pair round finished');
         assert(await cdp.eval(`localStorage.getItem('kl.flips.minni.${nPairs}') === '${nPairs}'`), 'perfect memory: ' + nPairs + ' moves');
         assert(await cdp.eval(`parseInt(localStorage.getItem('kl.stars.minni.${nPairs}') || '0', 10) === 3`), '3 stars');
+        await toMenu();
+      }
+    });
+
+    await test('minni for two: a miss passes the turn, a pair earns another go, the winner gets the crown, no stars', async () => {
+      const keep = `JSON.stringify(Object.keys(localStorage).filter((k) => /^kl\\.(stars|flips|prizes|rewards|stickers|wardrobe)/.test(k)).sort().map((k) => [k, localStorage.getItem(k)]))`;
+      const before = await cdp.eval(keep);
+      const face = `const face = (c) => c.querySelector('.mface.front').innerHTML; const cards = [...document.querySelectorAll('.mcard')]; const a = cards[0];`;
+      try {
+        await openGame('minni');
+        assert(await cdp.eval(`document.querySelector('[data-players="1"]').getAttribute('aria-pressed') === 'true'`), 'one player by default');
+        await cdp.eval(`document.querySelector('[data-players="2"]').click()`);
+        assert(await cdp.eval(`document.querySelector('[data-players="2"]').getAttribute('aria-pressed') === 'true' && document.querySelector('[data-players="1"]').getAttribute('aria-pressed') === 'false'`), 'two players chosen');
+        await cdp.eval(`window.__steps = []; window.__play = KL_SOUND.play; KL_SOUND.play = (n, x) => { if (n === 'correct') __steps.push(x); return __play(n, x); }`);
+        await pickLevel(0);
+        await waitFor(`document.querySelectorAll('.mcard').length === 12 && document.querySelector('.duo-player.p1.active')`, 'two-player board');
+        assert(await cdp.eval(`document.getElementById('score').textContent === '' && document.querySelector('#game .bubble-text').textContent.includes(KL.t('minni.start2'))`), 'no flip counter; Kóli explains the turns');
+        await cdp.eval(`(() => { ${face} a.click(); cards.find((c) => c !== a && face(c) !== face(a)).click(); })()`);
+        await waitFor(`document.querySelector('.duo-player.p2.active') && !document.querySelector('.mcard.flipped')`, 'a miss passes the turn', 3000);
+        assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent.includes(KL.t('minni.turn2')) && document.querySelector('.duo-player.p2').getAttribute('aria-label') === KL.t('minni.p2') + ': ' + KL.fmt('minni.duo_pairs', { n: 0 })`), 'Kóli says whose turn it is');
+        await shot('minni-duo-desktop');
+        await cdp.eval(`(() => { ${face} a.click(); cards.find((c) => c !== a && face(c) === face(a)).click(); })()`);
+        await waitFor(`document.querySelectorAll('.mcard.matched').length === 2`, 'pair found', 3000);
+        assert(await cdp.eval(`document.querySelector('.duo-player.p2.active .duo-pairs').textContent === '1' && document.querySelector('.duo-player.p1 .duo-pairs').textContent === '0'`), 'the pair counts for player 2, who goes again');
+        assert(await cdp.eval(PLAY_MINNI), 'round finished');
+        assert(await cdp.eval(`!!document.querySelector('.duo-result .p2.winner .duo-crown') && !document.querySelector('.duo-result .p1 .duo-crown')`), 'the penguin wins the crown');
+        assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent.includes(KL.t('minni.win2')) && !document.querySelector('.end-card .big-stars')`), 'winner announced, no stars');
+        await shot('minni-duo-end');
+        const steps = await cdp.eval(`JSON.stringify(__steps)`);
+        assert(steps === '[0,1,2,3,4,5]', 'pairs in a row climb the scale: ' + steps);
+        assert(await cdp.eval(keep) === before, 'no stars, flips, or prizes saved');
+        await cdp.eval(`document.getElementById('kl-replay').click()`);
+        await waitFor(`document.querySelectorAll('.mcard:not(.flipped)').length === 12 && document.querySelector('.duo-player.p1.active .duo-pairs').textContent === '0'`, 'replay keeps two players; the lion starts');
+      } finally {
+        await cdp.eval(`if (window.__play) { KL_SOUND.play = __play; delete window.__play; }`);
+        await toMenu();
+        await openGame('minni');
+        await cdp.eval(`document.querySelector('[data-players="1"]').click()`);
         await toMenu();
       }
     });
@@ -921,6 +1006,103 @@ async function main() {
       assert(await cdp.eval(PLAY_PAINT), 'ten coloured reflections finished');
       assert(await cdp.eval(`localStorage.getItem('kl.stars.spegill.paint') === '2'`), 'mistake counts once, nine first-try answers earn two stars');
       await toMenu();
+    });
+
+    await test('spegill free drawing: taps and strokes are mirrored three ways; undo, clear, praise, no stars', async () => {
+      assert(await cdp.eval(`['h', 'v', 'hv'].every((m) => {
+        for (let i = 0; i < 100; i++) {
+          const t = KL.spegill.twins(i, m, 10), key = t.slice().sort().join();
+          if (t[0] !== i || t.length !== (m === 'hv' ? 4 : 2)) return false; // 10 is even: no square is its own reflection
+          if (t.some((j) => KL.spegill.twins(j, m, 10).slice().sort().join() !== key)) return false;
+        }
+        return true;
+      })`), 'a square and its reflections reflect back to the same squares');
+      const keep = `JSON.stringify(Object.keys(localStorage).filter((k) => /^kl\\.(stars|prizes|rewards|stickers|wardrobe)/.test(k)).sort().map((k) => [k, localStorage.getItem(k)]))`;
+      const before = await cdp.eval(keep);
+      const painted = async () => cdp.eval(`[...document.querySelectorAll('.free-cell')].map((c, i) => c.style.backgroundColor ? i : -1).filter((i) => i >= 0).join()`);
+      const centers = (ids) => cdp.eval(`(() => {
+        document.querySelector('.free-grid').scrollIntoView({ block: 'center', behavior: 'instant' });
+        const cells = document.querySelectorAll('.free-cell');
+        return ${JSON.stringify(ids)}.map((i) => { const r = cells[i].getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; });
+      })()`);
+      const openFree = async () => {
+        await openGame('spegill');
+        await waitFor(`document.querySelector('.level-btn.level-extra')`, 'free drawing button');
+        await cdp.eval(`document.querySelector('.level-extra').click()`);
+        await waitFor(`document.querySelectorAll('.free-grid .free-cell').length === 100`, 'drawing sheet');
+      };
+      try {
+        await openGame('spegill');
+        await waitFor(`document.querySelector('.level-btn.level-extra')`, 'free drawing button');
+        assert(await cdp.eval(`document.querySelectorAll('.level-btn').length === 5 && !document.querySelector('.level-extra .lv-stars') && KL.games.spegill.levels.length === 4`), 'an extra button, not a level with stars');
+        await openFree();
+        await cdp.eval(`document.querySelector('.free-clear').click(); document.querySelector('.free-mode[data-mode="h"]').click(); document.querySelector('.free-ink').click()`);
+        assert(await painted() === '', 'clean sheet');
+        assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === KL.t('spegill.free_q') && !document.querySelector('.free-axis-h').offsetParent && !!document.querySelector('.free-axis-v').offsetParent`), 'Kóli explains; the mirror stands in the middle');
+        await cdp.eval(`document.querySelectorAll('.free-cell')[21].click()`);
+        assert(await painted() === '21,28', 'Enter/Space-style tap paints (2,1) and its reflection (2,8)');
+        // a real mouse tap paints once: its click must not rub the square out again
+        let [c33] = await centers([33]);
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...c33, button: 'left', buttons: 1, clickCount: 1 });
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...c33, button: 'left', buttons: 0, clickCount: 1 });
+        assert(await painted() === '21,28,33,36', 'mouse tap paints once: ' + await painted());
+        // a fast stroke skips squares; the line between them is filled in
+        const [m50, m53] = await centers([50, 53]);
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...m50, button: 'left', buttons: 1, clickCount: 1 });
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...m53, button: 'left', buttons: 1 });
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...m53, button: 'left', buttons: 0, clickCount: 1 });
+        assert(await painted() === '21,28,33,36,50,51,52,53,56,57,58,59', 'mouse stroke fills the row and its reflection: ' + await painted());
+        // touch: the sheet must not scroll away under the finger (touch-action: none)
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+        try {
+          const [t70, t71, t72] = await centers([70, 71, 72]);
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...t70, id: 1 }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...t71, id: 1 }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...t72, id: 1 }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        } finally { await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false }); }
+        await sleep(100);
+        assert((await painted()).endsWith('70,71,72,77,78,79'), 'touch stroke paints: ' + await painted());
+        await cdp.eval(`document.querySelector('.free-mode[data-mode="v"]').click(); document.querySelectorAll('.free-cell')[11].click()`);
+        assert(await cdp.eval(`(() => { const c = document.querySelectorAll('.free-cell'); return !!c[11].style.backgroundColor && !!c[81].style.backgroundColor && !c[18].style.backgroundColor && !!document.querySelector('.free-axis-h').offsetParent; })()`), 'lying mirror reflects up and down');
+        await cdp.eval(`document.querySelector('.free-mode[data-mode="hv"]').click(); document.querySelectorAll('.free-cell')[0].click()`);
+        assert(await cdp.eval(`[0, 9, 90, 99].every((i) => document.querySelectorAll('.free-cell')[i].style.backgroundColor)`), 'four-way mirror paints all four corners');
+        await shot('spegill-free-desktop');
+        const full = await painted();
+        await cdp.eval(`document.querySelectorAll('.free-cell')[99].click()`);
+        assert(await cdp.eval(`[0, 9, 90, 99].every((i) => !document.querySelectorAll('.free-cell')[i].style.backgroundColor)`), 'starting on the same colour rubs out, mirrored too');
+        await cdp.eval(`document.querySelector('.free-undo').click()`);
+        assert(await painted() === full, 'undo brings the corners back');
+        await cdp.eval(`document.querySelector('.free-clear').click()`);
+        assert(await painted() === '', 'clear empties the sheet');
+        await cdp.eval(`document.querySelector('.free-undo').click()`);
+        assert(await painted() === full, 'clear can be undone');
+        await cdp.eval(`document.querySelector('.free-ink:nth-child(4)').click(); document.querySelectorAll('.free-cell')[44].click()`);
+        assert(await cdp.eval(`(() => { const c = document.querySelectorAll('.free-cell'); return c[44].style.backgroundColor === c[55].style.backgroundColor && c[44].style.backgroundColor !== c[0].style.backgroundColor && /Grænn|Grøn/.test(c[44].getAttribute('aria-label')); })()`), 'another colour; the square says its colour');
+        await cdp.eval(`document.querySelector('.free-eraser').click(); document.querySelectorAll('.free-cell')[44].click()`);
+        assert(await cdp.eval(`!document.querySelectorAll('.free-cell')[44].style.backgroundColor && !document.querySelectorAll('.free-cell')[55].style.backgroundColor`), 'the eraser rubs out mirrored squares');
+        await cdp.eval(`document.querySelector('.free-show').click()`);
+        assert(await cdp.eval(`document.querySelector('.free-board').classList.contains('shown') && document.querySelector('#game .guide .koala').classList.contains('spin') && document.querySelectorAll('#fx .confetti').length > 0`), 'Kóli admires the picture');
+        // a language change waits until the drawing is left
+        await cdp.eval(`document.querySelector('[data-lang="da"]').click()`);
+        assert(await cdp.eval(`KL_I18N.lang() === 'is' && !document.getElementById('language-note').hidden && document.querySelectorAll('.free-cell').length === 100`), 'language change waits; the drawing stays');
+        await cdp.eval(`document.querySelector('[data-lang="is"]').click()`);
+        const kept = await painted();
+        await toMenu();
+        await openFree();
+        assert(await painted() === kept, 'the drawing is still there when coming back');
+        await cdp.eval(`document.querySelector('.free-clear').click(); document.querySelector('.free-show').click()`);
+        assert(await cdp.eval(`document.querySelector('#game .bubble-text').textContent === KL.t('spegill.free_q') && !document.querySelector('.free-board').classList.contains('shown')`), 'an empty sheet gets the instructions again');
+        assert(await cdp.eval(keep) === before, 'no stars or prizes saved');
+        // an iPad in landscape (home-screen app): the sheet and its buttons fit without scrolling
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1024, height: 748, deviceScaleFactor: 2, mobile: true });
+        await sleep(400);
+        assert(await cdp.eval(`(() => { window.scrollTo(0, 0); const b = document.querySelector('.free-actions').getBoundingClientRect(); return b.bottom <= window.innerHeight + 2 && document.querySelector('.free-cell').getBoundingClientRect().width >= 36; })()`), 'iPad landscape: everything on one screen, squares >= 36px');
+        await shot('spegill-free-ipad');
+      } finally {
+        await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+        await toMenu();
+      }
     });
 
     await test('talnatafla: snake includes zero, winds in order, steps stop at bounds, quiz finishes', async () => {
@@ -1391,6 +1573,13 @@ async function main() {
           assert(await cdp.eval(`document.querySelector('#game-title').getBoundingClientRect().width >= 40`), 'usable title width at ' + width);
           assert(await cdp.eval(`document.querySelector('#score').getBoundingClientRect().right <= window.innerWidth + 1`), 'score stays on screen at ' + width);
           if (width === 390) await shot('minni-mobile');
+          await toMenu();
+          await openGame('spegill');
+          await cdp.eval(`document.querySelector('.level-extra').click()`);
+          await waitFor(`document.querySelectorAll('.free-cell').length === 100`, 'drawing sheet');
+          assert(await cdp.eval(fits), 'free drawing fits at ' + width);
+          assert(await cdp.eval(`(() => { const card = document.querySelector('#game .question-card').getBoundingClientRect(), g = document.querySelector('.free-board').getBoundingClientRect(); return g.left >= card.left && g.right <= card.right && document.querySelector('.free-cell').getBoundingClientRect().width >= 24; })()`), 'drawing sheet inside the card at ' + width);
+          if (width === 390) await shot('spegill-free-mobile');
           await toMenu();
           await openGame('mynstur');
           await pickLevel(0);

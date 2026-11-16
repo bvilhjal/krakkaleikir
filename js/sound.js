@@ -261,8 +261,13 @@
     } catch (e) { /* audio unavailable */ }
   }
 
+  // major pentatonic steps (semitones): any run of them sounds like a tune
+  var PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+  function up(step, top) { return Math.pow(2, PENTA[Math.max(0, Math.min(step || 0, top))] / 12); }
+
   var SFX = {
-    correct: function () { tone(523.25, 0, 0.12, 'sine', 0.25); tone(659.25, 0.09, 0.12, 'sine', 0.25); tone(783.99, 0.18, 0.22, 'sine', 0.25); },
+    // step: right answers in a row before this one, so a streak climbs a scale (up to an octave)
+    correct: function (step) { var k = up(step, 5); tone(523.25 * k, 0, 0.12, 'sine', 0.25); tone(659.25 * k, 0.09, 0.12, 'sine', 0.25); tone(783.99 * k, 0.18, 0.22, 'sine', 0.25); },
     wrong: function () { tone(196.0, 0, 0.18, 'triangle', 0.16); tone(146.83, 0.12, 0.25, 'triangle', 0.14); },
     flip: function () { tone(880, 0, 0.05, 'square', 0.05); },
     win: function () { [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { tone(f, i * 0.12, 0.18, 'sine', 0.25); }); },
@@ -271,11 +276,21 @@
     // a quick sparkle run for answers in a row
     streak: function () { [1046.5, 1318.5, 1568, 2093].forEach(function (f, i) { tone(f, i * 0.06, 0.14, 'triangle', 0.12); }); },
     // Kóli giggles when tickled: "hi-hi-hi-hi", each a little higher
-    giggle: function () { [0, 1, 2, 3, 4].forEach(function (i) { tone(620 + i * 70, i * 0.11, 0.09, 'triangle', 0.17, 900 + i * 90); }); }
+    giggle: function () { [0, 1, 2, 3, 4].forEach(function (i) { tone(620 + i * 70, i * 0.11, 0.09, 'triangle', 0.17, 900 + i * 90); }); },
+    // Kóli dozes off with a soft sigh, and wakes with a springy "boing"
+    yawn: function () { tone(520, 0, 0.5, 'sine', 0.06, 330); tone(330, 0.45, 0.7, 'sine', 0.045, 220); },
+    wake: function () { tone(300, 0, 0.18, 'triangle', 0.16, 820); tone(820, 0.15, 0.12, 'sine', 0.1, 990); },
+    // the other player's turn (two-player Minni)
+    turn: function () { tone(392, 0, 0.1, 'triangle', 0.12); tone(587.33, 0.1, 0.16, 'triangle', 0.12); },
+    // a dab of paint: step 0-9 is the row from the bottom, so drawing plays a xylophone; -1 rubs out
+    dab: function (step) {
+      if (step < 0) { tone(196, 0, 0.07, 'triangle', 0.05, 150); return; }
+      tone(392 * up(step, 9), 0, 0.09, 'sine', 0.07);
+    }
   };
 
-  function play(name) {
-    try { if (SFX[name]) SFX[name](); } catch (e) { /* audio unavailable */ }
+  function play(name, arg) {
+    try { if (SFX[name]) SFX[name](arg); } catch (e) { /* audio unavailable */ }
   }
 
   function speakerOnSVG(size) {

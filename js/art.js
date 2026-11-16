@@ -19,7 +19,8 @@
       '<circle cx="' + x2 + '" cy="' + y + '" r="' + (r || 5) + '" fill="#F48FB1" opacity=".55"/>';
   }
 
-  // Kóli: ears, head, big nose; .k-mouth moves while he talks (CSS), .k-eyes blink
+  // Kóli: ears, head, big nose; .k-mouth moves while he talks (CSS), .k-eyes blink.
+  // .k-sleep-eyes (closed) stay hidden unless CSS shows them while he dozes.
   function koalaInner() {
     return '' +
       '<g class="k-ear k-ear-l"><circle cx="24" cy="40" r="22" fill="#97A3AD"/><circle cx="24" cy="40" r="13" fill="#F3C1CB"/></g>' +
@@ -28,6 +29,8 @@
       '<ellipse cx="60" cy="88" rx="23" ry="15" fill="#DCE2E6"/>' +
       cheeks(33, 87, 78, 6.5) +
       eyes(43, 77, 58, 5.5) +
+      '<g class="k-sleep-eyes" display="none" fill="none" stroke="' + INK + '" stroke-width="3.2" stroke-linecap="round">' +
+        '<path d="M36.5 57 Q43 63.5 49.5 57"/><path d="M70.5 57 Q77 63.5 83.5 57"/></g>' +
       '<ellipse cx="60" cy="71" rx="10.5" ry="13" fill="#3D405B"/>' +
       '<ellipse cx="56.5" cy="66" rx="3" ry="4.2" fill="#62668A"/>' +
       '<ellipse class="k-mouth" cx="60" cy="92" rx="6.5" ry="3.2" fill="#8C3B4A"/>';

@@ -5,7 +5,7 @@
 'use strict';
 
 // BEGIN GENERATED (node tools/check.js --write)
-var VERSION = '80ca5c25c6cc';
+var VERSION = '64b1b32138ee';
 var FILES = [
   './',
   'audio/animals/api.mp3',
@@ -215,6 +215,10 @@ var FILES = [
   'audio/da/maelingar.weight_q.mp3',
   'audio/da/minni.end_title.mp3',
   'audio/da/minni.start.mp3',
+  'audio/da/minni.start2.mp3',
+  'audio/da/minni.tie.mp3',
+  'audio/da/minni.win1.mp3',
+  'audio/da/minni.win2.mp3',
   'audio/da/miss.1.10.mp3',
   'audio/da/miss.1.5.mp3',
   'audio/da/miss.1.6.mp3',
@@ -373,6 +377,7 @@ var FILES = [
   'audio/da/shape.t%C3%ADgull.mp3',
   'audio/da/shape.%C3%A1tthyrningur.mp3',
   'audio/da/shape.%C3%BEr%C3%ADhyrningur.mp3',
+  'audio/da/spegill.free_q.mp3',
   'audio/da/spegill.hint.mp3',
   'audio/da/spegill.paint_hint.mp3',
   'audio/da/spegill.paint_q.mp3',
@@ -865,6 +870,10 @@ var FILES = [
   'audio/is/maelingar.weight_q.mp3',
   'audio/is/minni.end_title.mp3',
   'audio/is/minni.start.mp3',
+  'audio/is/minni.start2.mp3',
+  'audio/is/minni.tie.mp3',
+  'audio/is/minni.win1.mp3',
+  'audio/is/minni.win2.mp3',
   'audio/is/miss.1.10.mp3',
   'audio/is/miss.1.5.mp3',
   'audio/is/miss.1.6.mp3',
@@ -1033,6 +1042,7 @@ var FILES = [
   'audio/is/shape.t%C3%ADgull.mp3',
   'audio/is/shape.%C3%A1tthyrningur.mp3',
   'audio/is/shape.%C3%BEr%C3%ADhyrningur.mp3',
+  'audio/is/spegill.free_q.mp3',
   'audio/is/spegill.hint.mp3',
   'audio/is/spegill.paint_hint.mp3',
   'audio/is/spegill.paint_q.mp3',

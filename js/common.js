@@ -17,7 +17,7 @@
     if (window.KL_TTS) window.KL_TTS.say(parts, onDone);
     else if (onDone) setTimeout(onDone, 0);
   }
-  function sfx(name) { if (window.KL_SOUND) window.KL_SOUND.play(name); }
+  function sfx(name, arg) { if (window.KL_SOUND) window.KL_SOUND.play(name, arg); }
 
   /* ---- Web Speech fallback (used by tts.js when an mp3 is missing) ----
      onDone runs once, after the utterance ends or fails. tts.js needs that
@@ -68,7 +68,7 @@
   }
   document.addEventListener('pointerdown', warmSpeech, { once: true });
   document.addEventListener('touchstart', warmSpeech, { once: true });
-  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], [data-family], .guide .koala, .guide .bubble, [data-outfit], .wardrobe-koala, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .number-play-20, .sound-btn, .animal-prompt, .measure-pencil-drag, .measure-place, #kl-replay';
+  var OWN_AUDIO = '#sound-toggle, [data-lang], [data-nav], [data-animal-sound], [data-family], .guide .koala, .guide .bubble, [data-outfit], .wardrobe-koala, .level-btn, .answer:not(:disabled), .clock-num:not(:disabled), .number-cell:not(:disabled), .number-play, .number-play-20, .sound-btn, .animal-prompt, .measure-pencil-drag, .measure-place, .free-show, #kl-replay';
   function onGesture(e) {
     var T = window.KL_TTS;
     if (!T) return;
@@ -410,9 +410,39 @@
   }
   function screenEl() { return document.getElementById(current ? 'game' : 'menu'); }
   function guideEl() { var s = screenEl(); return s ? s.querySelector('.guide') : null; }
+  /* Kóli dozes off when nobody has played for IDLE_MS: no tap, no key and
+     nothing new said. He closes his eyes and Zzz float up; any tap wakes him,
+     and a tap on him also repeats the question as usual. */
+  var IDLE_MS = 30000, idleTimer = null;
+  function stayAwake() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(doze, IDLE_MS);
+  }
+  function doze() {
+    var g = guideEl(), k = g && g.querySelector('.koala');
+    if (!k) return false;
+    // never in the middle of a sentence, or while he asks for a tap to talk
+    if (document.hidden || k.classList.contains('talking') || k.classList.contains('hint')) { stayAwake(); return false; }
+    if (!k.classList.contains('sleepy')) {
+      k.classList.remove('happy', 'oops', 'spin');
+      k.classList.add('sleepy');
+      sfx('yawn');
+    }
+    return true;
+  }
+  function wake(e) {
+    var tapped = e && e.target && e.target.closest ? e.target.closest('.koala.sleepy') : null;
+    document.querySelectorAll('.koala.sleepy').forEach(function (k) { k.classList.remove('sleepy'); });
+    if (tapped) { sfx('wake'); replay(tapped, 'happy'); }
+    stayAwake();
+  }
+  ['pointerdown', 'keydown', 'wheel'].forEach(function (ev) { document.addEventListener(ev, wake, { capture: true, passive: true }); });
+
   function koalaSay(text, sub) {
+    stayAwake();
     var g = guideEl();
     if (!g) return;
+    g.querySelector('.koala').classList.remove('sleepy');
     g.querySelector('.koala').setAttribute('aria-label', I.t('speak.aria'));
     g.querySelector('.bubble-text').innerHTML = text || '';
     g.querySelector('.bubble-sub').textContent = sub || '';
@@ -458,7 +488,9 @@
   });
   if (window.KL_TTS) {
     window.KL_TTS.onState(function (s) {
+      stayAwake(); // the quiet time counts from the end of what he said
       document.querySelectorAll('.guide .koala').forEach(function (k) {
+        if (s === 'talk') k.classList.remove('sleepy');
         k.classList.toggle('talking', s === 'talk');
         if (s === 'talk') k.classList.remove('hint');
         if (s === 'blocked') k.classList.add('hint'); // wiggle: tap me to hear it
@@ -513,7 +545,8 @@
   }
 
   /* ---- level choice: Kóli asks, one big button per level with the best stars ----
-     levels: [{ id, label } or { id, labelKey }]; opts: { gameId, textKey, speech } */
+     levels: [{ id, label } or { id, labelKey }]; opts: { gameId, textKey, speech,
+     extra: [{ labelKey, icon, onPick }] } — extra buttons open star-free play (free drawing) */
   function levelLabel(lv) { return lv.labelKey ? I.t(lv.labelKey) : lv.label; }
   function levelScreen(ctx, levels, opts, onPick) {
     ctx.main.innerHTML =
@@ -528,6 +561,14 @@
       var best = getBest('stars.' + slot(opts.gameId, lv.id));
       b.innerHTML = '<span class="lv-label">' + levelLabel(lv) + '</span>' + (best ? '<span class="lv-stars">' + starsRow(best, 3, 20) + '</span>' : '');
       b.addEventListener('click', function () { sfx('click'); onPick(lv.id); });
+      row.appendChild(b);
+    });
+    (opts.extra || []).forEach(function (x) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'level-btn level-extra';
+      b.innerHTML = (x.icon || '') + '<span class="lv-label">' + I.t(x.labelKey) + '</span>';
+      b.addEventListener('click', function () { sfx('click'); x.onPick(); });
       row.appendChild(b);
     });
     koalaSay(I.t(opts.textKey));
@@ -703,7 +744,7 @@
             var big = showStreak();
             if (cfg.onCorrect) cfg.onCorrect(q, a, promptEl, level);
             var p = praise();
-            sfx('correct');
+            sfx('correct', state.streak - 1); // each first-try answer in a row rings a step higher
             burst(a.el);
             koalaSay(p.text, p.sub);
             koalaMood(big ? 'spin' : 'happy');
@@ -758,7 +799,7 @@
       onUnlock(function () { say(prompt, afterSpoken || undefined); });
     }
 
-    if (cfg.levels) levelScreen(cfg.ctx, cfg.levels, { gameId: cfg.gameId, textKey: 'level.q' }, start);
+    if (cfg.levels) levelScreen(cfg.ctx, cfg.levels, { gameId: cfg.gameId, textKey: 'level.q', extra: cfg.extraLevels }, start);
     else start(null);
   }
 
@@ -917,6 +958,7 @@
     guideHTML: guideHTML,
     koalaSay: koalaSay,
     koalaMood: koalaMood,
+    doze: doze, // Kóli falls asleep now (the smoke test does not wait 30 s)
     setReplay: setReplay,
     burst: burst,
     confetti: confetti,

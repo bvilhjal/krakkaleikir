@@ -215,6 +215,236 @@
       isCorrect: function () { return painted.every(function (color, i) { return color === expected[i]; }); } }];
   }
 
+  /* Free drawing (no stars): paint the sheet and the mirror paints the
+     reflection at once. The mirror stands ('h'), lies ('v') or both ('hv',
+     four-way like a kaleidoscope). A finger dragged across the sheet paints a
+     stroke; a stroke that starts on a square already in the chosen colour rubs
+     out instead. Each row rings its own note. The drawing lasts for the visit,
+     and Undo takes back the last stroke (or Clear). */
+  var FREE_N = 10;
+  var INKS = [['#E53935', 'color.red'], ['#FB8C00', 'color.orange'], ['#FDD835', 'color.yellow'], ['#43A047', 'color.green'],
+    ['#29B6F6', 'color.lightblue'], ['#3949AB', 'color.blue'], ['#8E24AA', 'color.purple'], ['#EC407A', 'color.pink'], ['#6D4C41', 'color.brown']];
+  var drawing = { cells: Array(FREE_N * FREE_N).fill(null), mode: 'h', ink: INKS[0][0], undo: [] };
+
+  // a mirrored butterfly on the free-drawing level button
+  var BUTTERFLY = '<svg width="46" height="46" viewBox="0 0 44 44" aria-hidden="true">' +
+    '<path d="M22 13C14 2 3 6 6 16c2 6 10 6 16 4zM22 13c8-11 19-7 16 3-2 6-10 6-16 4z" fill="#EC407A"/>' +
+    '<path d="M22 22c-8 0-14 8-10 14 4 4 9-4 10-10zM22 22c8 0 14 8 10 14-4 4-9-4-10-10z" fill="#FB8C00"/>' +
+    '<circle cx="12" cy="13" r="2.6" fill="#FFF"/><circle cx="32" cy="13" r="2.6" fill="#FFF"/>' +
+    '<rect x="20.5" y="10" width="3" height="26" rx="1.5" fill="#3D405B"/>' +
+    '<path d="M21 10q-3-5-6-6M23 10q3-5 6-6" fill="none" stroke="#3D405B" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+  var UNDO = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#3D405B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M8.5 4.5L4 9l4.5 4.5"/><path d="M4 9h10a5 5 0 0 1 0 10h-4"/></svg>';
+
+  // the squares one dab paints: the square itself and its reflections
+  function twins(i, mode, n) {
+    var r = Math.floor(i / n), c = i % n, out = [i];
+    function add(j) { if (out.indexOf(j) < 0) out.push(j); }
+    if (mode !== 'v') add(r * n + n - 1 - c);
+    if (mode !== 'h') add((n - 1 - r) * n + c);
+    if (mode === 'hv') add((n - 1 - r) * n + n - 1 - c);
+    return out;
+  }
+  function modeIcon(mode) {
+    var s = '<rect x="3" y="3" width="26" height="26" rx="4" fill="#fff" stroke="#90A4AE" stroke-width="2"/>';
+    if (mode !== 'v') s += '<path d="M16 4v24" stroke="#4E6F76" stroke-width="2.5" stroke-dasharray="3 2"/>';
+    if (mode !== 'h') s += '<path d="M4 16h24" stroke="#4E6F76" stroke-width="2.5" stroke-dasharray="3 2"/>';
+    twins(0, mode, 2).forEach(function (j) { // a dot and its reflections
+      s += '<circle cx="' + (j % 2 ? 23 : 9) + '" cy="' + (j >= 2 ? 23 : 9) + '" r="3.6" fill="#EC407A"/>';
+    });
+    return '<svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">' + s + '</svg>';
+  }
+
+  function freeDraw(ctx) {
+    var n = FREE_N, main = ctx.main;
+    KL_I18N.beginRound(); // a language change waits, so the drawing stays on screen
+    main.innerHTML =
+      '<div class="question-card free-card enter">' + KL.guideHTML() +
+        '<div class="free-tools">' +
+          '<div class="free-palette" role="group" aria-label="' + KL.t('spegill.colors') + '"></div>' +
+          '<div class="free-modes" role="group" aria-label="' + KL.t('spegill.mirrors') + '"></div>' +
+        '</div>' +
+        '<div class="free-board"><div class="free-grid" role="group" aria-label="' + KL.t('spegill.canvas') + '"></div>' +
+          '<span class="free-axis free-axis-v" aria-hidden="true"></span><span class="free-axis free-axis-h" aria-hidden="true"></span></div>' +
+        '<div class="free-actions">' +
+          '<button type="button" class="paint-tool free-undo">' + UNDO + ' ' + KL.t('spegill.undo') + '</button>' +
+          '<button type="button" class="paint-tool free-clear">' + KL.t('spegill.clear') + '</button>' +
+          '<button type="button" class="btn-primary free-show">' + KL.t('spegill.show') + '</button>' +
+        '</div>' +
+      '</div>';
+    var board = main.querySelector('.free-board'), grid = main.querySelector('.free-grid');
+    var palette = main.querySelector('.free-palette'), modes = main.querySelector('.free-modes');
+    var undoBtn = main.querySelector('.free-undo');
+    grid.style.setProperty('--n', n);
+
+    function refresh() {
+      board.classList.remove('mode-h', 'mode-v', 'mode-hv');
+      board.classList.add('mode-' + drawing.mode);
+      palette.querySelectorAll('[data-ink]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.ink === (drawing.ink || ''))); });
+      modes.querySelectorAll('[data-mode]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === drawing.mode)); });
+      undoBtn.disabled = !drawing.undo.length;
+    }
+    INKS.concat([[null, 'spegill.erase']]).forEach(function (ink) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = ink[0] ? 'free-ink' : 'paint-tool free-eraser';
+      b.dataset.ink = ink[0] || '';
+      if (ink[0]) b.style.backgroundColor = ink[0]; else b.textContent = KL.t(ink[1]);
+      b.setAttribute('aria-label', KL.t(ink[1]));
+      b.addEventListener('click', function () { drawing.ink = ink[0]; KL.sfx('click'); refresh(); });
+      palette.appendChild(b);
+    });
+    ['h', 'v', 'hv'].forEach(function (m) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'free-mode';
+      b.dataset.mode = m;
+      b.innerHTML = modeIcon(m);
+      b.setAttribute('aria-label', KL.t('spegill.mode_' + m));
+      b.title = b.getAttribute('aria-label');
+      b.addEventListener('click', function () { drawing.mode = m; KL.sfx('click'); refresh(); });
+      modes.appendChild(b);
+    });
+
+    function colorName(color) {
+      var hit = INKS.filter(function (x) { return x[0] === color; })[0];
+      return KL.t(hit ? hit[1] : 'spegill.empty');
+    }
+    function show(i) {
+      var cell = grid.children[i];
+      cell.style.backgroundColor = drawing.cells[i] || '';
+      cell.setAttribute('aria-label', KL.fmt('spegill.cell', { r: Math.floor(i / n) + 1, c: i % n + 1 }) + ': ' + colorName(drawing.cells[i]));
+    }
+    for (var i = 0; i < n * n; i++) {
+      var cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'free-cell';
+      cell.dataset.i = i;
+      cell.tabIndex = i === 0 ? 0 : -1; // one tab stop; arrows move inside the sheet
+      grid.appendChild(cell);
+      show(i);
+    }
+
+    // One undo step per stroke, saved only once the stroke changes something.
+    var before = null, lastDab = 0;
+    function begin() { before = drawing.cells.slice(); }
+    function paint(i, ink) {
+      var changed = false;
+      twins(i, drawing.mode, n).forEach(function (j) {
+        if (drawing.cells[j] === ink) return;
+        drawing.cells[j] = ink;
+        show(j);
+        changed = true;
+      });
+      if (!changed) return;
+      if (before) { drawing.undo.push(before); before = null; if (drawing.undo.length > 40) drawing.undo.shift(); }
+      board.classList.remove('shown');
+      undoBtn.disabled = false;
+      var now = Date.now();
+      if (now - lastDab > 45) { lastDab = now; KL.sfx('dab', ink ? n - 1 - Math.floor(i / n) : -1); }
+    }
+    // a fast finger skips squares: fill in the straight line between them
+    function line(from, to, ink) {
+      var r0 = Math.floor(from / n), c0 = from % n, r1 = Math.floor(to / n), c1 = to % n;
+      var steps = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0));
+      for (var s = 1; s <= steps; s++) paint(Math.round(r0 + (r1 - r0) * s / steps) * n + Math.round(c0 + (c1 - c0) * s / steps), ink);
+    }
+
+    var stroke = null, lastPointer = { cell: null, at: 0 };
+    grid.addEventListener('pointerdown', function (e) {
+      var cell = e.target.closest ? e.target.closest('.free-cell') : null;
+      if (!cell || !e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      lastPointer = { cell: cell, at: Date.now() };
+      var i = Number(cell.dataset.i);
+      begin();
+      stroke = { id: e.pointerId, ink: drawing.cells[i] === drawing.ink ? null : drawing.ink, last: i };
+      paint(i, stroke.ink);
+    });
+    grid.addEventListener('pointermove', function (e) {
+      if (!stroke || e.pointerId !== stroke.id) return;
+      var el = document.elementFromPoint(e.clientX, e.clientY);
+      var cell = el && el.closest ? el.closest('.free-cell') : null;
+      if (!cell || !grid.contains(cell)) return;
+      var i = Number(cell.dataset.i);
+      if (i === stroke.last) return;
+      line(stroke.last, i, stroke.ink);
+      stroke.last = i;
+    });
+    function endStroke(e) {
+      if (!stroke || e.pointerId !== stroke.id) return;
+      stroke = null;
+      before = null;
+      lastPointer.at = Date.now();
+    }
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { grid.addEventListener(ev, endStroke); });
+    // keyboard (and switch access): Enter or Space paints the focused square.
+    // A finger or mouse already painted on pointerdown, so its click is skipped
+    // (detail counts taps; the time check covers browsers that report 0).
+    grid.addEventListener('click', function (e) {
+      var cell = e.target.closest ? e.target.closest('.free-cell') : null;
+      if (!cell || e.detail > 0 || (cell === lastPointer.cell && Date.now() - lastPointer.at < 800)) return;
+      var i = Number(cell.dataset.i);
+      begin();
+      paint(i, drawing.cells[i] === drawing.ink ? null : drawing.ink);
+      before = null;
+    });
+    grid.addEventListener('keydown', function (e) {
+      var cell = e.target.closest ? e.target.closest('.free-cell') : null;
+      var move = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -n, ArrowDown: n }[e.key];
+      if (!cell || move === undefined) return;
+      e.preventDefault();
+      var i = Number(cell.dataset.i), next = i + move;
+      if (next < 0 || next >= n * n || (Math.abs(move) === 1 && Math.floor(next / n) !== Math.floor(i / n))) return;
+      cell.tabIndex = -1;
+      grid.children[next].tabIndex = 0;
+      grid.children[next].focus();
+    });
+
+    undoBtn.addEventListener('click', function () {
+      if (!drawing.undo.length) return;
+      drawing.cells = drawing.undo.pop();
+      for (var k = 0; k < n * n; k++) show(k);
+      board.classList.remove('shown');
+      KL.sfx('click');
+      refresh();
+    });
+    main.querySelector('.free-clear').addEventListener('click', function () {
+      if (!drawing.cells.some(Boolean)) return;
+      drawing.undo.push(drawing.cells.slice());
+      drawing.cells = Array(n * n).fill(null);
+      for (var k = 0; k < n * n; k++) show(k);
+      board.classList.remove('shown');
+      KL.sfx('flip');
+      refresh();
+    });
+    // Kóli admires the picture (or explains again when the sheet is empty)
+    main.querySelector('.free-show').addEventListener('click', function () {
+      if (!drawing.cells.some(Boolean)) {
+        KL.koalaSay(KL.t('spegill.free_q'));
+        KL.koalaMood('oops');
+        KL.setReplay(['spegill.free_q']);
+        KL.say(['spegill.free_q']);
+        return;
+      }
+      var p = KL.praise();
+      KL.replay(board, 'shown');
+      KL.sfx('win');
+      KL.confetti(50);
+      KL.koalaSay(p.text, p.sub);
+      KL.koalaMood('spin');
+      KL.setReplay([p.key]);
+      KL.say([p.key]);
+    });
+
+    refresh();
+    var speech = ['spegill.free_q'];
+    KL.koalaSay(KL.t('spegill.free_q'));
+    KL.setReplay(speech);
+    KL.say(speech);
+    KL.onUnlock(function () { KL.say(speech); });
+  }
+
   KL.register('spegill', {
     levels: [
       { id: 'pictures', labelKey: 'spegill.pictures' },
@@ -227,6 +457,7 @@
         ctx: ctx,
         gameId: 'spegill',
         levels: this.levels,
+        extraLevels: [{ labelKey: 'spegill.free', icon: BUTTERFLY, onPick: function () { freeDraw(ctx); } }],
         makeQuestions: makeQuestions,
         promptText: function (q) { return KL.t(q.kind === 'paint' ? 'spegill.paint_q' : 'spegill.q'); },
         promptSpeech: function (q) { return [q.kind === 'paint' ? 'spegill.paint_q' : 'spegill.q']; },
@@ -262,5 +493,5 @@
     }
   });
 
-  KL.spegill = { flip: flip, sig: sig, PICTURES: PICTURES }; // for the smoke test
+  KL.spegill = { flip: flip, sig: sig, PICTURES: PICTURES, twins: twins, drawing: function () { return drawing; } }; // for the smoke test
 })();

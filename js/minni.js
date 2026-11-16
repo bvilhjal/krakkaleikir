@@ -1,6 +1,8 @@
 /* Minni / Vendespil: memory game with animal and thing cards (6, 8, 10, or 12 pairs).
    Matching a pair plays that animal's voice or says the thing's name. Fewer flips is better; best stars
-   and fewest flips are stored per board size. */
+   and fewest flips are stored per board size. Pairs found in a row chime a step higher each time.
+   Two players (the lion and the penguin) can take turns: a pair earns another go, a miss passes
+   the turn, and whoever finds more pairs wins. Two-player rounds give no stars or prizes. */
 (function () {
   'use strict';
 
@@ -16,6 +18,11 @@
       '<rect x="3" y="5" width="10" height="14" rx="2" fill="#FFD9A0" stroke="#E07A5F" stroke-width="1.6" transform="rotate(-8 8 12)"/>' +
       '<rect x="11" y="5" width="10" height="14" rx="2" fill="#fff" stroke="#E07A5F" stroke-width="1.6" transform="rotate(8 16 12)"/></svg>';
   }
+
+  var players = 1; // chosen on the level screen; kept for the visit
+  var P = ['ljon', 'morgaes']; // player 1 and player 2
+  function pairsText(n) { return KL.fmt(n % 10 === 1 && n % 100 !== 11 ? 'minni.duo_pairs_one' : 'minni.duo_pairs', { n: n }); }
+  function who(k) { return '<span class="bubble-face">' + KL_ART.animal(P[k - 1], 34) + '</span>'; }
 
   // the most flips that still give two stars (and a prize)
   var GOOD = { 6: 14, 8: 18, 10: 24, 12: 28 };
@@ -42,6 +49,19 @@
         KL.levelScreen(ctx, LEVELS, { gameId: 'minni', textKey: 'minni.start', speech: ['minni.start'] }, function (id) {
           play(parseInt(id, 10));
         });
+        main.querySelector('.level-row').insertAdjacentHTML('beforebegin',
+          '<div class="players-toggle" role="group" aria-label="' + KL.t('minni.players') + '">' + [1, 2].map(function (k) {
+            return '<button type="button" class="players-btn" data-players="' + k + '" aria-pressed="' + (players === k) + '">' +
+              '<span class="players-faces">' + P.slice(0, k).map(function (id) { return KL_ART.animal(id, 36); }).join('') + '</span>' +
+              '<span>' + KL.t(k === 1 ? 'minni.solo' : 'minni.duo') + '</span></button>';
+          }).join('') + '</div>');
+        main.querySelectorAll('[data-players]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            players = Number(b.getAttribute('data-players'));
+            KL.sfx('click');
+            main.querySelectorAll('[data-players]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+          });
+        });
       }
 
       function play(nPairs) {
@@ -60,15 +80,37 @@
         var matched = 0;
         var flips = 0;
         var lock = false;
+        var run = 0; // pairs found in a row
+        var duo = players === 2, turn = 1, pairs = [0, 0, 0];
 
         main.innerHTML =
           '<div class="minni-wrap enter">' + KL.guideHTML(64) +
+            (duo ? '<div class="duo-score">' + [1, 2].map(function (k) {
+              return '<div class="duo-player p' + k + '" data-player="' + k + '" role="img">' + KL_ART.animal(P[k - 1], 44) + '<span class="duo-pairs">0</span></div>';
+            }).join('') + '</div>' : '') +
             '<div class="board' + (nPairs === 10 || nPairs === 12 ? ' board-' + nPairs : '') + '" id="kl-board"></div>' +
           '</div>';
         var board = document.getElementById('kl-board');
-        KL.koalaSay(KL.t('minni.start'));
-        KL.setReplay(['minni.start']);
-        showFlips(0);
+        function showTurn() {
+          main.querySelectorAll('.duo-player').forEach(function (el) {
+            var k = Number(el.getAttribute('data-player'));
+            el.classList.toggle('active', k === turn);
+            el.querySelector('.duo-pairs').textContent = pairs[k];
+            el.setAttribute('aria-label', KL.t('minni.p' + k) + ': ' + pairsText(pairs[k]));
+          });
+        }
+        if (duo) {
+          scoreEl.innerHTML = '';
+          scoreEl.removeAttribute('aria-label');
+          showTurn();
+          KL.koalaSay(who(1) + ' ' + KL.t('minni.start2'));
+          KL.setReplay(['minni.start2']);
+          KL.say(['minni.start2']);
+        } else {
+          KL.koalaSay(KL.t('minni.start'));
+          KL.setReplay(['minni.start']);
+          showFlips(0);
+        }
 
         cards.forEach(function (card, idx) {
           // a real button: keyboard and screen readers can play too. Face down
@@ -94,12 +136,13 @@
             // two cards up: ignore taps until they are matched or turned back
             lock = true;
             flips++;
-            showFlips(flips);
+            if (!duo) showFlips(flips);
             var a = flipped[0];
             var b = flipped[1];
             if (a.key === b.key) {
               KL.later(function () {
-                KL.sfx('correct');
+                run++;
+                KL.sfx('correct', run - 1);
                 a.el.classList.add('matched');
                 b.el.classList.add('matched');
                 a.el.disabled = true;
@@ -114,9 +157,11 @@
                   if (KL_ART.isThing(a.key)) KL.say([KL_ART.nameKey(a.key)]);
                   else if (window.KL_SOUND) KL_SOUND.animal(a.key);
                 }, 180);
-                if (matched === nPairs) { KL.later(function () { end(nPairs, flips); }, 850); return; }
+                if (duo) { pairs[turn]++; showTurn(); }
+                if (matched === nPairs) { KL.later(function () { if (duo) endDuo(nPairs, pairs); else end(nPairs, flips); }, 850); return; }
                 var p = KL.praise();
-                KL.koalaSay(p.text + ' — ' + KL.t(KL_ART.nameKey(a.key)), p.sub);
+                if (duo) KL.koalaSay(who(turn) + ' ' + p.text + ' — ' + KL.t(KL_ART.nameKey(a.key)), KL.t('minni.again' + turn) + (p.sub ? ' · ' + p.sub : ''));
+                else KL.koalaSay(p.text + ' — ' + KL.t(KL_ART.nameKey(a.key)), p.sub);
                 KL.koalaMood('happy');
               }, 350);
             } else {
@@ -127,6 +172,14 @@
                 b.el.setAttribute('aria-label', b.label);
                 flipped = [];
                 lock = false;
+                run = 0;
+                if (duo) { // a miss passes the turn
+                  turn = 3 - turn;
+                  KL.sfx('turn');
+                  showTurn();
+                  KL.replay(main.querySelector('.duo-player.active'), 'turn-pop');
+                  KL.koalaSay(who(turn) + ' ' + KL.t('minni.turn' + turn));
+                }
               }, 900);
             }
           });
@@ -148,6 +201,36 @@
                   KL.t('minni.pairs' + nPairs) + ' · ' + KL.fmt('minni.end_best', { n: KL.getBest('flips.minni.' + nPairs) })],
           onReplay: function () { play(nPairs); }
         });
+      }
+
+      // two players: no stars or prizes; the one with more pairs gets the crown (both on a tie)
+      function endDuo(nPairs, pairs) {
+        KL_I18N.endRound();
+        var w = pairs[1] > pairs[2] ? 1 : pairs[2] > pairs[1] ? 2 : 0;
+        var key = w ? 'minni.win' + w : 'minni.tie';
+        var hurra = KL_I18N.PRAISE[KL_I18N.HURRA];
+        main.innerHTML =
+          '<div class="question-card end-card enter">' + KL.guideHTML(96) +
+            '<div class="duo-result">' + [1, 2].map(function (k) {
+              var top = !w || w === k;
+              return '<div class="duo-player p' + k + (top ? ' winner' : '') + '">' +
+                (top ? '<span class="duo-crown">' + KL_ART.outfitIcon('crown', 46) + '</span>' : '') +
+                KL_ART.animal(P[k - 1], 88) + '<strong>' + KL.t('minni.p' + k) + '</strong><span>' + pairsText(pairs[k]) + '</span></div>';
+            }).join('') + '</div>' +
+            '<div class="end-buttons">' +
+              '<button type="button" class="btn-primary" id="kl-replay">' + KL.t('end.replay') + '</button>' +
+              '<a class="btn-secondary" href="#" data-nav="">' + KL.t('end.menu') + '</a>' +
+            '</div>' +
+          '</div>';
+        KL.koalaSay(hurra.is + ' ' + KL.t(key), KL_I18N.lang() === 'da' ? KL.fmt('praise.means', { g: hurra.da }) : '');
+        KL.koalaMood('happy');
+        var speech = ['is:praise.' + KL_I18N.HURRA, key];
+        KL.setReplay(speech);
+        KL.say(speech);
+        KL.onUnlock(null);
+        KL.sfx('win');
+        KL.confetti(70);
+        document.getElementById('kl-replay').addEventListener('click', function () { play(nPairs); });
       }
 
       chooseSize();
